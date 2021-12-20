@@ -1,0 +1,31 @@
+{
+  "name": "ds-b2b-manager",
+  "version": "1.0.0",
+  "description": "Integration manager",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/appveen/ds-b2b-manager.git"
+  },
+  "author": "Jugnu Agrawal",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/appveen/ds-b2b-manager/issues"
+  },
+  "homepage": "https://github.com/appveen/ds-b2b-manager#readme",
+  "dependencies": {
+    "@appveen/ds-auth-cache": "^1.0.1",
+    "express": "^4.17.2",
+    "got": "^12.0.0",
+    "lodash": "^4.17.21",
+    "log4js": "^6.3.0",
+    "mongoose": "^6.1.2",
+    "uuid": "^8.3.2"
+  },
+  "devDependencies": {
+    "dotenv": "^10.0.0"
+  }
+}
