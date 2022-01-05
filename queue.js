@@ -56,5 +56,8 @@ function sendToQueue(data) {
 
 module.exports = {
 	init: init,
-	sendToQueue: sendToQueue
+	sendToQueue: sendToQueue,
+	getClient: function () {
+		return client;
+	}
 };

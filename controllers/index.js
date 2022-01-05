@@ -9,5 +9,6 @@ router.use('/:app/faas', require('./faas.controller'));
 router.use('/:app/flow', require('./flow.controller'));
 router.use('/:app/interaction', require('./interaction.controller'));
 router.use('/:app/partner', require('./partner.controller'));
+router.use('/internal/health', require('./health.controller'));
 
 module.exports = router;
