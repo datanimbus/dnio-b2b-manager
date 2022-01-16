@@ -1,11 +1,8 @@
-const envConfig = require('../config');
-const expiry = envConfig.hbFrequency * envConfig.hbMissCount;
-
-var definition = {
+const definition = {
     '_id': {
         'type': 'String'
     },
-    'agentID': {
+    'agentId': {
         'type': 'String'
     },
     'namespace': {
@@ -14,19 +11,13 @@ var definition = {
     'deploymentName': {
         'type': 'String'
     },
-    'appName': {
+    'app': {
         'type': 'String'
     },
-    'partnerID': {
-        'type': 'String'
-    },
-    'flowID': {
+    'partnerId': {
         'type': 'String'
     },
     'partnerName': {
-        'type': 'String'
-    },
-    'flowName': {
         'type': 'String'
     },
     'action': {
@@ -43,8 +34,7 @@ var definition = {
     },
     'timestamp': {
         'type': 'Date',
-        'default': Date.now,
-        'expires': expiry
+        'default': Date.now
     },
     'status': {
         'type': 'String',

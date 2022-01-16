@@ -19,7 +19,7 @@ router.post('/heartbeat', async (req, res) => {
         logger.trace(`[${req.get('TxnId')}] HeartBeat Action Body - `, JSON.stringify(req.body));
 
         let monitoringLedgerEntries = req.body.monitoringLedgerEntries;
-        let agentList = monitoringLedgerEntries.map(item => item.agentID);
+        let agentList = monitoringLedgerEntries.map(item => item.agentId);
         let promises = [];
         let promise = Promise.resolve();
 
@@ -31,12 +31,12 @@ router.post('/heartbeat', async (req, res) => {
                 entry.timestamp = new Date(entry.timestamp);
                 let agent;
                 try {
-                    agent = await agentModel.findOne({ agentID: entry.agentID, '_metadata.deleted': false });
+                    agent = await agentModel.findOne({ agentId: entry.agentId, '_metadata.deleted': false });
                 } catch (err) {
                     logger.error(`[${req.get('TxnId')}] Error finding Agent Registry - `, err);
                     throw err;
                 }
-                logger.debug(`[${req.get('TxnId')}] Agent Registry found - `, entry.agentID, agent._metadata.lastUpdated);
+                logger.debug(`[${req.get('TxnId')}] Agent Registry found - `, entry.agentId, agent._metadata.lastUpdated);
                 if (agent._metadata && !agent._metadata.deleted && agent.status !== 'DISABLED') {
                     entry.appName = agent.app;
                     entry.partnerName = agent.partner;
@@ -49,17 +49,17 @@ router.post('/heartbeat', async (req, res) => {
                     agent.markModified('_metadata.lastUpdated');
                     agent._metadata.lastUpdated = new Date();
                     const status = await agent.save(req);
-                    logger.debug(`[${req.get('TxnId')}] Agent Registry Updated - `, entry.agentID, agent._metadata.lastUpdated);
+                    logger.debug(`[${req.get('TxnId')}] Agent Registry Updated - `, entry.agentId, agent._metadata.lastUpdated);
                     logger.trace(`[${req.get('TxnId')}] Agent Registry Update Response - `, JSON.stringify(status));
                 }
-                const savedEntry = await mongoose.model('agentMonitoring').create(entry);
+                const savedEntry = await mongoose.model('agent.logs').create(entry);
                 logger.info(`[${txnId}] Create Agent Monitoring Entry`);
 
                 logger.trace(`[${txnId}] Monitoring Entry Agent List - `, agentList);
-                const agents = await agentModel.find({ agentID: { $nin: agentList }, '_metadata.deleted': false });
+                const agents = await agentModel.find({ agentId: { $nin: agentList }, '_metadata.deleted': false });
                 let promises = agents.map(item => {
                     let ledgerEntry = {
-                        'agentID': item.agentID,
+                        'agentId': item.agentId,
                         'responseAgentID': '',
                         'heartBeatFrequency': envConfig.hbFrequency.toString(),
                         'macAddress': item.macAddress,
@@ -72,7 +72,7 @@ router.post('/heartbeat', async (req, res) => {
                         'pendingFiles': item.pendingFiles
                     };
                     logger.trace(`[${txnId}] Creating MonitorLedger Entry - ${JSON.stringify(ledgerEntry)}`);
-                    return mongoose.model('agentMonitoring').create(ledgerEntry);
+                    return mongoose.model('agent.logs').create(ledgerEntry);
                 });
                 return Promise.all(promises);
             });

@@ -1,6 +1,6 @@
-let expiry = require('../config').agentMonitoringExpiry;
-var definition = {
-	'agentID': {
+const expiry = require('../config').agent.logsExpiry;
+const definition = {
+	'agentId': {
 		'type': 'String'
 	},
 	'responseAgentID': {

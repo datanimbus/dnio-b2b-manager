@@ -1,6 +1,8 @@
 
 const dataStackUtils = require('@appveen/data.stack-utils');
-const logger = global.logger;
+
+const LOGGER_NAME = sK8sEnv() ? `[${process.env.HOSTNAME}] [B2B-MANAGER v${process.env.IMAGE_TAG}]` : `[B2B-MANAGER v${process.env.IMAGE_TAG}]`;
+const logger = log4js.getLogger(LOGGER_NAME);
 const DATA_STACK_NAMESPACE = process.env.DATA_STACK_NAMESPACE;
 
 logger.debug(`DATA_STACK_NAMESPACE : ${process.env.DATA_STACK_NAMESPACE}`);
@@ -62,6 +64,8 @@ if (isK8sEnv() && !DATA_STACK_NAMESPACE) throw new Error('DATA_STACK_NAMESPACE n
 
 
 module.exports = {
+    imageTag: process.env.IMAGE_TAG,
+    hostname: process.env.HOSTNAME,
     port: process.env.PORT || 8080,
     httpsPort: process.env.HTTPS_PORT || 8443,
     baseUrlSM: get('sm') + '/sm',

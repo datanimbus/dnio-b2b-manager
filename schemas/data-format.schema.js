@@ -1,4 +1,4 @@
-var definition = {
+const definition = {
 	'_id': {
 		'type': 'String'
 	},

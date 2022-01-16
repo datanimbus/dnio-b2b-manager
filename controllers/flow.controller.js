@@ -2,44 +2,21 @@ const router = require('express').Router();
 const log4js = require('log4js');
 const mongoose = require('mongoose');
 
+const queryUtils = require('../utils/query.utils');
+
 const logger = log4js.getLogger('flow.controller');
 const flowModel = mongoose.model('flow');
 
 
 router.get('/', async (req, res) => {
     try {
-        let filter = {};
-        try {
-            if (req.query.filter) {
-                filter = JSON.parse(req.query.filter);
-            }
-        } catch (e) {
-            logger.error(e);
-            return res.status(400).json({
-                message: e
-            });
-        }
+        const filter = queryUtils.parseFilter(req);
         if (req.query.countOnly) {
             const count = await flowModel.countDocuments(filter);
             return res.status(200).json(count);
         }
-        let skip = 0;
-        let count = 30;
-        let select = '';
-        let sort = '';
-        if (req.query.count && (+req.query.count) > 0) {
-            count = +req.query.count;
-        }
-        if (req.query.page && (+req.query.page) > 0) {
-            skip = count * ((+req.query.page) - 1);
-        }
-        if (req.query.select && req.query.select.trim()) {
-            select = req.query.select;
-        }
-        if (req.query.sort && req.query.sort.trim()) {
-            sort = req.query.sort;
-        }
-        const docs = await flowModel.find(filter).select(select).sort(sort).skip(skip).limit(count).lean();
+        const data = queryUtils.getPaginationData(req);
+        const docs = await flowModel.find(filter).select(data.select).sort(data.sort).skip(data.skip).limit(data.count).lean();
         res.status(200).json(docs);
     } catch (e) {
         logger.error(err);

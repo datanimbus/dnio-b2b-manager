@@ -1,4 +1,4 @@
-var definition = {
+const definition = {
 	'_id': {
 		'type': 'String',
 		'default': null
@@ -14,14 +14,6 @@ var definition = {
 	'logo': {
 		'type': 'String'
 	},
-	'status': {                  //internal
-		'type': 'String',
-		'enum': ['Pending', 'Stopped', 'Active'],
-		'default': 'Pending'
-	},
-	'comment': {                 //internal
-		'type': 'String'
-	},
 	'secrets': [{
 		'name': { 'type': 'String' },
 		'type': {
@@ -34,21 +26,7 @@ var definition = {
 		'meta': { 'type': 'Object' }
 	}],
 	'flows': [{ 'type': 'String' }],
-	'notifications': [{
-		'channels': {
-			'name': {
-				'events': [{
-					'name': { 'type': 'String' },
-					'active': { 'type': 'Boolean' },
-
-				}]
-			},
-			'recipient': ['String']
-		}
-	}],
-	'agentID': { 'type': 'String' },
-	'serverReadTimeout': { 'type': 'String' },
-	'serverWriteTimeout': { 'type': 'String' },
+	'agentId': { 'type': 'String' },
 	'headers': {
 		'type': 'Object'
 	},
@@ -60,10 +38,6 @@ var definition = {
 			'type': 'Boolean',
 			'default': false
 		}
-	},
-	'internal': {
-		'type': 'Boolean',
-		'default': false
 	},
 	'_metadata': {
 		'type': {

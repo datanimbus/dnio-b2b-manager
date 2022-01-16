@@ -8,7 +8,7 @@ const definition = {
     'partner': {
         'type': 'String'
     },
-    'agentID': {
+    'agentId': {
         'type': 'String'
     },
     'release': {

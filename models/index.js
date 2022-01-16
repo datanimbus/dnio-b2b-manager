@@ -1,4 +1,5 @@
 function init(){
+    require('./agent-action.model');
     require('./agent-logs.model');
     require('./agent.model');
     require('./data-format.model');

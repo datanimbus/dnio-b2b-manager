@@ -59,8 +59,8 @@ router.put('/:id', async (req, res) => {
         }
         logger.debug(`[${req.get('TxnId')}] IG Agent Found`);
         logger.trace(`[${req.get('TxnId')}] IG Agent - ${JSON.stringify(data)}`);
-        obj.agentID = data.agentID;
-        await mongoose.model('transferEvent').create(obj);
+        obj.agentId = data.agentId;
+        await mongoose.model('agent-action').create(obj);
     } catch (err) {
         logger.error(err);
         if (typeof err === 'string') {

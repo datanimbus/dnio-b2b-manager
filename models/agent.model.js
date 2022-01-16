@@ -1,3 +1,4 @@
+const log4js = require('log4js');
 const mongoose = require('mongoose');
 const utils = require('@appveen/utils');
 const dataStackUtils = require('@appveen/data.stack-utils');
@@ -6,7 +7,7 @@ const definition = require('../schemas/agent.schema').definition;
 const mongooseUtils = require('../utils/mongoose.utils');
 const securityUtils = require('../utils/security.utils');
 
-const logger = global.logger;
+const logger = log4js.getLogger(global.loggerName);
 const queue = require('../queue');
 
 const client = queue.getClient();
@@ -65,7 +66,7 @@ schema.pre('save', utils.counter.getIdGenerator('AGENT', 'b2b.agents', null, nul
 
 schema.pre('save', async function (next, req) {
     try {
-        if (!this.agentID) this.agentID = uuid();
+        if (!this.agentId) this.agentId = uuid();
         if (!this.password) {
             const text = securityUtils.generatePassword(8);
             this.password = await securityUtils.encryptText(req, this.app, text);
@@ -79,7 +80,7 @@ schema.pre('save', async function (next, req) {
 schema.pre('remove', async function (next) {
     try {
         const flows = await mongoose.model('flows')
-            .find({ $or: [{ 'blocks.meta.source': this.agentID }, { 'blocks.meta.target': this.agentID }] })
+            .find({ $or: [{ 'blocks.meta.source': this.agentId }, { 'blocks.meta.target': this.agentId }] })
             .select('_id name').lean();
         if (!flows || flows.length == 0) {
             return next();
@@ -93,7 +94,7 @@ schema.pre('remove', async function (next) {
 
 schema.post('remove', function (doc, next) {
     let obj = {
-        'agentID': doc.agentID,
+        'agentId': doc.agentId,
         'appName': '',
         'partnerName': '',
         'flowName': '',
@@ -104,7 +105,7 @@ schema.post('remove', function (doc, next) {
         'sentOrRead': false
     };
     next();
-    return mongoose.model('transferEvent').create(obj);
+    return mongoose.model('agent-action').create(obj);
 });
 
 schema.post('remove', async function (doc, next) {

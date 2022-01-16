@@ -1,7 +1,8 @@
+const log4js = require('log4js');
 const config = require('../config');
 const httpClient = require('../http-client');
 
-const logger = global.logger;
+const logger = log4js.getLogger(global.loggerName);
 
 async function getApp(req, _id) {
     try {

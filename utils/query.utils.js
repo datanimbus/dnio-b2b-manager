@@ -1,4 +1,6 @@
-const logger = global.logger;
+const log4js = require('log4js');
+
+const logger = log4js.getLogger(global.loggerName);
 
 function getPaginationData(req) {
     const data = {

@@ -1,11 +1,11 @@
-var definition = {
+const definition = {
 	'_id': {
 		'type': 'String'
 	},
 	'tokenID': {
 		'type': 'String'
 	},
-	'agentID': {
+	'agentId': {
 		'type': 'String'
 	},
 	'creationTimestamp': {
