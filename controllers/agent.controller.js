@@ -6,7 +6,7 @@ const logger = log4js.getLogger('agent.controller');
 const agentModel = mongoose.model('agent');
 
 
-router.post('/init', async (req, res) => {
+router.post('/login', async (req, res) => {
     try {
     } catch (err) {
         logger.error(err);

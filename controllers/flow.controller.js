@@ -33,7 +33,11 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
     try {
-        let doc = await flowModel.findById(req.params.id).lean();
+        let mongoQuery = flowModel.findById(req.params.id);
+        if (req.query.select) {
+            mongoQuery = mongoQuery.select(req.query.select);
+        }
+        let doc = await mongoQuery.lean();
         if (!doc) {
             return res.status(404).json({
                 message: 'Data Model Not Found'
