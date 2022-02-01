@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const mkdirp = require('mkdirp');
+const log4js = require('log4js');
 const copy = require('recursive-copy');
 
 const config = require('../../config')
@@ -8,7 +9,7 @@ const config = require('../../config')
 const codeGen = require('./generators/code.generator');
 // const fileUtilsGenerator = require('./generators/file.utils');
 
-const logger = global.logger;
+const logger = log4js.getLogger(global.loggerName);
 
 async function createProject(flowJSON) {
   try {
@@ -18,7 +19,7 @@ async function createProject(flowJSON) {
     const folderPath = path.join(process.cwd(), 'generatedFlows', flowJSON._id);
     logger.info('Creating Project Folder:', folderPath);
 
-    // mkdirp.sync(folderPath);
+    mkdirp.sync(folderPath);
     // mkdirp.sync(path.join(folderPath, 'schemas'));
     // if (fs.existsSync(path.join(folderPath, 'routes'))) {
     //   fs.rmdirSync(path.join(folderPath, 'routes'), { recursive: true });
@@ -51,14 +52,14 @@ async function createProject(flowJSON) {
       fs.copyFileSync(path.join(baseImagePath, 'state.utils.js'), path.join(folderPath, 'state.utils.js'));
 
       // fs.copyFileSync(path.join(baseImagePath, 'utils', 'flow.utils.js'), path.join(folderPath, 'utils', 'flow.utils.js'),);
-      const cpUtils = await copy(path.join(baseImagePath, 'utils'), path.join(folderPath, 'utils'));
-      logger.info('Copied utils', cpUtils ? cpUtils.length : 0);
-      const cpRoutes = await copy(path.join(baseImagePath, 'routes'), path.join(folderPath, 'routes'));
-      logger.info('Copied routes', cpRoutes ? cpRoutes.length : 0);
+      // const cpUtils = await copy(path.join(baseImagePath, 'utils'), path.join(folderPath, 'utils'));
+      // logger.info('Copied utils', cpUtils ? cpUtils.length : 0);
+      // const cpRoutes = await copy(path.join(baseImagePath, 'routes'), path.join(folderPath, 'routes'));
+      // logger.info('Copied routes', cpRoutes ? cpRoutes.length : 0);
     }
 
-    fs.writeFileSync(path.join(folderPath, `route.js`), codeGen.generateCode(flowJSON.stages));
-    fs.writeFileSync(path.join(folderPath, `stage.utils.js`), codeGen.generateStages(flowJSON.stages));
+    fs.writeFileSync(path.join(folderPath, `route.js`), codeGen.generateCode(flowJSON));
+    fs.writeFileSync(path.join(folderPath, `stage.utils.js`), codeGen.generateStages(flowJSON));
     // fs.writeFileSync(path.join(folderPath, `file.utils.js`), fileUtilsGenerator.getContent(flowJSON));
     fs.writeFileSync(path.join(folderPath, 'Dockerfile'), getDockerFile(config.imageTag, flowJSON.port, flowJSON));
     fs.writeFileSync(path.join(folderPath, 'flow.json'), JSON.stringify(flowJSON));
@@ -89,15 +90,12 @@ function getDockerFile(release, port, flowData) {
     COPY . .
 
     ENV NODE_ENV="production"
-    ENV DATA_STACK_NAMESPACE="${config.dataStackNS}"
-    ENV DATA_STACK_APP="${flowData.appName}"
-    ENV DATA_STACK_PARTNER_ID="${flowData.partnerID}"
-    ENV DATA_STACK_PARTNER_NAME="${flowData.partnerName}"
+    ENV DATA_STACK_NAMESPACE="${config.DATA_STACK_NAMESPACE}"
+    ENV DATA_STACK_APP="${flowData.app}"
     ENV DATA_STACK_FLOW_NAMESPACE="${flowData.namespace}"
-    ENV DATA_STACK_FLOW_ID="${flowData.flowID}"
-    ENV DATA_STACK_FLOW_NAME="${flowData.flowName}"
-    ENV DATA_STACK_FLOW_VERSION="${flowData.flowVersion}"
-    ENV DATA_STACK_FLOW_DIRECTION="${flowData.direction}"
+    ENV DATA_STACK_FLOW_ID="${flowData._id}"
+    ENV DATA_STACK_FLOW_NAME="${flowData.name}"
+    ENV DATA_STACK_FLOW_VERSION="${flowData.version}"
     ENV DATA_STACK_DEPLOYMENT_NAME="${flowData.deploymentName}"
     ENV RELEASE="${release}"
     ENV PORT="${port}"
@@ -112,15 +110,12 @@ function getDockerFile(release, port, flowData) {
 
 function getEnvFile(release, port, flowData) {
   return `
-    DATA_STACK_NAMESPACE="${config.dataStackNS}"
-    DATA_STACK_APP="${flowData.appName}"
-    DATA_STACK_PARTNER_ID="${flowData.partnerID}"
-    DATA_STACK_PARTNER_NAME="${flowData.partnerName}"
+    DATA_STACK_NAMESPACE="${config.DATA_STACK_NAMESPACE}"
+    DATA_STACK_APP="${flowData.app}"
     DATA_STACK_FLOW_NAMESPACE="${flowData.namespace}"
-    DATA_STACK_FLOW_ID="${flowData.flowID}"
-    DATA_STACK_FLOW_NAME="${flowData.flowName}"
-    DATA_STACK_FLOW_VERSION="${flowData.flowVersion}"
-    DATA_STACK_FLOW_DIRECTION="${flowData.direction}"
+    DATA_STACK_FLOW_ID="${flowData._id}"
+    DATA_STACK_FLOW_NAME="${flowData.name}"
+    DATA_STACK_FLOW_VERSION="${flowData.version}"
     DATA_STACK_DEPLOYMENT_NAME="${flowData.deploymentName}"
     RELEASE="${release}"
     PORT="${port}"

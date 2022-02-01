@@ -35,11 +35,11 @@ logsDB.on('connected', () => { logger.info(`Connected to ${config.logsDB} DB`); 
 logsDB.on('reconnectFailed', () => { logger.error(` *** ${config.logsDB} FAILED TO RECONNECT *** `); });
 global.logsDB = logsDB;
 
-mongoose.connect(config.mongoAuthorUrl, config.mongoAuthorOptions, err => {
-	if (err) {
-		logger.error(err);
-		process.exit(0);
-	}
+mongoose.connect(config.mongoAuthorUrl, config.mongoAuthorOptions).then(client => {
+	global.authorDB = mongoose.connection.db;
+}).catch(err => {
+	logger.error(err);
+	process.exit(0);
 });
 
 mongoose.connection.on('connecting', () => { logger.info(` *** ${config.authorDB} CONNECTING *** `); });

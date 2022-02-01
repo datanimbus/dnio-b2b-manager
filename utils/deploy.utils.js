@@ -1,6 +1,10 @@
 const fs = require('fs');
+const fse = require('fs-extra');
 const path = require('path');
+const log4js = require('log4js');
 const zipFolder = require('zip-folder');
+const FormData = require('form-data');
+
 const dataStackUtils = require('@appveen/data.stack-utils');
 
 const config = require('../config');
@@ -10,6 +14,8 @@ const deploymentUrlCreate = config.baseUrlDM + '/deployment';
 const deploymentUrlUpdate = config.baseUrlDM + '/updateDeployment';
 const deploymentApiChange = config.baseUrlDM + '/apiChange';
 const kubeutil = dataStackUtils.kubeutil;
+
+const logger = log4js.getLogger(global.loggerName);
 
 async function deploy(data, type) {
     const id = data._id;
@@ -38,39 +44,38 @@ async function deploy(data, type) {
     logger.debug('***************************************************');
     logger.debug('port', data.port);
     logger.debug('***************************************************');
-    zipAFolder(folderPath, zipPath);
-    const formData = {
-        deployment: JSON.stringify({
-            image: id,
-            imagePullPolicy: 'Always',
-            namespace: config.DATA_STACK_NAMESPACE + '-' + data.app,
-            port: +(data.port || 31000),
-            name: data.deploymentName,
-            version: data.version,
-            envVars: envObj,
-            volumeMounts: {
-            },
-            options: {
-                startupProbe: {
-                    httpGet: {
-                        path: '/api/b2b/utils/health/ready',
-                        port: +(data.port || 31000),
-                        scheme: 'HTTP'
-                    },
-                    initialDelaySeconds: 5,
-                    timeoutSeconds: 30,
-                    periodSeconds: 10,
-                    failureThreshold: 5
-                }
+    await zipAFolder(folderPath, zipPath);
+    const formData = new FormData();
+    formData.append('deployment', JSON.stringify({
+        image: id,
+        imagePullPolicy: 'Always',
+        namespace: config.DATA_STACK_NAMESPACE + '-' + data.app,
+        port: +(data.port || 31000),
+        name: data.deploymentName,
+        version: data.version,
+        envVars: envObj,
+        volumeMounts: {
+        },
+        options: {
+            startupProbe: {
+                httpGet: {
+                    path: '/api/b2b/utils/health/ready',
+                    port: +(data.port || 31000),
+                    scheme: 'HTTP'
+                },
+                initialDelaySeconds: 5,
+                timeoutSeconds: 30,
+                periodSeconds: 10,
+                failureThreshold: 5
             }
-        }),
-        file: fs.createReadStream(zipPath),
-    };
+        }
+    }));
+    formData.append('file', fs.createReadStream(zipPath));
     try {
         const httpResponse = await httpClient.httpRequest({
             method: 'POST',
             url: deploymentUrl,
-            formdata: formData
+            body: formData
         });
         if (httpResponse.statusCode >= 400) {
             let errorMsg = httpResponse.body && httpResponse.body.message ? httpResponse.body.message : 'DM returned statusCode ' + httpResponse.statusCode;
@@ -78,9 +83,9 @@ async function deploy(data, type) {
             throw new Error(errorMsg);
         }
         logger.info('Upload successful!  Server responded with:', httpResponse.body);
-        helper.deleteProjectFolder(folderPath);
-        helper.removeFile(zipPath);
-        return 'Process queued in DM'
+        deleteProjectFolder(folderPath);
+        removeFile(zipPath);
+        return { statusCode: 200, body: { message: 'Process queued in DM' } };
     } catch (err) {
         logger.error('upload failed:', err);
         throw err;
@@ -125,6 +130,24 @@ function zipAFolder(src, dest) {
         });
     });
 }
+
+function deleteProjectFolder(path) {
+    try {
+        fse.removeSync(path);
+    } catch (e) {
+        logger.warn(e);
+    }
+};
+
+
+function removeFile(path) {
+    try {
+        fse.unlinkSync(path);
+    } catch (e) {
+        logger.warn(e);
+    }
+};
+
 
 
 

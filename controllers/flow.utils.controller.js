@@ -16,7 +16,7 @@ router.put('/:id/deploy', async (req, res) => {
         }
         await codeGen.createProject(doc);
         const status = await deployUtils.deploy(doc, 'flow');
-        if (status.statusCode !== 200 || status.statusCode !== 202) {
+        if (status.statusCode != 200 || status.statusCode != 202) {
             return res.status(status.statusCode).json({ message: 'Unable to deploy function' });
         }
         res.status(200).json({ message: 'Function Deployed' });

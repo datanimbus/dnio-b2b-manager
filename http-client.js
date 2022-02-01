@@ -37,15 +37,15 @@ async function httpRequest(options) {
             options.method = 'GET';
         }
         options.responseType = 'json';
-        if (!options['headers']) {
-            options['headers'] = {};
-        }
-        if (!options['headers']['TxnId']) {
-            options['headers']['TxnId'] = `${sh.unique(crypto.createHash('md5').update(Date.now().toString()).digest('hex'))}`;
-        }
-        if (!options['headers']['Content-Type']) {
-            options['headers']['Content-Type'] = `application/json`;
-        }
+        // if (!options['headers']) {
+        //     options['headers'] = {};
+        // }
+        // if (!options['headers']['TxnId']) {
+        //     options['headers']['TxnId'] = `${sh.unique(crypto.createHash('md5').update(Date.now().toString()).digest('hex'))}`;
+        // }
+        // if (!options['headers']['Content-Type']) {
+        //     options['headers']['Content-Type'] = `application/json`;
+        // }
         const resp = await got(options);
         return { statusCode: resp.statusCode, body: resp.body };
     } catch (err) {

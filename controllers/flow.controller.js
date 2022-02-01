@@ -62,7 +62,7 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
     try {
         const payload = req.body;
-        payload.app = req.params.app;
+        payload.app = req.locals.app;
         const errorMsg = flowUtils.validatePayload(payload);
         if (errorMsg) {
             return res.status(400).json({ message: errorMsg });
@@ -87,6 +87,7 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
     try {
         const payload = req.body;
+        payload.app = req.locals.app;
         const errorMsg = flowUtils.validatePayload(payload);
         if (errorMsg) {
             return res.status(400).json({ message: errorMsg });

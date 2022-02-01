@@ -1,79 +1,274 @@
-[
-    {
-        "_id": "abc1234",
-        "type": "API",
-        "next": [
-            {
-                "_id": "abc456",
-                "condition": "some logical condition"
-            }
-        ],
-        "incomming": {
-            "path": "/Adam/flow-one",
-            "method": "POST",
-            "headers": {
-                "Content-Type": "application/json"
-            }
-        },
-        "dataStructure": {
-            "outgoing": {
-                "type": "service",
-                "_id": "SRVC1231"
-            }
-        }
-    },
-    {
-        "_id": "abc456",
-        "type": "TRANSFORM",
-        "multiple": true,
-        "mapping": {},
-        "dataStructure": {
-            "incomings": [
+{
+    "_id": "FLOW1001",
+    "name": "Test Flow",
+    "api": "/Adam/testFlow",
+    "stages": [
+        {
+            "_id": "ID1001",
+            "type": "API",
+            "next": [
                 {
-                    "type": "dataFormat",
-                    "_id": "SRVC1231"
-                },
-                {
-                    "type": "dataFormat",
-                    "_id": "SRVC1231"
+                    "_id": "ID1002"
                 }
             ],
-            "outgoing": {
-                "type": "dataFormat",
-                "_id": "SRVC1231"
-            }
-        }
-    },
-    {
-        "_id": "abc678",
-        "type": "LOGIN",
-        "outgoing": {
-            "url": "http://somethirdpartyURL",
-            "method": "POST",
-            "headers": {
-                "Content-Type": "application/json"
+            "incomming": {
+                "path": "/Adam/flow-one",
+                "method": "POST",
+                "headers": {
+                    "Content-Type": "application/json"
+                }
+            },
+            "dataStructure": {
+                "outgoing": {
+                    "type": "dataFormat",
+                    "_id": "DF1001"
+                }
             }
         },
-        "credentials": {
-            "username": "",
-            "password": ""
-        }
-    },
-    {
-        "_id": "abc678",
-        "type": "API",
-        "outgoing": {
-            "url": "http://somethirdpartyURL",
-            "method": "POST",
-            "headers": {
-                "Content-Type": "application/json"
+        {
+            "_id": "ID1002",
+            "type": "TRANSFORM",
+            "next": [
+                {
+                    "_id": "ID1003"
+                }
+            ],
+            "mapping": [
+                {
+                    "source": [
+                        "_id"
+                    ],
+                    "target": "_id"
+                },
+                {
+                    "source": [
+                        "name"
+                    ],
+                    "target": "name"
+                },
+                {
+                    "source": [
+                        "email"
+                    ],
+                    "target": "email"
+                },
+                {
+                    "source": [
+                        "contactNo"
+                    ],
+                    "target": "contactNo"
+                },
+                {
+                    "source": [
+                        "age"
+                    ],
+                    "target": "age"
+                }
+            ],
+            "dataStructure": {
+                "outgoing": {
+                    "type": "dataFormat",
+                    "_id": "DF1002"
+                }
             }
         },
-        "dataStructure": {
+        {
+            "_id": "ID1003",
+            "type": "LOGIN",
             "outgoing": {
-                "type": "dataFormat",
-                "_id": "SRVC1231"
+                "url": "http://somethirdpartyURL",
+                "method": "POST",
+                "headers": {
+                    "Content-Type": "application/json"
+                }
+            },
+            "credentials": {
+                "username": "",
+                "password": ""
+            },
+            "dataStructure": {
+                "outgoing": {
+                    "type": "dataFormat",
+                    "_id": "DF1003"
+                }
+            },
+            "next": [
+                {
+                    "_id": "ID1004"
+                }
+            ]
+        },
+        {
+            "_id": "ID1004",
+            "type": "API",
+            "outgoing": {
+                "url": "http://somethirdpartyURL",
+                "method": "POST",
+                "headers": {
+                    "Content-Type": "application/json"
+                }
+            },
+            "dataStructure": {
+                "outgoing": {
+                    "type": "dataFormat",
+                    "_id": "DF1003"
+                }
             }
+        }
+    ],
+    "dataStructures": {
+        "DF1001": {
+            "name": "Some Structure",
+            "definition": [
+                {
+                    "key": "_id",
+                    "type": "String",
+                    "prefix": "EMP",
+                    "suffix": null,
+                    "padding": null,
+                    "counter": 1001,
+                    "properties": {
+                        "name": "ID",
+                        "required": false,
+                        "dataPath": "_id"
+                    }
+                },
+                {
+                    "type": "String",
+                    "key": "name",
+                    "properties": {
+                        "name": "Name",
+                        "dataPath": "name"
+                    }
+                },
+                {
+                    "type": "String",
+                    "key": "email",
+                    "properties": {
+                        "name": "Email",
+                        "dataPath": "email"
+                    }
+                },
+                {
+                    "type": "String",
+                    "key": "contactNo",
+                    "properties": {
+                        "name": "Contact No",
+                        "dataPath": "contactNo"
+                    }
+                },
+                {
+                    "type": "Number",
+                    "key": "age",
+                    "properties": {
+                        "name": "Age",
+                        "precision": 2,
+                        "dataPath": "age"
+                    }
+                }
+            ]
+        },
+        "DF1002": {
+            "name": "Some Structure",
+            "definition": [
+                {
+                    "key": "_id",
+                    "type": "String",
+                    "prefix": "EMP",
+                    "suffix": null,
+                    "padding": null,
+                    "counter": 1001,
+                    "properties": {
+                        "name": "ID",
+                        "required": false,
+                        "dataPath": "_id"
+                    }
+                },
+                {
+                    "type": "String",
+                    "key": "name",
+                    "properties": {
+                        "name": "Name",
+                        "dataPath": "name"
+                    }
+                },
+                {
+                    "type": "String",
+                    "key": "email",
+                    "properties": {
+                        "name": "Email",
+                        "dataPath": "email"
+                    }
+                },
+                {
+                    "type": "String",
+                    "key": "contactNo",
+                    "properties": {
+                        "name": "Contact No",
+                        "dataPath": "contactNo"
+                    }
+                },
+                {
+                    "type": "Number",
+                    "key": "age",
+                    "properties": {
+                        "name": "Age",
+                        "precision": 2,
+                        "dataPath": "age"
+                    }
+                }
+            ]
+        },
+        "DF1003": {
+            "name": "Some Structure",
+            "definition": [
+                {
+                    "key": "_id",
+                    "type": "String",
+                    "prefix": "EMP",
+                    "suffix": null,
+                    "padding": null,
+                    "counter": 1001,
+                    "properties": {
+                        "name": "ID",
+                        "required": false,
+                        "dataPath": "_id"
+                    }
+                },
+                {
+                    "type": "String",
+                    "key": "name",
+                    "properties": {
+                        "name": "Name",
+                        "dataPath": "name"
+                    }
+                },
+                {
+                    "type": "String",
+                    "key": "email",
+                    "properties": {
+                        "name": "Email",
+                        "dataPath": "email"
+                    }
+                },
+                {
+                    "type": "String",
+                    "key": "contactNo",
+                    "properties": {
+                        "name": "Contact No",
+                        "dataPath": "contactNo"
+                    }
+                },
+                {
+                    "type": "Number",
+                    "key": "age",
+                    "properties": {
+                        "name": "Age",
+                        "precision": 2,
+                        "dataPath": "age"
+                    }
+                }
+            ]
         }
     }
-]
+}

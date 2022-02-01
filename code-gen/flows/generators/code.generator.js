@@ -5,9 +5,10 @@ const logger = log4js.getLogger(global.loggerName);
 
 /**
  * 
- * @param {any[]} dataJson 
+ * @param {any} dataJson 
  */
 function generateCode(dataJson) {
+    const stages = dataJson.stages;
     let code = [];
     code.push(`const router = require('express').Router();`);
     code.push(``);
@@ -15,10 +16,10 @@ function generateCode(dataJson) {
     code.push(`const stageUtils = require('./stage.utils');`);
     code.push(``);
     code.push(``);
-    code.push(`router.use('/', async function (req, res) {`);
+    code.push(`router.use('${dataJson.api}', async function (req, res) {`);
     code.push(`let state = {};`);
     code.push(`let tempResponse = req;`);
-    dataJson.forEach((item) => {
+    stages.forEach((item) => {
         code.push(`state = stateUtils.getState(tempResponse, '${item._id}');`);
         code.push(`try {`);
         code.push(`    tempResponse = await stageUtils.${_.camelCase(item._id)}(req, state);`);
@@ -41,6 +42,7 @@ function generateCode(dataJson) {
 
 
 function generateStages(dataJson) {
+    const stages = dataJson.stages;
     const code = [];
     const exportsCode = [];
     code.push(`const log4js = require('log4js');`);
@@ -49,40 +51,52 @@ function generateStages(dataJson) {
     code.push(``);
     code.push(`const logger = log4js.getLogger();`);
     code.push(``);
-    dataJson.forEach((item) => {
-        exportsCode.push(`module.exports.${_.camelCase(item._id)} = ${_.camelCase(item._id)};`);
-        code.push(`async function ${_.camelCase(item._id)}(req, state) {`);
-        code.push(`logger.info(\`[\${req.header('data-stack-txn-id')}] [\${req.header('data-stack-remote-txn-id')}] Starting ${_.camelCase(item._id)} Stage\`);`);
+    stages.forEach((stage) => {
+        exportsCode.push(`module.exports.${_.camelCase(stage._id)} = ${_.camelCase(stage._id)};`);
+        code.push(`async function ${_.camelCase(stage._id)}(req, state) {`);
+        code.push(`logger.info(\`[\${req.header('data-stack-txn-id')}] [\${req.header('data-stack-remote-txn-id')}] Starting ${_.camelCase(stage._id)} Stage\`);`);
         code.push(`    const options = {};`);
         code.push(`    try {`);
-        if ((item.type === 'API' || item.type === 'FAAS') && item.outgoing) {
-            code.push(`state.url = '${item.outgoing.url}';`);
-            code.push(`state.method = '${item.outgoing.method}';`);
-            code.push(`options.url = '${item.outgoing.url}';`);
-            code.push(`options.method = '${item.outgoing.method}';`);
-            code.push(`options.headers = _.merge(state.headers,${JSON.stringify(item.outgoing.headers)});`);
+        if ((stage.type === 'API' || stage.type === 'FAAS') && stage.outgoing) {
+            code.push(`state.url = '${stage.outgoing.url}';`);
+            code.push(`state.method = '${stage.outgoing.method}';`);
+            code.push(`options.url = '${stage.outgoing.url}';`);
+            code.push(`options.method = '${stage.outgoing.method}';`);
+            code.push(`options.headers = _.merge(state.headers,${JSON.stringify(stage.outgoing.headers)});`);
             code.push(`options.json = state.body;`);
             code.push(`try {`);
             code.push(`  const tempResponse = await httpClient.request(options);`);
             code.push(`  if( tempResponse && tempResponse.statusCode != 200 ) {`);
-            code.push(`    logger.info(\`[\${req.header('data-stack-txn-id')}] [\${req.header('data-stack-remote-txn-id')}] Ending ${_.camelCase(item._id)} Stage with not 200\`);`);
+            code.push(`    logger.info(\`[\${req.header('data-stack-txn-id')}] [\${req.header('data-stack-remote-txn-id')}] Ending ${_.camelCase(stage._id)} Stage with not 200\`);`);
             code.push(`    return res.status(tempResponse.statusCode).json(tempResponse.body);`);
             code.push(`  }`);
-            code.push(`  logger.info(\`[\${req.header('data-stack-txn-id')}] [\${req.header('data-stack-remote-txn-id')}] Ending ${_.camelCase(item._id)} Stage with 200\`);`);
+            code.push(`  logger.info(\`[\${req.header('data-stack-txn-id')}] [\${req.header('data-stack-remote-txn-id')}] Ending ${_.camelCase(stage._id)} Stage with 200\`);`);
             code.push(`  return { statusCode: tempResponse.statusCode, body: tempResponse.body, headers: tempResponse.headers };`);
             code.push(`} catch(err) {`);
-            code.push(`  logger.info(\`[\${req.header('data-stack-txn-id')}] [\${req.header('data-stack-remote-txn-id')}] Ending ${_.camelCase(item._id)} Stage with Error\`);`);
+            code.push(`  logger.info(\`[\${req.header('data-stack-txn-id')}] [\${req.header('data-stack-remote-txn-id')}] Ending ${_.camelCase(stage._id)} Stage with Error\`);`);
             code.push(`  logger.error(err);`);
             code.push(`  return { statusCode: 500, body: err, headers: options.headers };`);
             code.push(`}`);
-        } else if (item.type === 'TRANSFORM' && item.mapping) {
-            
+        } else if (stage.type === 'TRANSFORM' && stage.mapping) {
+            code.push(`const newBody = {};`);
+            code.push(`if (Array.isArray(state.body)) {`);
+            code.push(`  state.body.forEach( item => {`);
+            stage.mapping.forEach(item => {
+                code.push(`    _.set(newBody, '${item.target}', _.get(item, '${item.source[0]}'));`);
+            });
+            code.push(`  });`);
+            code.push(`} else {`);
+            stage.mapping.forEach(item => {
+                code.push(`_.set(newBody, '${item.target}', _.get(state.body, '${item.source[0]}'));`);
+            });
+            code.push(`}`);
+            code.push(`  return { statusCode: 200, body: newBody, headers: stage.headers };`);
         } else {
             code.push(`  return { statusCode: 200, body: stage.body, headers: stage.headers };`);
         }
         code.push(`    } catch (err) {`);
         code.push(`        logger.error(err);`);
-        code.push(`        return { statusCode: 500, body: err, headers: options.headers };`);
+        code.push(`        return { statusCode: 500, body: err, headers: stage.headers };`);
         code.push(`    }`);
         code.push(`}`);
     });
