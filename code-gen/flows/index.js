@@ -3,12 +3,10 @@ const path = require('path');
 const mkdirp = require('mkdirp');
 const copy = require('recursive-copy');
 
-const config = require('../../config/config')
-const schemaUtils = require('@appveen/utils').schemaUtils;
-const { getRequestContent } = require('./generators/request.generator');
-const { getSuccessContent } = require('./generators/success.generator');
-const { getErrorContent } = require('./generators/error.generator');
-const fileUtilsGenerator = require('./generators/file.utils');
+const config = require('../../config')
+// const schemaUtils = require('@appveen/utils').schemaUtils;
+const codeGen = require('./generators/code.generator');
+// const fileUtilsGenerator = require('./generators/file.utils');
 
 const logger = global.logger;
 
@@ -17,36 +15,41 @@ async function createProject(flowJSON) {
     if (!flowJSON.port) {
       flowJSON.port = 31000;
     }
-    const folderPath = path.join(process.cwd(), 'generatedFlows', flowJSON.flowID);
+    const folderPath = path.join(process.cwd(), 'generatedFlows', flowJSON._id);
     logger.info('Creating Project Folder:', folderPath);
 
-    mkdirp.sync(folderPath);
-    mkdirp.sync(path.join(folderPath, 'schemas'));
-    if (fs.existsSync(path.join(folderPath, 'routes'))) {
-      fs.rmdirSync(path.join(folderPath, 'routes'), { recursive: true });
-    }
-    if (fs.existsSync(path.join(folderPath, 'utils'))) {
-      fs.rmdirSync(path.join(folderPath, 'utils'), { recursive: true });
-    }
-    mkdirp.sync(path.join(folderPath, 'routes'));
-    mkdirp.sync(path.join(folderPath, 'utils'));
+    // mkdirp.sync(folderPath);
+    // mkdirp.sync(path.join(folderPath, 'schemas'));
+    // if (fs.existsSync(path.join(folderPath, 'routes'))) {
+    //   fs.rmdirSync(path.join(folderPath, 'routes'), { recursive: true });
+    // }
+    // if (fs.existsSync(path.join(folderPath, 'utils'))) {
+    //   fs.rmdirSync(path.join(folderPath, 'utils'), { recursive: true });
+    // }
+    // mkdirp.sync(path.join(folderPath, 'routes'));
+    // mkdirp.sync(path.join(folderPath, 'utils'));
 
-    Object.keys(flowJSON.structures).forEach(key => {
-      const structure = flowJSON.structures[key].structure;
-      fs.writeFileSync(path.join(folderPath, 'schemas', `${key}.schema.json`), JSON.stringify(schemaUtils.convertToJSONSchema(structure)));
-    });
+    // Object.keys(flowJSON.structures).forEach(key => {
+    //   const structure = flowJSON.structures[key].structure;
+    //   fs.writeFileSync(path.join(folderPath, 'schemas', `${key}.schema.json`), JSON.stringify(schemaUtils.convertToJSONSchema(structure)));
+    // });
     if (!config.isK8sEnv()) {
       let baseImagePath;
       if (process.cwd().indexOf('ds-flows') > -1) {
         baseImagePath = path.join(process.cwd());
       } else {
-        baseImagePath = path.join(process.cwd(), '../ds-b2b-flow');
+        baseImagePath = path.join(process.cwd(), '../ds-b2b-base');
       }
       fs.copyFileSync(path.join(baseImagePath, 'package.json'), path.join(folderPath, 'package.json'));
       fs.copyFileSync(path.join(baseImagePath, 'package-lock.json'), path.join(folderPath, 'package-lock.json'));
-      fs.copyFileSync(path.join(baseImagePath, 'flow.yaml'), path.join(folderPath, 'flow.yaml'));
       fs.copyFileSync(path.join(baseImagePath, 'config.js'), path.join(folderPath, 'config.js'));
       fs.copyFileSync(path.join(baseImagePath, 'app.js'), path.join(folderPath, 'app.js'));
+      fs.copyFileSync(path.join(baseImagePath, 'Dockerfile'), path.join(folderPath, 'Dockerfile'));
+      fs.copyFileSync(path.join(baseImagePath, 'db-factory.js'), path.join(folderPath, 'db-factory.js'));
+      fs.copyFileSync(path.join(baseImagePath, 'http-client.js'), path.join(folderPath, 'http-client.js'));
+      fs.copyFileSync(path.join(baseImagePath, 'schema.utils.js'), path.join(folderPath, 'schema.utils.js'));
+      fs.copyFileSync(path.join(baseImagePath, 'state.utils.js'), path.join(folderPath, 'state.utils.js'));
+
       // fs.copyFileSync(path.join(baseImagePath, 'utils', 'flow.utils.js'), path.join(folderPath, 'utils', 'flow.utils.js'),);
       const cpUtils = await copy(path.join(baseImagePath, 'utils'), path.join(folderPath, 'utils'));
       logger.info('Copied utils', cpUtils ? cpUtils.length : 0);
@@ -54,13 +57,9 @@ async function createProject(flowJSON) {
       logger.info('Copied routes', cpRoutes ? cpRoutes.length : 0);
     }
 
-    let { content: requestContent } = await getRequestContent(flowJSON);
-    let { content: successContent } = await getSuccessContent(flowJSON);
-    let { content: errorContent } = await getErrorContent(flowJSON);
-    fs.writeFileSync(path.join(folderPath, 'routes', `request.router.js`), requestContent);
-    fs.writeFileSync(path.join(folderPath, 'routes', `success.router.js`), successContent);
-    fs.writeFileSync(path.join(folderPath, 'routes', `error.router.js`), errorContent);
-    fs.writeFileSync(path.join(folderPath, 'utils', `file.utils.js`), fileUtilsGenerator.getContent(flowJSON));
+    fs.writeFileSync(path.join(folderPath, `route.js`), codeGen.generateCode(flowJSON.stages));
+    fs.writeFileSync(path.join(folderPath, `stage.utils.js`), codeGen.generateStages(flowJSON.stages));
+    // fs.writeFileSync(path.join(folderPath, `file.utils.js`), fileUtilsGenerator.getContent(flowJSON));
     fs.writeFileSync(path.join(folderPath, 'Dockerfile'), getDockerFile(config.imageTag, flowJSON.port, flowJSON));
     fs.writeFileSync(path.join(folderPath, 'flow.json'), JSON.stringify(flowJSON));
     fs.writeFileSync(path.join(folderPath, '.env'), getEnvFile(config.release, flowJSON.port, flowJSON));

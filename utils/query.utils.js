@@ -24,8 +24,6 @@ function getPaginationData(req) {
     return data;
 }
 
-let logger = global.logger;
-
 function IsString(val) {
     return val && val.constructor.name === 'String';
 }

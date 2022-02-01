@@ -3,6 +3,8 @@ const log4js = require('log4js');
 const mongoose = require('mongoose');
 
 const queryUtils = require('../utils/query.utils');
+const flowCodeGen = require('../code-gen/flows');
+const flowUtils = require('../utils/flow.utils');
 
 const logger = log4js.getLogger('flow.controller');
 const flowModel = mongoose.model('flow');
@@ -60,17 +62,14 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
     try {
         const payload = req.body;
-        const key = payload.jsonSchema.title.toCamelCase();
-        logger.info(key);
-        let doc = await flowModel.findOne({ key });
-        if (doc) {
-            return res.status(400).json({
-                message: 'Data Model with Same Key Exist'
-            });
+        payload.app = req.params.app;
+        const errorMsg = flowUtils.validatePayload(payload);
+        if (errorMsg) {
+            return res.status(400).json({ message: errorMsg });
         }
-        payload.key = key;
         doc = new flowModel(payload);
-        const status = await doc.save(req);
+        doc._req = req;
+        const status = await doc.save();
         res.status(200).json(status);
     } catch (err) {
         logger.error(err);
@@ -88,6 +87,10 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
     try {
         const payload = req.body;
+        const errorMsg = flowUtils.validatePayload(payload);
+        if (errorMsg) {
+            return res.status(400).json({ message: errorMsg });
+        }
         let doc = await flowModel.findById(req.params.id);
         if (!doc) {
             return res.status(404).json({
@@ -97,7 +100,8 @@ router.put('/:id', async (req, res) => {
         Object.keys(payload).forEach(key => {
             doc[key] = payload[key];
         });
-        const status = await doc.save(req);
+        doc._req = req;
+        const status = await doc.save();
         res.status(200).json(status);
     } catch (err) {
         logger.error(err);
@@ -120,7 +124,8 @@ router.delete('/:id', async (req, res) => {
                 message: 'Data Model Not Found'
             });
         }
-        const status = await doc.remove(req);
+        doc._req = req;
+        const status = await doc.remove();
         res.status(200).json({
             message: 'Document Deleted'
         });

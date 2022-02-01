@@ -1,4 +1,3 @@
-const expiry = require('../config').agent.logsExpiry;
 const definition = {
 	'agentId': {
 		'type': 'String'
@@ -26,8 +25,7 @@ const definition = {
 	},
 	'timestamp': {
 		'type': 'Date',
-		'default': Date.now,
-		'expires': expiry
+		'default': Date.now
 	},
 	'agentType': {
 		'type': 'String'

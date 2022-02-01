@@ -13,7 +13,7 @@ try {
     const cipher = crypto.createCipheriv(ALGORITHM, key, iv);
     cipherText = cipher.update(plainText, 'utf8', 'hex');
     cipherText += cipher.final('hex');
-    cipherText = iv.toString('hex') + cipherText
+    cipherText = iv.toString('hex') + ':' + cipherText
     parentPort.postMessage({ statusCode: 200, body: cipherText });
 } catch (e) {
     cipherText = null;

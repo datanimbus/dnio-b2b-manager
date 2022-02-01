@@ -9,10 +9,12 @@ const key = workerData.key;
 let decrypted;
 
 try {
-    const contents = Buffer.from(cipherText, 'hex');
-    const iv = contents.slice(0, BLOCK_SIZE);
-    const textBytes = contents.slice(BLOCK_SIZE);
-    const decipher = crypto.createDecipheriv(ALGORITHM, key, iv);
+    // const contents = Buffer.from(cipherText, 'hex');
+    // const iv = contents.slice(0, BLOCK_SIZE);
+    // const textBytes = contents.slice(BLOCK_SIZE);
+    const iv = cipherText.split(':')[0];
+    const textBytes = cipherText.split(':')[1];
+    const decipher = crypto.createDecipheriv(ALGORITHM, key, Buffer.from(iv, 'hex'));
     decrypted = decipher.update(textBytes, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
     parentPort.postMessage({ statusCode: 200, body: decrypted });

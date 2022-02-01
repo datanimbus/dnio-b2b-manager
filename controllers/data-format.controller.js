@@ -70,7 +70,8 @@ router.post('/', async (req, res) => {
         }
         payload.key = key;
         doc = new dataFormatModel(payload);
-        const status = await doc.save(req);
+        doc._req = req;
+        const status = await doc.save();
         res.status(200).json(status);
     } catch (err) {
         logger.error(err);
@@ -97,7 +98,8 @@ router.put('/:id', async (req, res) => {
         Object.keys(payload).forEach(key => {
             doc[key] = payload[key];
         });
-        const status = await doc.save(req);
+        doc._req = req;
+        const status = await doc.save();
         res.status(200).json(status);
     } catch (err) {
         logger.error(err);
@@ -120,7 +122,8 @@ router.delete('/:id', async (req, res) => {
                 message: 'Data Model Not Found'
             });
         }
-        const status = await doc.remove(req);
+        doc._req = req;
+        const status = await doc.remove();
         res.status(200).json({
             message: 'Document Deleted'
         });

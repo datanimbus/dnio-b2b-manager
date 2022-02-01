@@ -77,6 +77,7 @@ router.put('/:id', async (req, res) => {
 router.delete('/:id', async (req, res) => {
     try {
         const app = req.params.app;
+        let promises;
         if (!app) {
             return res.status(400).json({ message: 'App is required' });
         }
@@ -88,7 +89,7 @@ router.delete('/:id', async (req, res) => {
         logger.debug(`[${req.get('TxnId')}] Deleting Data Formats`);
         const dataFormatDocs = await mongoose.model('dataFormat').find({ app: app });
         logger.trace(`[${req.get('TxnId')}] Data Formats to delete - ${JSON.stringify(dataFormatDocs)}`);
-        let promises = dataFormatDocs.map(doc => {
+        promises = dataFormatDocs.map(doc => {
             doc._req = req;
             return doc.remove(req).catch(err => logger.error(`[${req.get('TxnId')}] Error Deleting Data Formats - ${err.message}`));
         });
@@ -99,7 +100,7 @@ router.delete('/:id', async (req, res) => {
         logger.debug(`[${req.get('TxnId')}] Deleting Partners`);
         const partnerDocs = await mongoose.model('partners').find({ app: app });
         logger.trace(`[${req.get('TxnId')}] Partners to delete - ${JSON.stringify(partnerDocs)}`);
-        let promises = partnerDocs.map(doc => {
+        promises = partnerDocs.map(doc => {
             doc._req = req;
             return doc.remove(req).catch(err => logger.error(`[${req.get('TxnId')}] Error Deleting Partners - ${err.message}`));
         });
@@ -110,7 +111,7 @@ router.delete('/:id', async (req, res) => {
         logger.debug(`[${req.get('TxnId')}] Deleting Agents`);
         const agentDocs = await mongoose.model('agentRegistry').find({ app: app });
         logger.trace(`[${req.get('TxnId')}] Agents to delete - ${JSON.stringify(agentDocs)}`);
-        let promises = agentDocs.map(doc => {
+        promises = agentDocs.map(doc => {
             doc._req = req;
             return doc.remove(req).catch(err => logger.error(`[${req.get('TxnId')}] Error Deleting Agents - ${err.message}`));
         });
@@ -121,7 +122,7 @@ router.delete('/:id', async (req, res) => {
         logger.debug(`[${req.get('TxnId')}] Deleting Flows`);
         const flowDocs = await mongoose.model('flow').find({ app: app });
         logger.trace(`[${req.get('TxnId')}] Flows to delete - ${JSON.stringify(flowDocs)}`);
-        let promises = flowDocs.map(doc => {
+        promises = flowDocs.map(doc => {
             doc._req = req;
             return doc.remove(req).catch(err => logger.error(`[${req.get('TxnId')}] Error Deleting Flows - ${err.message}`));
         });
@@ -132,7 +133,7 @@ router.delete('/:id', async (req, res) => {
         logger.debug(`[${req.get('TxnId')}] Deleting FaaS`);
         const faasDocs = await mongoose.model('faas').find({ app: app });
         logger.trace(`[${req.get('TxnId')}] FaaS to delete - ${JSON.stringify(faasDocs)}`);
-        let promises = faasDocs.map(doc => {
+        promises = faasDocs.map(doc => {
             doc._req = req;
             return doc.remove(req).catch(err => logger.error(`[${req.get('TxnId')}] Error Deleting FaaS - ${err.message}`));
         });

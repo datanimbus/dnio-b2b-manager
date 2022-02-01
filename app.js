@@ -11,10 +11,8 @@ const { AuthCacheMW } = require('@appveen/ds-auth-cache');
 
 const config = require('./config');
 require('./db-factory');
-require('./models').init();
 
-const LOGGER_NAME = config.isK8sEnv() ? `[${config.hostname}] [B2B-MANAGER v${config.imageTag}]` : `[B2B-MANAGER v${config.imageTag}]`;
-const logger = log4js.getLogger(LOGGER_NAME);
+const logger = log4js.getLogger(global.loggerName);
 logger.level = process.env.LOG_LEVEL || 'info';
 global.activeRequest = 0;
 

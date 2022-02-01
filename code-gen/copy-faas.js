@@ -6,7 +6,6 @@ const dataStackFunctions = path.join(process.cwd(), '../ds-faas/generator');
 const generatorsFolder = path.join(process.cwd(), 'codeGen/faas/generators');
 
 let indexContent = fs.readFileSync(path.join(dataStackFunctions, 'index.js'), 'utf-8');
-indexContent = indexContent.replace('../config', '../../config/config');
 
 if (fs.existsSync(generatorsFolder)) {
 	fs.rmdirSync(generatorsFolder, { recursive: true });

@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const mkdirp = require('mkdirp');
 const copy = require('recursive-copy');
-const config = require('../../config/config')
+const config = require('../../config')
 
 const { getFaasContent } = require('./generators/faas.generator');
 const logger = global.logger;
