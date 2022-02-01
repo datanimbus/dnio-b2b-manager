@@ -1,0 +1,79 @@
+[
+    {
+        "_id": "abc1234",
+        "type": "API",
+        "next": [
+            {
+                "_id": "abc456",
+                "condition": "some logical condition"
+            }
+        ],
+        "incomming": {
+            "path": "/Adam/flow-one",
+            "method": "POST",
+            "headers": {
+                "Content-Type": "application/json"
+            }
+        },
+        "dataStructure": {
+            "outgoing": {
+                "type": "service",
+                "_id": "SRVC1231"
+            }
+        }
+    },
+    {
+        "_id": "abc456",
+        "type": "TRANSFORM",
+        "multiple": true,
+        "mapping": {},
+        "dataStructure": {
+            "incomings": [
+                {
+                    "type": "dataFormat",
+                    "_id": "SRVC1231"
+                },
+                {
+                    "type": "dataFormat",
+                    "_id": "SRVC1231"
+                }
+            ],
+            "outgoing": {
+                "type": "dataFormat",
+                "_id": "SRVC1231"
+            }
+        }
+    },
+    {
+        "_id": "abc678",
+        "type": "LOGIN",
+        "outgoing": {
+            "url": "http://somethirdpartyURL",
+            "method": "POST",
+            "headers": {
+                "Content-Type": "application/json"
+            }
+        },
+        "credentials": {
+            "username": "",
+            "password": ""
+        }
+    },
+    {
+        "_id": "abc678",
+        "type": "API",
+        "outgoing": {
+            "url": "http://somethirdpartyURL",
+            "method": "POST",
+            "headers": {
+                "Content-Type": "application/json"
+            }
+        },
+        "dataStructure": {
+            "outgoing": {
+                "type": "dataFormat",
+                "_id": "SRVC1231"
+            }
+        }
+    }
+]

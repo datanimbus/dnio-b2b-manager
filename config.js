@@ -41,7 +41,7 @@ function get(_service) {
     if (isK8sEnv()) {
         if (_service == 'ne') return `http://ne.${DATA_STACK_NAMESPACE}`;
         if (_service == 'sm') return `http://sm.${DATA_STACK_NAMESPACE}`;
-        if (_service == 'pm') return `http://pm.${DATA_STACK_NAMESPACE}`;
+        if (_service == 'dm') return `http://dm.${DATA_STACK_NAMESPACE}`;
         if (_service == 'user') return `http://user.${DATA_STACK_NAMESPACE}`;
         if (_service == 'gw') return `http://gw.${DATA_STACK_NAMESPACE}`;
         if (_service == 'sec') return `http://sec.${DATA_STACK_NAMESPACE}`;
@@ -49,7 +49,7 @@ function get(_service) {
     } else {
         if (_service == 'ne') return 'http://localhost:10010';
         if (_service == 'sm') return 'http://localhost:10003';
-        if (_service == 'pm') return 'http://localhost:10011';
+        if (_service == 'dm') return 'http://localhost:10709';
         if (_service == 'user') return 'http://localhost:10004';
         if (_service == 'gw') return 'http://localhost:9080';
         if (_service == 'sec') return 'http://localhost:10007';
@@ -70,6 +70,7 @@ module.exports = {
     baseUrlUSR: get('user') + '/rbac',
     baseUrlPM: get('pm') + '/pm',
     baseUrlSEC: get('sec') + '/sec',
+    baseUrlDM: get('dm') + '/dm',
     isK8sEnv: isK8sEnv,
     logQueueName: 'systemService',
     DATA_STACK_NAMESPACE,

@@ -1,24 +1,136 @@
 const fs = require('fs');
 const path = require('path');
+const zipFolder = require('zip-folder');
+const dataStackUtils = require('@appveen/data.stack-utils');
 
-async function deploy() {
+const config = require('../config');
+const httpClient = require('../http-client');
 
+const deploymentUrlCreate = config.baseUrlDM + '/deployment';
+const deploymentUrlUpdate = config.baseUrlDM + '/updateDeployment';
+const deploymentApiChange = config.baseUrlDM + '/apiChange';
+const kubeutil = dataStackUtils.kubeutil;
+
+async function deploy(data, type) {
+    const id = data._id;
+    let folderPath;
+    let zipPath;
+    if (type == 'flow') {
+        folderPath = path.join(process.cwd(), 'generatedFlows', data._id);
+        zipPath = path.join(process.cwd(), 'generatedFlows', data._id + '_' + data.version + '.zip');
+    } else {
+        folderPath = path.join(process.cwd(), 'generatedFaas', data._id);
+        zipPath = path.join(process.cwd(), 'generatedFaas', data._id + '_' + data.version + '.zip');
+    }
+    const deploymentUrl = deploymentUrlUpdate;
+    const deployNamespace = config.DATA_STACK_NAMESPACE + '-' + data.app.toLowerCase().replace(/ /g, '');
+    await kubeutil.service.deleteService(deployNamespace, data.deploymentName);
+    await kubeutil.deployment.deleteDeployment(deployNamespace, data.deploymentName);
+
+    const envKeys = ['FQDN', 'LOG_LEVEL', 'MONGO_APPCENTER_URL', 'MONGO_AUTHOR_DBNAME', 'MONGO_AUTHOR_URL', 'MONGO_LOGS_DBNAME', 'MONGO_LOGS_URL', 'MONGO_RECONN_TIME', 'MONGO_RECONN_TRIES', 'STREAMING_CHANNEL', 'STREAMING_HOST', 'STREAMING_PASS', 'STREAMING_RECONN_ATTEMPTS', 'STREAMING_RECONN_TIMEWAIT', 'STREAMING_USER', 'DATA_STACK_NAMESPACE', 'CACHE_CLUSTER', 'CACHE_HOST', 'CACHE_PORT', 'CACHE_RECONN_ATTEMPTS', 'CACHE_RECONN_TIMEWAIT_MILLI', 'RELEASE', 'TLS_REJECT_UNAUTHORIZED', 'API_REQUEST_TIMEOUT'];
+    const envObj = {};
+    for (let i in envKeys) {
+        let val = envKeys[i];
+        envObj[val] = process.env[val];
+    }
+    envObj['DATA_STACK_APP_NS'] = (config.DATA_STACK_NAMESPACE + '-' + data.app).toLowerCase();
+    envObj['NODE_OPTIONS'] = `--max-old-space-size=${config.maxHeapSize}`;
+    logger.debug('***************************************************');
+    logger.debug('port', data.port);
+    logger.debug('***************************************************');
+    zipAFolder(folderPath, zipPath);
+    const formData = {
+        deployment: JSON.stringify({
+            image: id,
+            imagePullPolicy: 'Always',
+            namespace: config.DATA_STACK_NAMESPACE + '-' + data.app,
+            port: +(data.port || 31000),
+            name: data.deploymentName,
+            version: data.version,
+            envVars: envObj,
+            volumeMounts: {
+            },
+            options: {
+                startupProbe: {
+                    httpGet: {
+                        path: '/api/b2b/utils/health/ready',
+                        port: +(data.port || 31000),
+                        scheme: 'HTTP'
+                    },
+                    initialDelaySeconds: 5,
+                    timeoutSeconds: 30,
+                    periodSeconds: 10,
+                    failureThreshold: 5
+                }
+            }
+        }),
+        file: fs.createReadStream(zipPath),
+    };
+    try {
+        const httpResponse = await httpClient.httpRequest({
+            method: 'POST',
+            url: deploymentUrl,
+            formdata: formData
+        });
+        if (httpResponse.statusCode >= 400) {
+            let errorMsg = httpResponse.body && httpResponse.body.message ? httpResponse.body.message : 'DM returned statusCode ' + httpResponse.statusCode;
+            logger.error(errorMsg);
+            throw new Error(errorMsg);
+        }
+        logger.info('Upload successful!  Server responded with:', httpResponse.body);
+        helper.deleteProjectFolder(folderPath);
+        helper.removeFile(zipPath);
+        return 'Process queued in DM'
+    } catch (err) {
+        logger.error('upload failed:', err);
+        throw err;
+    }
 }
 
-async function repair() {
-
+async function repair(data, type) {
+    return await deploy(data, type);
 }
 
 
-async function start() {
-
+async function start(data) {
+    const deployNamespace = config.DATA_STACK_NAMESPACE + '-' + data.app.toLowerCase().replace(/ /g, '');
+    const status = await kubeutil.deployment.scaleDeployment(deployNamespace, data.deploymentName, 1);
+    return status;
 }
 
-async function stop() {
-
+async function stop(data) {
+    const deployNamespace = config.DATA_STACK_NAMESPACE + '-' + data.app.toLowerCase().replace(/ /g, '');
+    const status = await kubeutil.deployment.scaleDeployment(deployNamespace, data.deploymentName, 0);
+    return status;
 }
 
 
-async function scale() {
-
+async function scale(data, scaleValue) {
+    const deployNamespace = config.DATA_STACK_NAMESPACE + '-' + data.app.toLowerCase().replace(/ /g, '');
+    const status = await kubeutil.deployment.scaleDeployment(deployNamespace, data.deploymentName, scaleValue);
+    return status;
 }
+
+
+
+
+function zipAFolder(src, dest) {
+    return new Promise((resolve, reject) => {
+        zipFolder(src, dest, function (err) {
+            if (err) {
+                return reject(err);
+            } else {
+                return resolve();
+            }
+        });
+    });
+}
+
+
+
+
+module.exports.deploy = deploy;
+module.exports.repair = repair;
+module.exports.start = start;
+module.exports.stop = stop;
+module.exports.scale = scale;
