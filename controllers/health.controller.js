@@ -2,7 +2,7 @@ const router = require('express').Router();
 const log4js = require('log4js');
 const mongoose = require('mongoose');
 
-const client = require('../queue');
+const client = require('../queue').getClient();
 
 const logger = log4js.getLogger('health.controller');
 
