@@ -113,14 +113,14 @@ echo "data.stack:bm :: Adding IMAGE_TAG in Dockerfile :: "$TAG
 echo "****************************************************"
 sed -i.bak s#__image_tag__#$TAG# Dockerfile
 
-if [ -f $WORKSPACE/../CLEAN_BUILD_PM ]; then
+if [ -f $WORKSPACE/../CLEAN_BUILD_BM ]; then
     echo "****************************************************"
     echo "data.stack:bm :: Doing a clean build"
     echo "****************************************************"
     
     # docker build --no-cache -t data.stack:bm.$TAG --build-arg LATEST_B2BGW=$LATEST_B2BGW --build-arg RELEASE=$REL .
     docker build --no-cache -t data.stack:bm.$TAG --build-arg RELEASE=$REL .
-    rm $WORKSPACE/../CLEAN_BUILD_PM
+    rm $WORKSPACE/../CLEAN_BUILD_BM
 
 
     echo "****************************************************"
@@ -199,4 +199,4 @@ fi
 echo "****************************************************"
 echo "data.stack:bm :: BUILD SUCCESS :: data.stack:bm.$TAG"
 echo "****************************************************"
-echo $TAG > $WORKSPACE/../LATEST_PM
+echo $TAG > $WORKSPACE/../LATEST_BM
