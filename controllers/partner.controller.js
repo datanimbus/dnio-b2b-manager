@@ -10,7 +10,7 @@ const partnerModel = mongoose.model('partner');
 
 router.get('/', async (req, res) => {
 	try {
-		const filter = queryUtils.parseFilter(req);
+		const filter = queryUtils.parseFilter(req.query.filter);
 		if (req.query.countOnly) {
 			const count = await partnerModel.countDocuments(filter);
 			return res.status(200).json(count);

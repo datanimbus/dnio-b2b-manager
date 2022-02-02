@@ -10,7 +10,7 @@ const agentModel = mongoose.model('agent');
 
 router.get('/', async (req, res) => {
 	try {
-		const filter = queryUtils.parseFilter(req);
+		const filter = queryUtils.parseFilter(req.query.filter);
 		if (req.query.countOnly) {
 			const count = await agentModel.countDocuments(filter);
 			return res.status(200).json(count);
