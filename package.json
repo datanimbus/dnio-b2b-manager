@@ -4,7 +4,10 @@
   "description": "Integration manager",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node app.js",
+    "lint": "./node_modules/.bin/eslint app.js controllers/ models/ utils/ --fix",
+    "copy-flow": "node codeGen/copy-flow.js",
+    "copy-faas": "node codeGen/copy-faas.js"
   },
   "repository": {
     "type": "git",
@@ -33,6 +36,8 @@
     "zip-folder": "^1.0.0"
   },
   "devDependencies": {
-    "dotenv": "^10.0.0"
+    "dotenv": "^10.0.0",
+    "eslint": "^8.8.0",
+    "husky": "^7.0.4"
   }
 }

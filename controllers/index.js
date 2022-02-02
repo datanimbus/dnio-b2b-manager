@@ -19,7 +19,7 @@ module.exports = router;
 
 
 function paramParser(req, res, next) {
-    req.locals = {};
-    req.locals.app = req.params.app;
-    next();
+	req.locals = {};
+	req.locals.app = req.params.app;
+	next();
 }

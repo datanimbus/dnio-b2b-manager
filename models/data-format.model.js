@@ -13,7 +13,7 @@ dataStackUtils.eventsUtil.setNatsClient(client);
 
 
 const schema = new mongoose.Schema(definition, {
-    usePushEach: true
+	usePushEach: true
 });
 
 schema.plugin(mongooseUtils.metadataPlugin());
@@ -21,12 +21,12 @@ schema.plugin(mongooseUtils.metadataPlugin());
 schema.index({ name: 1, app: 1 }, { unique: '__CUSTOM_NAME_DUPLICATE_ERROR__', sparse: true, collation: { locale: 'en_US', strength: 2 } });
 
 schema.post('save', function (error, doc, next) {
-    if ((error.errors && error.errors.name) || error.name === 'ValidationError' || error.message.indexOf('E11000') > -1
+	if ((error.errors && error.errors.name) || error.name === 'ValidationError' || error.message.indexOf('E11000') > -1
         || error.message.indexOf('__CUSTOM_NAME_DUPLICATE_ERROR__') > -1) {
-        next(new Error('Data Format name is already in use'));
-    } else {
-        next(error);
-    }
+		next(new Error('Data Format name is already in use'));
+	} else {
+		next(error);
+	}
 });
 
 schema.pre('save', utils.counter.getIdGenerator('DF', 'b2b.dataFormats', null, null, 1000));
@@ -40,37 +40,37 @@ schema.pre('remove', dataStackUtils.auditTrail.getAuditPreRemoveHook());
 schema.post('remove', dataStackUtils.auditTrail.getAuditPostRemoveHook('dataFormat.audit', client, 'auditQueue'));
 
 schema.pre('save', async function (next, req) {
-    try {
-        this._req = req;
-        const res = await commonUtils.getApp(req, this.app);
-        if (res.statusCode !== 200) {
-            return next(new Error('Invalid app ' + this.app));
-        }
-        return next();
-    } catch (err) {
-        return next(err);
-    }
+	try {
+		this._req = req;
+		const res = await commonUtils.getApp(req, this.app);
+		if (res.statusCode !== 200) {
+			return next(new Error('Invalid app ' + this.app));
+		}
+		return next();
+	} catch (err) {
+		return next(err);
+	}
 });
 
 schema.pre('remove', async function (next, req) {
-    try {
-        this._req = req;
-        const flows = await mongoose.model('flows').find({ dataFormat: this._id }).lean(true);
-        if (flows.length > 0) {
-            return next(new Error('Flows ' + flows.map(f => f.name) + ' still use this data format'));
-        }
-        return next();
-    } catch (err) {
-        return next(err);
-    }
+	try {
+		this._req = req;
+		const flows = await mongoose.model('flows').find({ dataFormat: this._id }).lean(true);
+		if (flows.length > 0) {
+			return next(new Error('Flows ' + flows.map(f => f.name) + ' still use this data format'));
+		}
+		return next();
+	} catch (err) {
+		return next(err);
+	}
 });
 
 schema.pre('save', function (next) {
-    self._isNew = this.isNew;
-    if (!this.definition) return next();
-    let def = typeof self.definition === 'string' ? JSON.parse(self.definition)[0].definition : this.definition[0].definition;
-    this.attributeCount = commonUtils.countAttr(def);
-    next();
+	this._isNew = this.isNew;
+	if (!this.definition) return next();
+	let def = typeof this.definition === 'string' ? JSON.parse(this.definition)[0].definition : this.definition[0].definition;
+	this.attributeCount = commonUtils.countAttr(def);
+	next();
 });
 
 //Update flow if DF changed
@@ -84,21 +84,21 @@ schema.pre('save', function (next) {
 // });
 
 schema.post('save', function (doc) {
-    if (!doc._req) {
-        doc._req = {};
-    }
-    if (doc._isNew) {
-        dataStackUtils.eventsUtil.publishEvent('EVENT_DF_CREATE', 'dataFormat', doc._req, doc);
-    } else {
-        dataStackUtils.eventsUtil.publishEvent('EVENT_DF_UPDATE', 'dataFormat', doc._req, doc);
-    }
+	if (!doc._req) {
+		doc._req = {};
+	}
+	if (doc._isNew) {
+		dataStackUtils.eventsUtil.publishEvent('EVENT_DF_CREATE', 'dataFormat', doc._req, doc);
+	} else {
+		dataStackUtils.eventsUtil.publishEvent('EVENT_DF_UPDATE', 'dataFormat', doc._req, doc);
+	}
 });
 
 schema.post('remove', function (doc) {
-    if (!doc._req) {
-        doc._req = {};
-    }
-    dataStackUtils.eventsUtil.publishEvent('EVENT_DF_DELETE', 'dataFormat', doc._req, doc);
+	if (!doc._req) {
+		doc._req = {};
+	}
+	dataStackUtils.eventsUtil.publishEvent('EVENT_DF_DELETE', 'dataFormat', doc._req, doc);
 });
 
 mongoose.model('dataFormat', schema, 'b2b.dataFormats');

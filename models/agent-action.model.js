@@ -6,7 +6,7 @@ const mongooseUtils = require('../utils/mongoose.utils');
 
 const expiry = config.hbFrequency * config.hbMissCount;
 const schema = new mongoose.Schema(definition, {
-    usePushEach: true
+	usePushEach: true
 });
 
 schema.plugin(mongooseUtils.metadataPlugin());

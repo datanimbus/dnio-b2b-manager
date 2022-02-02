@@ -3,7 +3,7 @@
  * 
  * @param {*} [options]
  */
- function metadataPlugin() {
+function metadataPlugin() {
 	return function (schema) {
 		schema.add({
 			_expireAt: {

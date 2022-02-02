@@ -81,6 +81,10 @@ module.exports = {
     logsDB: process.env.MONGO_LOGS_DBNAME || 'datastackLogs',
     googleKey: process.env.GOOGLE_API_KEY || '',
     queueName: 'webHooks',
+    logQueueName: 'systemService',
+    interactionLogQueueName: 'interactionLogs',
+    interactionQueueName: 'interaction',
+    eventsQueueName: 'events',
     streamingConfig: {
         url: process.env.STREAMING_HOST || 'nats://127.0.0.1:4222',
         user: process.env.STREAMING_USER || '',

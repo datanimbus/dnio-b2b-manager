@@ -1,0 +1,17 @@
+node_modules
+.vscode
+.idea
+.eslintrc.yml
+.gitignore
+.dockerignore
+.huskyrc
+Dockerfile
+pm.yaml
+VERSION
+README.md
+generatedAgent
+scripts
+test
+generatedFlows
+generatedFaas
+generatedFaasTest

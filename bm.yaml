@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: bm
+  namespace: __namespace__
+spec:
+  type: ClusterIP
+  selector:
+    app: bm
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 10011
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bm
+  namespace: __namespace__
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bm
+  template:
+    metadata:
+      labels:
+        app: bm
+    spec:
+      serviceAccountName: ds-admin-appveen
+      containers:
+        - name: bm
+          image: '__docker_registry_server__/data.stack:bm.__release__'
+          ports:
+            - containerPort: 10011
+          livenessProbe:
+            httpGet:
+              path: /bm/internal/health/live
+              port: 10011
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 60
+          readinessProbe:
+            httpGet:
+              path: /bm/internal/health/ready
+              port: 10011
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 60
+          envFrom:
+          - configMapRef:
+              name: config
