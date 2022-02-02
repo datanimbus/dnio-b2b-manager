@@ -30,7 +30,7 @@ function IsString(val) {
 
 function CreateRegexp(str) {
 	if (str.charAt(0) === '/' &&
-        str.charAt(str.length - 1) === '/') {
+		str.charAt(str.length - 1) === '/') {
 		var text = str.substr(1, str.length - 2).replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
 		return new RegExp(text, 'i');
 	} else {
@@ -73,12 +73,12 @@ function FilterParse(filterParsed) {
 }
 
 function isString(val) {
-	return val && val.constructor.name === 'String';
+	return val && val.constructor && val.constructor.name === 'String';
 }
 
 function createRegexp(str) {
 	if (str.charAt(0) === '/' &&
-        str.charAt(str.length - 1) === '/') {
+		str.charAt(str.length - 1) === '/') {
 		var text = str.substr(1, str.length - 2).replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
 		return new RegExp(text, 'i');
 	} else {
@@ -86,11 +86,11 @@ function createRegexp(str) {
 	}
 }
 function isArray(arg) {
-	return arg && arg.constructor.name === 'Array';
+	return arg && arg.constructor && arg.constructor.name === 'Array';
 }
 
 function isObject(arg) {
-	return arg && arg.constructor.name === 'Object';
+	return arg && arg.constructor && arg.constructor.name === 'Object';
 }
 
 function resolveArray(arr) {
