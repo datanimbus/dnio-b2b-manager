@@ -9,9 +9,11 @@ spec:
     app: bm
   ports:
     - protocol: TCP
+      name: http-port
       port: 80
       targetPort: 10011
     - protocol: TCP
+      name: https-port
       port: 443
       targetPort: 10443
 ---
