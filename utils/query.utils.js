@@ -113,8 +113,9 @@ function parseFilter(filter) {
 	}
 	filterParsed = filter;
 	try {
-		filterParsed = JSON.parse(filter);
+		filterParsed = JSON.parse(filterParsed);
 	} catch (e) {
+		filterParsed = filter;
 		logger.error(e);
 	}
 	for (var key in filterParsed) {
