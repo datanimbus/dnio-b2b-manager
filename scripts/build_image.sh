@@ -127,7 +127,7 @@ if [ -f $WORKSPACE/../CLEAN_BUILD_PM ]; then
     echo "data.stack:bm :: Building Base Image"
     echo "****************************************************"
     
-    cd $WORKSPACE/../ds-b2b-flow
+    cd $WORKSPACE/../ds-b2b-base
     docker build --no-cache -t data.stack:b2b.base.$TAG .
 
 
@@ -168,7 +168,7 @@ else
     echo "data.stack:bm :: Building Base Image"
     echo "****************************************************"
     
-    cd $WORKSPACE/../ds-b2b-flow
+    cd $WORKSPACE/../ds-b2b-base
     docker build -t data.stack:b2b.base.$TAG .
 
     cd $WORKSPACE/../ds-faas
