@@ -2,7 +2,7 @@ const log4js = require('log4js');
 const mongoose = require('mongoose');
 const utils = require('@appveen/utils');
 const dataStackUtils = require('@appveen/data.stack-utils');
-const uuid = require('uuid/v1');
+const { v4: uuid } = require('uuid');
 const _ = require('lodash');
 
 const definition = require('../schemas/partner.schema').definition;

@@ -8,7 +8,7 @@ async function getFaasContent(functionData) {
 		const lodash = require('lodash');
 		const log4js = require('log4js');
 		const faker = require("faker");
-		const uuid = require('uuid');
+		const {v4: uuid} = require('uuid');
 		const validator = require('validator');
 		const moment = require('moment');
 		const got = require('got');
