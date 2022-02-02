@@ -2,7 +2,7 @@ const log4js = require('log4js');
 const mongoose = require('mongoose');
 const dataStackUtils = require('@appveen/data.stack-utils');
 // const utils = require('@appveen/utils');
-// const _ = require('lodash');
+const _ = require('lodash');
 
 const queue = require('../queue');
 const definition = require('../schemas/flow.schema').definition;
@@ -22,10 +22,20 @@ schema.index({ api: 1, app: 1 }, { unique: '__CUSTOM_API_DUPLICATE_ERROR__', spa
 
 schema.plugin(mongooseUtils.metadataPlugin());
 
+schema.pre('save', function (next) {
+	if (!this.app) {
+		next(new Error('App value needed'));
+	}
+	if (!this.api) {
+		this.api = '/' + this.app + '/' + _.camelCase(this.name);
+	}
+	next();
+});
+
 
 schema.post('save', function (error, doc, next) {
 	if ((error.errors && error.errors.name) || error.name === 'ValidationError' ||
-        error.message.indexOf('E11000') > -1 || error.message.indexOf('__CUSTOM_NAME_DUPLICATE_ERROR__') > -1) {
+		error.message.indexOf('E11000') > -1 || error.message.indexOf('__CUSTOM_NAME_DUPLICATE_ERROR__') > -1) {
 		logger.error('flow - Function name is already in use, not saving doc - ' + doc._id);
 		next(new Error('Function name is already in use'));
 	} else {
@@ -36,13 +46,13 @@ schema.post('save', function (error, doc, next) {
 
 schema.pre('save', mongooseUtils.generateId('FLOW', 'b2b.flow', null, 4, 2000));
 
-schema.pre('save', dataStackUtils.auditTrail.getAuditPreSaveHook('b2b.flow'));
+// schema.pre('save', dataStackUtils.auditTrail.getAuditPreSaveHook('b2b.flow'));
 
-schema.post('save', dataStackUtils.auditTrail.getAuditPostSaveHook('b2b.flow.audit', client, 'auditQueue'));
+// schema.post('save', dataStackUtils.auditTrail.getAuditPostSaveHook('b2b.flow.audit', client, 'auditQueue'));
 
-schema.pre('remove', dataStackUtils.auditTrail.getAuditPreRemoveHook());
+// schema.pre('remove', dataStackUtils.auditTrail.getAuditPreRemoveHook());
 
-schema.post('remove', dataStackUtils.auditTrail.getAuditPostRemoveHook('b2b.flow.audit', client, 'auditQueue'));
+// schema.post('remove', dataStackUtils.auditTrail.getAuditPostRemoveHook('b2b.flow.audit', client, 'auditQueue'));
 
 
 schema.post('save', function (doc) {
