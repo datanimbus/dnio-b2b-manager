@@ -22,6 +22,7 @@ COPY . .
 # COPY --from=agent /app/exec ./generatedAgent/exes
 
 ENV IMAGE_TAG=__image_tag__
+ENV NODE_ENV='production'
 EXPOSE 10011
 EXPOSE 10443
 

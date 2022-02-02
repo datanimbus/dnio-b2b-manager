@@ -3,6 +3,7 @@ const log4js = require('log4js');
 
 const config = require('./config');
 const models = require('./models');
+const queue = require('./queue');
 
 const LOGGER_NAME = config.isK8sEnv() ? `[${config.hostname}] [B2B-MANAGER v${config.imageTag}]` : `[B2B-MANAGER v${config.imageTag}]`
 const logger = log4js.getLogger(LOGGER_NAME);
@@ -49,3 +50,4 @@ mongoose.connection.on('connected', () => { logger.info(`Connected to ${config.a
 mongoose.connection.on('reconnectFailed', () => { logger.error(` *** ${config.authorDB} FAILED TO RECONNECT *** `); });
 
 models.init();
+queue.init();
