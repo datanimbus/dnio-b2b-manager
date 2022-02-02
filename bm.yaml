@@ -11,6 +11,9 @@ spec:
     - protocol: TCP
       port: 80
       targetPort: 10011
+    - protocol: TCP
+      port: 443
+      targetPort: 10443
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -33,6 +36,7 @@ spec:
           image: '__docker_registry_server__/data.stack:bm.__release__'
           ports:
             - containerPort: 10011
+            - containerPort: 10443
           livenessProbe:
             httpGet:
               path: /bm/internal/health/live

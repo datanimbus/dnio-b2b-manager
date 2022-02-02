@@ -63,8 +63,8 @@ if (isK8sEnv() && !DATA_STACK_NAMESPACE) throw new Error('DATA_STACK_NAMESPACE n
 module.exports = {
     imageTag: process.env.IMAGE_TAG,
     hostname: process.env.HOSTNAME,
-    port: process.env.PORT || 3000,
-    httpsPort: process.env.HTTPS_PORT || 3443,
+    port: process.env.PORT || 10011,
+    httpsPort: process.env.HTTPS_PORT || 10443,
     baseUrlSM: get('sm') + '/sm',
     baseUrlNE: get('ne') + '/ne',
     baseUrlUSR: get('user') + '/rbac',

@@ -23,6 +23,7 @@ COPY . .
 
 ENV IMAGE_TAG=__image_tag__
 EXPOSE 10011
+EXPOSE 10443
 
 #RUN adduser -D appuser
 #RUN chown -R appuser /app
