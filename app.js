@@ -37,8 +37,8 @@ app.use((req, res, next) => {
 	next();
 });
 
-app.use(AuthCacheMW({ secret: config.secret, decodeOnly: true }));
-app.use('/bm', require('./controllers'));
+app.use('/api/b2b', require('./router'));
+app.use('/bm', AuthCacheMW({ permittedUrls: ['/bm/:app/flow/utils/:id/init'], secret: config.secret, decodeOnly: true }), require('./controllers'));
 
 
 const server = app.listen(config.port, () => {

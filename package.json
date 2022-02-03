@@ -6,8 +6,8 @@
   "scripts": {
     "start": "node app.js",
     "lint": "./node_modules/.bin/eslint app.js controllers/ models/ utils/ --fix",
-    "copy-flow": "node codeGen/copy-flow.js",
-    "copy-faas": "node codeGen/copy-faas.js"
+    "copy-flow": "node code-gen/copy-flow.js",
+    "copy-faas": "node code-gen/copy-faas.js"
   },
   "repository": {
     "type": "git",

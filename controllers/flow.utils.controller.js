@@ -4,9 +4,35 @@ const mongoose = require('mongoose');
 
 const deployUtils = require('../utils/deploy.utils');
 const codeGen = require('../code-gen/flows');
+const routerUtils = require('../utils/router.utils');
 
 const logger = log4js.getLogger('flow.utils.controller');
 const flowModel = mongoose.model('flow');
+
+
+router.put('/:id/init', async (req, res) => {
+	try {
+		const doc = await flowModel.findById(req.params.id);
+		if (!doc) {
+			return res.status(400).json({ message: 'Invalid Flow' });
+		}
+		doc.status = 'Active';
+		doc._req = req;
+		await doc.save();
+		res.status(200).json({ message: 'Flow Status Updated' });
+		routerUtils.initRouterMap();
+	} catch (err) {
+		logger.error(err);
+		if (typeof err === 'string') {
+			return res.status(500).json({
+				message: err
+			});
+		}
+		res.status(500).json({
+			message: err.message
+		});
+	}
+});
 
 router.put('/:id/deploy', async (req, res) => {
 	try {

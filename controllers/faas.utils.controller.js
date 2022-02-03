@@ -8,6 +8,29 @@ const codeGen = require('../code-gen/faas');
 const logger = log4js.getLogger('faas.controller');
 const faasModel = mongoose.model('faas');
 
+router.put('/:id/init', async (req, res) => {
+	try {
+		const doc = await faasModel.findById(req.params.id);
+		if (!doc) {
+			return res.status(400).json({ message: 'Invalid Function' });
+		}
+		doc.status = 'Active';
+		doc._req = req;
+		await doc.save();
+		res.status(200).json({ message: 'Function Status Updated' });
+	} catch (err) {
+		logger.error(err);
+		if (typeof err === 'string') {
+			return res.status(500).json({
+				message: err
+			});
+		}
+		res.status(500).json({
+			message: err.message
+		});
+	}
+});
+
 
 router.put('/:id/deploy', async (req, res) => {
 	try {
