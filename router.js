@@ -17,6 +17,9 @@ router.use(async (req, res) => {
         }
         const headers = req.headers;
         headers['data-stack-txn-id'] = uuid();
+        if (!req.header('data-stack-remote-txn-id')) {
+            headers['data-stack-remote-txn-id'] = uuid();
+        }
         const proxyPath = global.activeFlows[path] + '/api/b2b' + path;
         logger.info('Proxying request to: ', proxyPath);
         const resp = await httpClient.httpRequest({
