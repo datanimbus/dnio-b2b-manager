@@ -29,6 +29,9 @@ schema.pre('save', function (next) {
 	if (!this.api) {
 		this.api = '/' + this.app + '/' + _.camelCase(this.name);
 	}
+	if (!this.deploymentName) {
+		this.deploymentName = 'b2b-' + _.lowerCase(_.camelCase(this.name));
+	}
 	next();
 });
 

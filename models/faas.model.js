@@ -139,12 +139,15 @@ schema.pre('save', function (next) {
 	let user = req.headers ? req.headers.user : 'AUTO';
 	this._metadata.lastUpdatedBy = user;
 	this.url = '/api/a/faas/' + this.app + '/' + _.camelCase(this.name);
+	if (!this.deploymentName) {
+		this.deploymentName = 'faas-' + _.lowerCase(_.camelCase(this.name));
+	}
 	if (!this.status) {
 		this.status = 'STOPPED';
 	}
 	if (!this.code) {
 		this.code =
-            `router.get('/${this.app}/${_.camelCase(this.name)}', async (req, res)=>{
+			`router.get('/${this.app}/${_.camelCase(this.name)}', async (req, res)=>{
 
             });
             router.post('/${this.app}/${_.camelCase(this.name)}', async (req, res)=>{
@@ -168,12 +171,15 @@ draftSchema.pre('save', function (next) {
 	let user = req.headers ? req.headers.user : 'AUTO';
 	this._metadata.lastUpdatedBy = user;
 	this.url = '/api/a/faas/' + this.app + '/' + _.camelCase(this.name);
+	if (!this.deploymentName) {
+		this.deploymentName = 'faas-' + _.lowerCase(_.camelCase(this.name));
+	}
 	if (!this.status) {
 		this.status = 'STOPPED';
 	}
 	if (!this.code) {
 		this.code =
-            `router.get('/${this.app}/${_.camelCase(this.name)}', (req, res)=>{
+			`router.get('/${this.app}/${_.camelCase(this.name)}', (req, res)=>{
 
             });
             router.post('/${this.app}/${_.camelCase(this.name)}', (req, res)=>{
@@ -193,7 +199,7 @@ draftSchema.pre('save', function (next) {
 
 schema.post('save', function (error, doc, next) {
 	if ((error.errors && error.errors.name) || error.name === 'ValidationError' ||
-        error.message.indexOf('E11000') > -1 || error.message.indexOf('__CUSTOM_NAME_DUPLICATE_ERROR__') > -1) {
+		error.message.indexOf('E11000') > -1 || error.message.indexOf('__CUSTOM_NAME_DUPLICATE_ERROR__') > -1) {
 		logger.error('faas - Function name is already in use, not saving doc - ' + doc._id);
 		next(new Error('Function name is already in use'));
 	} else {
