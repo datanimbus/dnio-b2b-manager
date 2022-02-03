@@ -14,7 +14,8 @@ dataStackUtils.eventsUtil.setNatsClient(client);
 
 
 const schema = new mongoose.Schema(definition, {
-	usePushEach: true
+	usePushEach: true,
+	versionKey: 'version'
 });
 
 schema.index({ name: 1, app: 1 }, { unique: '__CUSTOM_NAME_DUPLICATE_ERROR__', sparse: true, collation: { locale: 'en_US', strength: 2 } });
@@ -31,6 +32,11 @@ schema.pre('save', function (next) {
 	}
 	if (!this.deploymentName) {
 		this.deploymentName = 'b2b-' + _.lowerCase(_.camelCase(this.name));
+	}
+	if (!this.version) {
+		this.version = 1;
+	} else {
+		this.version += 1;
 	}
 	next();
 });

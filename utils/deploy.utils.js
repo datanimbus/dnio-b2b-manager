@@ -49,7 +49,7 @@ async function deploy(data, type) {
 	formData.append('deployment', JSON.stringify({
 		image: id,
 		imagePullPolicy: 'Always',
-		namespace: config.DATA_STACK_NAMESPACE + '-' + data.app,
+		namespace: deployNamespace,
 		port: +(data.port || 31000),
 		name: data.deploymentName,
 		version: data.version,
