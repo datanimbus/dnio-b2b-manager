@@ -21,12 +21,15 @@ async function deploy(data, type) {
 	const id = data._id;
 	let folderPath;
 	let zipPath;
+	let healthAPI;
 	if (type == 'flow') {
 		folderPath = path.join(process.cwd(), 'generatedFlows', data._id);
 		zipPath = path.join(process.cwd(), 'generatedFlows', data._id + '_' + data.version + '.zip');
+		healthAPI = '/api/b2b/internal/health/ready';
 	} else {
 		folderPath = path.join(process.cwd(), 'generatedFaas', data._id);
 		zipPath = path.join(process.cwd(), 'generatedFaas', data._id + '_' + data.version + '.zip');
+		healthAPI = '/api/faas/internal/health/ready';
 	}
 	const deploymentUrl = deploymentUrlUpdate;
 	const deployNamespace = config.DATA_STACK_NAMESPACE + '-' + data.app.toLowerCase().replace(/ /g, '');
@@ -49,7 +52,7 @@ async function deploy(data, type) {
 		image: id,
 		imagePullPolicy: 'Always',
 		namespace: deployNamespace,
-		port: +(data.port || 31000),
+		port: +(data.port || 8080),
 		name: data.deploymentName,
 		version: data.version,
 		envVars: envObj,
@@ -58,8 +61,8 @@ async function deploy(data, type) {
 		options: {
 			startupProbe: {
 				httpGet: {
-					path: '/api/b2b/utils/health/ready',
-					port: +(data.port || 31000),
+					path: healthAPI,
+					port: +(data.port || 8080),
 					scheme: 'HTTP'
 				},
 				initialDelaySeconds: 5,
