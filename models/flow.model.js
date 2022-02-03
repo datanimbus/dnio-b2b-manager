@@ -31,7 +31,7 @@ schema.pre('save', function (next) {
 		this.api = '/' + this.app + '/' + _.camelCase(this.name);
 	}
 	if (!this.deploymentName) {
-		this.deploymentName = 'b2b-' + _.lowerCase(_.camelCase(this.name));
+		this.deploymentName = 'b2b-' + _.camelCase(this.name).toLowerCase();
 	}
 	if (!this.version) {
 		this.version = 1;

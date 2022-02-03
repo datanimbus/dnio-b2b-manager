@@ -140,7 +140,7 @@ schema.pre('save', function (next) {
 	this._metadata.lastUpdatedBy = user;
 	this.url = '/api/a/faas/' + this.app + '/' + _.camelCase(this.name);
 	if (!this.deploymentName) {
-		this.deploymentName = 'faas-' + _.lowerCase(_.camelCase(this.name));
+		this.deploymentName = 'faas-' + _.camelCase(this.name).toLowerCase();
 	}
 	if (!this.status) {
 		this.status = 'STOPPED';
@@ -172,7 +172,7 @@ draftSchema.pre('save', function (next) {
 	this._metadata.lastUpdatedBy = user;
 	this.url = '/api/a/faas/' + this.app + '/' + _.camelCase(this.name);
 	if (!this.deploymentName) {
-		this.deploymentName = 'faas-' + _.lowerCase(_.camelCase(this.name));
+		this.deploymentName = 'faas-' + _.camelCase(this.name).toLowerCase();
 	}
 	if (!this.status) {
 		this.status = 'STOPPED';
