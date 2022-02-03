@@ -99,6 +99,7 @@ function getDockerFile(release, port, flowData) {
     ENV DATA_STACK_DEPLOYMENT_NAME="${flowData.deploymentName}"
     ENV RELEASE="${release}"
     ENV PORT="${port}"
+    ENV IMAGE_TAG="${flowData._id}:${flowData.version}"
     ENV DATA_DB="${config.dataStackNS}-${flowData.appName}"
 
     EXPOSE ${port}
@@ -119,6 +120,7 @@ function getEnvFile(release, port, flowData) {
     DATA_STACK_DEPLOYMENT_NAME="${flowData.deploymentName}"
     RELEASE="${release}"
     PORT="${port}"
+    ENV IMAGE_TAG="${flowData._id}:${flowData.version}"
     DATA_DB="${config.dataStackNS}-${flowData.appName}"
     LOG_LEVEL="debug"
   `

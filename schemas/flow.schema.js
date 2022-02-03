@@ -41,15 +41,7 @@ const definition = {
 	},
 	'stages': { 'type': 'Object' },
 	'port': { 'type': 'String' },
-	'description': { 'type': 'String' },
-	'_metadata': {
-		'type': {
-			'version': {
-				'release': { 'type': 'Number' }
-			},
-			'lastUpdatedBy': { 'type': 'String' }
-		}
-	}
+	'description': { 'type': 'String' }
 };
 
 module.exports.definition = definition;

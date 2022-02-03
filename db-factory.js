@@ -49,5 +49,5 @@ mongoose.connection.on('reconnect', () => { logger.info(` *** ${config.authorDB}
 mongoose.connection.on('connected', () => { logger.info(`Connected to ${config.authorDB} DB`); });
 mongoose.connection.on('reconnectFailed', () => { logger.error(` *** ${config.authorDB} FAILED TO RECONNECT *** `); });
 
-models.init();
 queue.init();
+models.init();

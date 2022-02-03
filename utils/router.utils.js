@@ -8,11 +8,11 @@ const flowModal = mongoose.model('flow');
 
 async function initRouterMap() {
     try {
-        const flows = await flowModal.find({ status: 'Active' }).lean();
+        const flows = await flowModal.find().lean();
         global.activeFlows = {};
         flows.forEach(item => {
             const appNamespace = (config.DATA_STACK_NAMESPACE + '-' + item.app).toLowerCase();
-            global.activeFlows[item.api] = `http://b2b-${item.deploymentName}.${appNamespace}`;
+            global.activeFlows[item.api] = `http://${item.deploymentName}.${appNamespace}`;
         });
     } catch (err) {
         logger.error(err);

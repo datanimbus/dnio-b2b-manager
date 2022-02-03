@@ -17,6 +17,7 @@ router.put('/:id/init', async (req, res) => {
 			return res.status(400).json({ message: 'Invalid Flow' });
 		}
 		doc.status = 'Active';
+		doc.isNew = false;
 		doc._req = req;
 		await doc.save();
 		res.status(200).json({ message: 'Flow Status Updated' });

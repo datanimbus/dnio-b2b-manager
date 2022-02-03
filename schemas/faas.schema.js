@@ -51,14 +51,6 @@ const definition = {
 	},
 	'lastInvoked': {
 		'type': 'Date'
-	},
-	'_metadata': {
-		'type': {
-			'version': {
-				'release': { 'type': 'Number' }
-			},
-			'lastUpdatedBy': { 'type': 'String' }
-		}
 	}
 };
 

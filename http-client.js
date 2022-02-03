@@ -16,6 +16,7 @@ const got = require('got');
  * @property {string} url
  * @property {string} [method=get]
  * @property {*} body
+ * @property {*} json
  * @property {*} formdata
  * @property {*} headers
  * @property {number} timeout

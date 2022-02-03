@@ -4,6 +4,7 @@ const dataStackUtils = require('@appveen/data.stack-utils');
 // const utils = require('@appveen/utils');
 const _ = require('lodash');
 
+const config = require('../config');
 const queue = require('../queue');
 const definition = require('../schemas/flow.schema').definition;
 const mongooseUtils = require('../utils/mongoose.utils');
@@ -33,6 +34,9 @@ schema.pre('save', function (next) {
 	if (!this.deploymentName) {
 		this.deploymentName = 'b2b-' + _.camelCase(this.name).toLowerCase();
 	}
+	if (!this.namespace) {
+		this.namespace = (config.DATA_STACK_NAMESPACE + '-' + this.app).toLowerCase()
+	}
 	if (!this.version) {
 		this.version = 1;
 	} else {
@@ -55,13 +59,13 @@ schema.post('save', function (error, doc, next) {
 
 schema.pre('save', mongooseUtils.generateId('FLOW', 'b2b.flow', null, 4, 2000));
 
-// schema.pre('save', dataStackUtils.auditTrail.getAuditPreSaveHook('b2b.flow'));
+schema.pre('save', dataStackUtils.auditTrail.getAuditPreSaveHook('b2b.flow'));
 
-// schema.post('save', dataStackUtils.auditTrail.getAuditPostSaveHook('b2b.flow.audit', client, 'auditQueue'));
+schema.post('save', dataStackUtils.auditTrail.getAuditPostSaveHook('b2b.flow.audit', client, 'auditQueue'));
 
-// schema.pre('remove', dataStackUtils.auditTrail.getAuditPreRemoveHook());
+schema.pre('remove', dataStackUtils.auditTrail.getAuditPreRemoveHook());
 
-// schema.post('remove', dataStackUtils.auditTrail.getAuditPostRemoveHook('b2b.flow.audit', client, 'auditQueue'));
+schema.post('remove', dataStackUtils.auditTrail.getAuditPostRemoveHook('b2b.flow.audit', client, 'auditQueue'));
 
 
 schema.post('save', function (doc) {
