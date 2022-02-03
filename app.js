@@ -37,7 +37,7 @@ app.use((req, res, next) => {
 	next();
 });
 
-app.use('/api/b2b', require('./router'));
+app.use('/b2b', require('./router'));
 app.use('/bm', AuthCacheMW({ permittedUrls: ['/{app}/flow/utils/{id}/init'], secret: config.secret, decodeOnly: true }), require('./controllers'));
 
 
