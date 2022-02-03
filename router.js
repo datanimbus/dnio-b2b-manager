@@ -11,7 +11,10 @@ router.use(async (req, res) => {
     try {
         const path = req.path;
         const method = req.method;
-        const proxyPath = global.activeFlows[path];
+        if (!global.activeFlows[path]) {
+            return res.status(400).json({ message: `No Flows with path ${path} Found` });
+        }
+        const proxyPath = global.activeFlows[path] + '/api/b2b' + path;
         logger.info('Proxying request to: ', proxyPath);
         const resp = await httpClient.httpRequest({
             method,
