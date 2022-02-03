@@ -71,6 +71,7 @@ module.exports = {
     baseUrlPM: get('pm') + '/pm',
     baseUrlSEC: get('sec') + '/sec',
     baseUrlDM: get('dm') + '/dm',
+    maxHeapSize: process.env.NODE_MAX_HEAP_SIZE || '4096',
     isK8sEnv: isK8sEnv,
     logQueueName: 'systemService',
     DATA_STACK_NAMESPACE,
