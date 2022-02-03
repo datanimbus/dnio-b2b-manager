@@ -1,5 +1,6 @@
 const log4js = require('log4js');
 const router = require('express').Router();
+const { v4: uuid } = require('uuid');
 
 const httpClient = require('./http-client');
 const routerUtils = require('./utils/router.utils');
@@ -14,12 +15,14 @@ router.use(async (req, res) => {
         if (!global.activeFlows[path]) {
             return res.status(400).json({ message: `No Flows with path ${path} Found` });
         }
+        const headers = req.headers;
+        headers['data-stack-txn-id'] = uuid();
         const proxyPath = global.activeFlows[path] + '/api/b2b' + path;
         logger.info('Proxying request to: ', proxyPath);
         const resp = await httpClient.httpRequest({
             method,
             url: proxyPath,
-            headers: req.headers,
+            headers: headers,
             json: req.body
         });
         res.status(resp.statusCode).json(resp.body);
