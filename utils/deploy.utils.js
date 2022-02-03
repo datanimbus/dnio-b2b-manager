@@ -40,7 +40,6 @@ async function deploy(data, type) {
 		envObj[val] = process.env[val];
 	}
 	envObj['DATA_STACK_APP_NS'] = (config.DATA_STACK_NAMESPACE + '-' + data.app).toLowerCase();
-	envObj['NODE_OPTIONS'] = `--max-old-space-size=${config.maxHeapSize}`;
 	logger.debug('***************************************************');
 	logger.debug('port', data.port);
 	logger.debug('***************************************************');
