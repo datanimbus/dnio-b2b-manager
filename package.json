@@ -14,7 +14,7 @@
     "url": "git+https://github.com/appveen/ds-b2b-manager.git"
   },
   "author": "Jugnu Agrawal",
-  "license": "MIT",
+  "license": "Apache-2.0",
   "bugs": {
     "url": "https://github.com/appveen/ds-b2b-manager/issues"
   },
