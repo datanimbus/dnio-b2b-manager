@@ -47,6 +47,7 @@ async function createProject(flowJSON) {
       fs.copyFileSync(path.join(baseImagePath, 'app.js'), path.join(folderPath, 'app.js'));
       fs.copyFileSync(path.join(baseImagePath, 'Dockerfile'), path.join(folderPath, 'Dockerfile'));
       fs.copyFileSync(path.join(baseImagePath, 'db-factory.js'), path.join(folderPath, 'db-factory.js'));
+      fs.copyFileSync(path.join(baseImagePath, 'lib.middlewares.js'), path.join(folderPath, 'lib.middlewares.js'));
       fs.copyFileSync(path.join(baseImagePath, 'http-client.js'), path.join(folderPath, 'http-client.js'));
       fs.copyFileSync(path.join(baseImagePath, 'schema.utils.js'), path.join(folderPath, 'schema.utils.js'));
       fs.copyFileSync(path.join(baseImagePath, 'state.utils.js'), path.join(folderPath, 'state.utils.js'));
