@@ -7,10 +7,6 @@ const definition = {
 		'type': 'String',
 		'required': true
 	},
-	'api': {
-		'type': 'String',
-		'required': true
-	},
 	'name': {
 		'type': 'String'
 	},
