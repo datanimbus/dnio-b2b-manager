@@ -28,15 +28,14 @@ schema.pre('save', function (next) {
 	if (!this.app) {
 		next(new Error('App value needed'));
 	}
-	if (!this.api) {
-		this.api = '/' + this.app + '/' + _.camelCase(this.name);
-	}
-	if (this.inputStage && this.inputStage.api && this.inputStage.api.trim()) {
-		this.inputStage.api = this.inputStage.api.trim();
-		if (this.inputStage.api.trim().charAt(0) != '/') {
-			this.inputStage.api = '/' + this.inputStage.api;
+	// if (!this.api) {
+	// 	this.api = '/' + this.app + '/' + _.camelCase(this.name);
+	// }
+	if (this.inputStage && this.inputStage.incoming && this.inputStage.incoming.path && this.inputStage.incoming.path.trim()) {
+		this.inputStage.incoming.path = this.inputStage.incoming.path.trim();
+		if (this.inputStage.incoming.path.trim().charAt(0) != '/') {
+			this.inputStage.incoming.path = '/' + this.inputStage.incoming.path;
 		}
-		this.api = '/' + this.app + this.inputStage.api;
 	}
 	if (!this.deploymentName) {
 		this.deploymentName = 'b2b-' + _.camelCase(this.name).toLowerCase();
