@@ -26,16 +26,22 @@ schema.plugin(mongooseUtils.metadataPlugin());
 
 schema.pre('save', function (next) {
 	if (!this.app) {
-		next(new Error('App value needed'));
+
 	}
-	// if (!this.api) {
-	// 	this.api = '/' + this.app + '/' + _.camelCase(this.name);
-	// }
+	if (!this.inputStage || !this.inputStage.type) {
+		next(new Error('Input Stage is Mandatory'));
+	}
+	if (!this.inputStage || !this.inputStage.incoming) {
+		this.inputStage.incoming = {};
+	}
 	if (this.inputStage && this.inputStage.incoming && this.inputStage.incoming.path && this.inputStage.incoming.path.trim()) {
 		this.inputStage.incoming.path = this.inputStage.incoming.path.trim();
 		if (this.inputStage.incoming.path.trim().charAt(0) != '/') {
 			this.inputStage.incoming.path = '/' + this.inputStage.incoming.path;
 		}
+	}
+	if (!this.inputStage.incoming.path || !this.inputStage.incoming.path.trim()) {
+		this.inputStage.incoming.path = '/' + this.app + '/' + _.camelCase(this.name);
 	}
 	if (!this.deploymentName) {
 		this.deploymentName = 'b2b-' + _.camelCase(this.name).toLowerCase();
