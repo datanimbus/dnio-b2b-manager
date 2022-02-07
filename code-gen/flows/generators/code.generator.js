@@ -3,17 +3,23 @@ const _ = require('lodash');
 
 // const logger = log4js.getLogger(global.loggerName);
 
+function tab(len) {
+	let d = '';
+	while (len > 0) {
+		d += '  ';
+		len--;
+	}
+	return d;
+}
+
 /**
  * 
  * @param {any} dataJson 
  */
 function generateCode(dataJson) {
-	const initalStage = dataJson.initalStage;
+	const inputStage = dataJson.inputStage;
 	const stages = dataJson.stages;
-	let api = dataJson.api;
-	if (initalStage && initalStage.type === 'API' && initalStage.api) {
-		api = initalStage.api;
-	}
+	let api = inputStage.incoming.path;
 	let code = [];
 	code.push('const router = require(\'express\').Router();');
 	code.push('const log4js = require(\'log4js\');');
@@ -23,24 +29,40 @@ function generateCode(dataJson) {
 	code.push('');
 	code.push('const logger = log4js.getLogger(global.loggerName);');
 	code.push('');
-	code.push(`router.use('${api}', async function (req, res) {`);
-	code.push('let state = {};');
-	code.push('let tempResponse = req;');
-	stages.forEach((item) => {
-		code.push(`state = stateUtils.getState(tempResponse, '${item._id}');`);
-		code.push('try {');
-		code.push(`    tempResponse = await stageUtils.${_.camelCase(item._id)}(req, state);`);
-		code.push('    state.statusCode = tempResponse.statusCode;');
-		code.push('    state.body = tempResponse.body;');
-		code.push('    if( tempResponse.statusCode != 200 ) {');
-		code.push('         return res.status(tempResponse.statusCode).json(tempResponse.body)');
-		code.push('    }');
-		code.push('} catch (err) {');
-		code.push('    logger.error(err);');
-		code.push('    return res.status(500).json({ message: err.message });');
-		code.push('} finally {');
-		code.push('     stateUtils.upsertState(req, state);');
-		code.push('}');
+	// TODO: Method to be fixed.
+	code.push(`router.post('${api}', async function (req, res) {`);
+	code.push(`${tab(1)}let txnId = req.headers['data-stack-txn-id'];`);
+	code.push(`${tab(1)}let remoteTxnId = req.headers['data-stack-remote-txn-id'];`);
+	code.push(`${tab(1)}let state = {};`);
+	code.push(`${tab(1)}let tempResponse = req;`);
+	stages.forEach((item, i) => {
+		const isLast = stages.length - 1 == i;
+		code.push(`${tab(1)}// ═══════════════════ ${item._id} / ${item.name} / ${item.type} ══════════════════════`);
+		code.push(`${tab(1)}logger.debug(\`[\${txnId}] [\${remoteTxnId}] Invoking stage :: ${item._id} / ${item.name} / ${item.type}\`)`);
+		code.push(`${tab(1)}state = stateUtils.getState(tempResponse, '${item._id}');`);
+		code.push(`${tab(1)}try {`);
+		code.push(`${tab(1)}    tempResponse = await stageUtils.${_.camelCase(item._id)}(req, state);`);
+		code.push(`${tab(1)}    state.statusCode = tempResponse.statusCode;`);
+		code.push(`${tab(1)}    state.body = tempResponse.body;`);
+		code.push(`${tab(1)}    if( tempResponse.statusCode >= 400 ) {`);
+		code.push(`${tab(1)}      state.status = "ERROR";`);
+		code.push(`${tab(1)}      await stateUtils.upsertState(req, state);`);
+		code.push(`${tab(1)}      state = stateUtils.getState(tempResponse, '${item.onError._id}');`);
+		if (item.onError && item.onError.length > 0) {
+			code.push(`${tab(1)}    tempResponse = await stageUtils.${_.camelCase(item.onError._id)}(req, state);`);
+		} else {
+			code.push(`${tab(1)}      return res.status(tempResponse.statusCode).json(tempResponse.body)`);
+		}
+		code.push(`${tab(1)}    }`);
+		code.push(`${tab(1)}    state.status = "SUCCESS";`);
+		code.push(`${tab(1)}    await stateUtils.upsertState(req, state);`);
+		if (isLast) {
+			code.push(`${tab(1)}    res.status(tempResponse.statusCode).json(tempResponse.body)`);
+		}
+		code.push(`${tab(1)}} catch (err) {`);
+		code.push(`${tab(1)}    logger.error(err);`);
+		code.push(`${tab(1)}    return res.status(500).json({ message: err.message });`);
+		code.push(`${tab(1)}}`);
 	});
 	code.push('});');
 	code.push('module.exports = router;');
@@ -56,7 +78,7 @@ function generateStages(dataJson) {
 	code.push('const _ = require(\'lodash\');');
 	code.push('const httpClient = require(\'./http-client\');');
 	code.push('');
-	code.push('const logger = log4js.getLogger();');
+	code.push('const logger = log4js.getLogger(global.loggerName);');
 	code.push('');
 	stages.forEach((stage) => {
 		exportsCode.push(`module.exports.${_.camelCase(stage._id)} = ${_.camelCase(stage._id)};`);
