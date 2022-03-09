@@ -1,0 +1,191 @@
+{
+  "_id": "FLOW1001",
+  "name": "Test Flow",
+  "options": {
+    "uniqueTxnID": true
+  },
+  "inputStage": {
+    "type": "API",
+    "name": "Get Data",
+    "incoming": {
+      "path": "/branchMultipleResponse",
+      "method": "POST",
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      }
+    },
+    "onSuccess": [
+      {
+        "_id": "STAGE1001"
+      }
+    ],
+    "onError": [],
+    "dataStructure": {
+      "outgoing": {
+        "type": "dataFormat",
+        "_id": "DF1001"
+      }
+    }
+  },
+  "stages": [
+    {
+      "_id": "STAGE1001",
+      "name": "Call external API /condition/stage1",
+      "type": "API",
+      "outgoing": {
+        "url": "http://localhost:18080/api/condition/stage1",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "dataStructure": {
+        "outgoing": {
+          "type": "dataFormat",
+          "_id": "DF1001"
+        }
+      },
+      "onSuccess": [
+        {
+          "_id": "STAGE1002",
+          "condition": "response.data.age < 10"
+        },
+        {
+          "_id": "STAGE1003",
+          "condition": "true"
+        }
+      ],
+      "onError": []
+    },
+    {
+      "_id": "STAGE1002",
+      "name": "Call external API /condition/stage2",
+      "type": "API",
+      "outgoing": {
+        "url": "http://localhost:18080/api/condition/stage2",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "dataStructure": {
+        "outgoing": {
+          "type": "dataFormat",
+          "_id": "DF1001"
+        }
+      },
+      "onSuccess": [
+        {
+          "_id": "STAGE1004"
+        }
+      ],
+      "onError": []
+    },
+    {
+      "_id": "STAGE1003",
+      "name": "Call external API /condition/stage3",
+      "type": "API",
+      "outgoing": {
+        "url": "http://localhost:18080/api/condition/stage3",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "dataStructure": {
+        "outgoing": {
+          "type": "dataFormat",
+          "_id": "DF1001"
+        }
+      },
+      "onSuccess": [
+        {
+          "_id": "STAGE1005"
+        }
+      ],
+      "onError": []
+    },
+    {
+      "_id": "STAGE1004",
+      "name": "Response Node",
+      "type": "RESPONSE",
+      "dataStructure": {
+        "outgoing": {
+          "type": "dataFormat",
+          "_id": "DF1001"
+        }
+      },
+      "onSuccess": [],
+      "onError": []
+    },
+    {
+      "_id": "STAGE1005",
+      "name": "Response Node",
+      "type": "RESPONSE",
+      "dataStructure": {
+        "outgoing": {
+          "type": "dataFormat",
+          "_id": "DF1001"
+        }
+      },
+      "onSuccess": [],
+      "onError": []
+    }
+  ],
+  "error": [],
+  "dataStructures": {
+    "DF1001": {
+      "name": "Some Structure",
+      "definition": [
+        {
+          "key": "_id",
+          "type": "String",
+          "prefix": "EMP",
+          "suffix": null,
+          "padding": null,
+          "counter": 1001,
+          "properties": {
+            "name": "ID",
+            "required": false,
+            "dataPath": "_id"
+          }
+        },
+        {
+          "type": "String",
+          "key": "name",
+          "properties": {
+            "name": "Name",
+            "dataPath": "name"
+          }
+        },
+        {
+          "type": "String",
+          "key": "email",
+          "properties": {
+            "name": "Email",
+            "dataPath": "email"
+          }
+        },
+        {
+          "type": "String",
+          "key": "contactNo",
+          "properties": {
+            "name": "Contact No",
+            "dataPath": "contactNo"
+          }
+        },
+        {
+          "type": "Number",
+          "key": "age",
+          "properties": {
+            "name": "Age",
+            "precision": 2,
+            "dataPath": "age"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -16,43 +16,23 @@ async function createProject(functionJSON, txnId) {
     const folderPath = path.join(process.cwd(), 'generatedFaas', functionJSON._id);
     logger.info(`[${txnId}] Creating Project Folder - ${folderPath}`);
 
+    if (fs.existsSync(folderPath)) {
+      fs.rmdirSync(folderPath, { recursive: true });
+    }
+
     mkdirp.sync(folderPath);
-    
-    if (fs.existsSync(path.join(folderPath, 'routes'))) {
-      fs.rmdirSync(path.join(folderPath, 'routes'), { recursive: true });
-    }
-    
-    if (fs.existsSync(path.join(folderPath, 'utils'))) {
-      fs.rmdirSync(path.join(folderPath, 'utils'), { recursive: true });
-    }
-    
     mkdirp.sync(path.join(folderPath, 'routes'));
     mkdirp.sync(path.join(folderPath, 'utils'));
 
-    if (!config.isK8sEnv()) {
-      let baseImagePath;
-      if (process.cwd().indexOf('ds-faas') > -1) {
-        baseImagePath = path.join(process.cwd(), '../');
-      } else {
-        baseImagePath = path.join(process.cwd(), '../ds-faas');
-      }
-      logger.info(`[${txnId}] Base Image Path - ${baseImagePath}`);
-
-      fs.copyFileSync(path.join(baseImagePath, 'package.json'), path.join(folderPath, 'package.json'));
-      fs.copyFileSync(path.join(baseImagePath, 'package-lock.json'), path.join(folderPath, 'package-lock.json'));
-      fs.copyFileSync(path.join(baseImagePath, 'faas.yaml'), path.join(folderPath, 'faas.yaml'));
-      fs.copyFileSync(path.join(baseImagePath, 'config.js'), path.join(folderPath, 'config.js'));
-      fs.copyFileSync(path.join(baseImagePath, 'app.js'), path.join(folderPath, 'app.js'));
-      
-      const cpUtils = await copy(path.join(baseImagePath, 'utils'), path.join(folderPath, 'utils'));
-      logger.info(`[${txnId}] Copied utils - ${cpUtils ? cpUtils.length : 0}`);
-      const cpRoutes = await copy(path.join(baseImagePath, 'routes'), path.join(folderPath, 'routes'));
-      logger.info(`[${txnId}] Copied routes - ${cpRoutes ? cpRoutes.length : 0}`);
-    }
+    fs.copyFileSync(path.join('./config.js'), path.join(folderPath, 'config.js'));
+    fs.copyFileSync(path.join('./app.js'), path.join(folderPath, 'app.js'));
+    const cpUtils = await copy(path.join('./utils'), path.join(folderPath, 'utils'));
+    logger.info(`[${txnId}] Copied utils - ${cpUtils ? cpUtils.length : 0}`);
+    const cpRoutes = await copy(path.join('./routes'), path.join(folderPath, 'routes'));
+    logger.info(`[${txnId}] Copied routes - ${cpRoutes ? cpRoutes.length : 0}`);
 
     let { content: faasContent } = await getFaasContent(functionJSON);
     fs.writeFileSync(path.join(folderPath, 'routes', `faas.router.js`), faasContent);
-    
     fs.writeFileSync(path.join(folderPath, 'Dockerfile'), getDockerFile(config.imageTag, functionJSON.port, functionJSON));
     fs.writeFileSync(path.join(folderPath, 'faas.json'), JSON.stringify(functionJSON));
     fs.writeFileSync(path.join(folderPath, '.env'), getEnvFile(config.release, functionJSON.port, functionJSON));
@@ -73,13 +53,15 @@ if (dockerReg.length > 0 && !dockerReg.endsWith('/') && dockerRegistryType != 'E
 
 
 function getDockerFile(release, port, functionData) {
-  let base = `${dockerReg}data.stack:faas.base.${process.env.IMAGE_TAG}`;
-  if (dockerRegistryType == 'ECR') base = `${dockerReg}:data.stack.faas.base.${process.env.IMAGE_TAG}`;
+  let base = `${dockerReg}data.stack.bm:${process.env.IMAGE_TAG}`;
+  if (dockerRegistryType == 'ECR') base = `${dockerReg}:data.stack.bm:${process.env.IMAGE_TAG}`;
   logger.debug(`Base image :: ${base}`);
   return `
     FROM ${base}
 
     WORKDIR /app
+
+    RUN rm -rf *
 
     COPY . .
 

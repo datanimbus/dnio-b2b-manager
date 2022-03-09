@@ -1,0 +1,231 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "$id": "https://appveen.com/schemas/flow.json",
+  "title": "data.stack Flow",
+  "description": "data.stack flow definition.",
+  "type": "object",
+  "properties": {
+    "_id": {
+      "description": "Unique flow identifier",
+      "type": "string"
+    },
+    "name": {
+      "description": "Name of the flow",
+      "type": "string"
+    },
+    "options": {
+      "type": "object",
+      "properties": {
+        "uniqueTxnID": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        }
+      }
+    },
+    "inputStage": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "API",
+            "FILE",
+            "TIMER"
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "incoming": {
+          "$ref": "/schemas/incoming"
+        },
+        "onSuccess": {
+          "$ref": "/schemas/onX"
+        },
+        "onError": {
+          "$ref": "/schemas/onX"
+        },
+        "dataStructure": {
+          "$ref": "/schemas/dataStructure"
+        }
+      },
+      "required": [
+        "type",
+        "name",
+        "incoming",
+        "onSuccess",
+        "dataStructure"
+      ]
+    },
+    "stages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    "error": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {},
+        "required": []
+      }
+    },
+    "dataStructures": {}
+  },
+  "required": [
+    "_id",
+    "name",
+    "inputStage",
+    "stages",
+    "error"
+  ],
+  "additionalProperties": true,
+  "$defs": {
+    "stage": {
+      "$id": "/schemas/stage",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "API",
+              "DATASERVICE",
+              "FAAS",
+              "TRANSFORM",
+              "FOREACH",
+              "REDUCE",
+              "FLOW",
+              "VALIDATOR",
+              "AUTH-DATASTACK"
+            ]
+          }
+        },
+        "required": [
+          "_id"
+        ]
+      }
+    },
+    "onX": {
+      "$id": "/schemas/onX",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "_id": {
+            "type": "string"
+          },
+          "condition": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "_id"
+        ]
+      }
+    },
+    "incoming": {
+      "$id": "/schemas/incoming",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "string"
+        },
+        "method": {
+          "type": "string",
+          "enum": [
+            "GET",
+            "POST",
+            "PUT",
+            "DELETE",
+            "OPTIONS"
+          ]
+        },
+        "headers": {
+          "type": "object",
+          "properties": {
+            "Content-type": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "application/json"
+                ]
+              }
+            }
+          },
+          "required": [
+            "Content-Type"
+          ]
+        }
+      },
+      "required": [
+        "path",
+        "method",
+        "headers"
+      ]
+    },
+    "dataStructure": {
+      "$id": "/schemas/dataStructure",
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "type": "object",
+      "properties": {
+        "outgoing": {
+          "type": "object",
+          "properties": {
+            "_id": {
+              "type": "string"
+            },
+            "type": {
+              "type": "string",
+              "enum": [
+                "dataService",
+                "dataFormat",
+                "binary"
+              ]
+            }
+          },
+          "if": {
+            "properties": {
+              "type": {
+                "enum": [
+                  "dataService",
+                  "dataFormat"
+                ]
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "then": {
+            "required": [
+              "_id"
+            ]
+          },
+          "else": {
+            "required": []
+          }
+        }
+      },
+      "required": [
+        "outgoing"
+      ]
+    }
+  }
+}

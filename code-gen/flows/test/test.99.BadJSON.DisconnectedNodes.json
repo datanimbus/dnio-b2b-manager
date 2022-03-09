@@ -1,0 +1,125 @@
+{
+  "_id": "FLOW1001",
+  "name": "Test Flow",
+  "options": {
+    "uniqueTxnID": true
+  },
+  "inputStage": {
+    "type": "API",
+    "name": "Get Data",
+    "incoming": {
+      "path": "/testAPI",
+      "method": "POST",
+      "headers": {
+        "Content-Type": [
+          "application/json"
+        ]
+      }
+    },
+    "onSuccess": [
+      {
+        "_id": "STAGE1001"
+      }
+    ],
+    "onError": [],
+    "dataStructure": {
+      "outgoing": {
+        "type": "dataFormat",
+        "_id": "DF1001"
+      }
+    }
+  },
+  "stages": [
+    {
+      "_id": "STAGE1002",
+      "name": "Call external API 1",
+      "type": "API",
+      "outgoing": {
+        "url": "http://localhost:18080/api/testAPI/stage1",
+        "method": "POST",
+        "headers": {
+          "Content-Type": "application/json"
+        }
+      },
+      "dataStructure": {
+        "outgoing": {
+          "type": "dataFormat",
+          "_id": "DF1001"
+        }
+      },
+      "onSuccess": [
+        {
+          "_id": "STAGE1002"
+        }
+      ],
+      "onError": []
+    },
+    {
+      "_id": "STAGE1002",
+      "name": "Response node",
+      "type": "RESPONSE",
+      "dataStructure": {
+        "outgoing": {
+          "type": "dataFormat",
+          "_id": "DF1001"
+        }
+      },
+      "onSuccess": [],
+      "onError": []
+    }
+  ],
+  "error": [],
+  "dataStructures": {
+    "DF1001": {
+      "name": "Some Structure",
+      "definition": [
+        {
+          "key": "_id",
+          "type": "String",
+          "prefix": "EMP",
+          "suffix": null,
+          "padding": null,
+          "counter": 1001,
+          "properties": {
+            "name": "ID",
+            "required": false,
+            "dataPath": "_id"
+          }
+        },
+        {
+          "type": "String",
+          "key": "name",
+          "properties": {
+            "name": "Name",
+            "dataPath": "name"
+          }
+        },
+        {
+          "type": "String",
+          "key": "email",
+          "properties": {
+            "name": "Email",
+            "dataPath": "email"
+          }
+        },
+        {
+          "type": "String",
+          "key": "contactNo",
+          "properties": {
+            "name": "Contact No",
+            "dataPath": "contactNo"
+          }
+        },
+        {
+          "type": "Number",
+          "key": "age",
+          "properties": {
+            "name": "Age",
+            "precision": 2,
+            "dataPath": "age"
+          }
+        }
+      ]
+    }
+  }
+}

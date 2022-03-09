@@ -1,0 +1,9 @@
+node_modules
+generator
+Dockerfile
+.gitignore
+.dockerignore
+LICENSE
+README.md
+.env
+index.js

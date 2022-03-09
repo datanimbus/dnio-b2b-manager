@@ -20,48 +20,14 @@ async function createProject(flowJSON) {
     logger.info('Creating Project Folder:', folderPath);
 
     mkdirp.sync(folderPath);
-    // mkdirp.sync(path.join(folderPath, 'schemas'));
-    // if (fs.existsSync(path.join(folderPath, 'routes'))) {
-    //   fs.rmdirSync(path.join(folderPath, 'routes'), { recursive: true });
-    // }
-    // if (fs.existsSync(path.join(folderPath, 'utils'))) {
-    //   fs.rmdirSync(path.join(folderPath, 'utils'), { recursive: true });
-    // }
-    // mkdirp.sync(path.join(folderPath, 'routes'));
-    // mkdirp.sync(path.join(folderPath, 'utils'));
 
-    // Object.keys(flowJSON.structures).forEach(key => {
-    //   const structure = flowJSON.structures[key].structure;
-    //   fs.writeFileSync(path.join(folderPath, 'schemas', `${key}.schema.json`), JSON.stringify(schemaUtils.convertToJSONSchema(structure)));
-    // });
-    if (!config.isK8sEnv()) {
-      let baseImagePath;
-      if (process.cwd().indexOf('ds-flows') > -1) {
-        baseImagePath = path.join(process.cwd());
-      } else {
-        baseImagePath = path.join(process.cwd(), '../ds-b2b-base');
-      }
-      fs.copyFileSync(path.join(baseImagePath, 'package.json'), path.join(folderPath, 'package.json'));
-      fs.copyFileSync(path.join(baseImagePath, 'package-lock.json'), path.join(folderPath, 'package-lock.json'));
-      fs.copyFileSync(path.join(baseImagePath, 'config.js'), path.join(folderPath, 'config.js'));
-      fs.copyFileSync(path.join(baseImagePath, 'app.js'), path.join(folderPath, 'app.js'));
-      fs.copyFileSync(path.join(baseImagePath, 'Dockerfile'), path.join(folderPath, 'Dockerfile'));
-      fs.copyFileSync(path.join(baseImagePath, 'db-factory.js'), path.join(folderPath, 'db-factory.js'));
-      fs.copyFileSync(path.join(baseImagePath, 'lib.middlewares.js'), path.join(folderPath, 'lib.middlewares.js'));
-      fs.copyFileSync(path.join(baseImagePath, 'http-client.js'), path.join(folderPath, 'http-client.js'));
-      fs.copyFileSync(path.join(baseImagePath, 'schema.utils.js'), path.join(folderPath, 'schema.utils.js'));
-      fs.copyFileSync(path.join(baseImagePath, 'state.utils.js'), path.join(folderPath, 'state.utils.js'));
+    copy(__dirname, folderPath);
 
-      // fs.copyFileSync(path.join(baseImagePath, 'utils', 'flow.utils.js'), path.join(folderPath, 'utils', 'flow.utils.js'),);
-      // const cpUtils = await copy(path.join(baseImagePath, 'utils'), path.join(folderPath, 'utils'));
-      // logger.info('Copied utils', cpUtils ? cpUtils.length : 0);
-      // const cpRoutes = await copy(path.join(baseImagePath, 'routes'), path.join(folderPath, 'routes'));
-      // logger.info('Copied routes', cpRoutes ? cpRoutes.length : 0);
-    }
+    fs.rmdirSync(path.join(folderPath, `test`), { recursive: true });
+    fs.rmdirSync(path.join(folderPath, `generators`), { recursive: true });
 
-    fs.writeFileSync(path.join(folderPath, `route.js`), codeGen.generateCode(flowJSON));
-    fs.writeFileSync(path.join(folderPath, `stage.utils.js`), codeGen.generateStages(flowJSON));
-    // fs.writeFileSync(path.join(folderPath, `file.utils.js`), fileUtilsGenerator.getContent(flowJSON));
+    fs.writeFileSync(path.join(folderPath, `route.js`), codeGen.parseFlow(flowJSON));
+    fs.writeFileSync(path.join(folderPath, `stage.utils.js`), codeGen.parseStages(flowJSON));
     fs.writeFileSync(path.join(folderPath, 'Dockerfile'), getDockerFile(config.imageTag, flowJSON.port, flowJSON));
     fs.writeFileSync(path.join(folderPath, 'flow.json'), JSON.stringify(flowJSON));
     fs.writeFileSync(path.join(folderPath, '.env'), getEnvFile(config.release, flowJSON.port, flowJSON));
@@ -80,13 +46,15 @@ if (dockerReg.length > 0 && !dockerReg.endsWith('/') && dockerRegistryType != 'E
 
 
 function getDockerFile(release, port, flowData) {
-  let base = `${dockerReg}data.stack:b2b.base.${process.env.IMAGE_TAG}`;
-  if (dockerRegistryType == 'ECR') base = `${dockerReg}:data.stack.b2b.base.${process.env.IMAGE_TAG}`;
+  let base = `${dockerReg}data.stack.bm:${process.env.IMAGE_TAG}`;
+  if (dockerRegistryType == 'ECR') base = `${dockerReg}:data.stack.bm:${process.env.IMAGE_TAG}`;
   logger.debug(`Base image :: ${base}`);
   return `
     FROM ${base}
 
     WORKDIR /app
+
+    RUN rm -rf *
 
     COPY . .
 
