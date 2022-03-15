@@ -175,6 +175,11 @@ function generateStages(stage) {
 			}
 			code.push(`${tab(2)}options.headers = _.merge(state.headers, customHeaders);`);
 			code.push(`${tab(2)}options.json = customBody;`);
+			code.push(`${tab(2)}delete options.headers['cookie'];`);
+			code.push(`${tab(2)}delete options.headers['host'];`);
+			code.push(`${tab(2)}delete options.headers['connection'];`);
+			code.push(`${tab(2)}delete options.headers['user-agent'];`);
+			code.push(`${tab(2)}delete options.headers['content-length'];`);
 			code.push(`${tab(2)}const response = await httpClient.request(options);`);
 			code.push(`${tab(2)}state.statusCode = response.statusCode;`);
 			code.push(`${tab(2)}state.body = response.body;`);
