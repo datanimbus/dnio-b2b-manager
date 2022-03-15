@@ -25,11 +25,8 @@ schema.index({ 'inputStage.incoming.path': 1, app: 1 }, { unique: '__CUSTOM_API_
 schema.plugin(mongooseUtils.metadataPlugin());
 
 schema.pre('save', function (next) {
-	if (!this.app) {
-
-	}
 	if (!this.inputStage || !this.inputStage.type) {
-		next(new Error('Input Stage is Mandatory'));
+		return next(new Error('Input Stage is Mandatory'));
 	}
 	if (!this.inputStage || !this.inputStage.incoming) {
 		this.inputStage.incoming = {};
