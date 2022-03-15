@@ -8,7 +8,7 @@ const flowModal = mongoose.model('flow');
 
 async function initRouterMap() {
     try {
-        const flows = await flowModal.find().lean();
+        const flows = await flowModal.find({}).lean();
         global.activeFlows = {};
         flows.forEach(item => {
             global.activeFlows[item.inputStage.options.path] = `http://${item.deploymentName}.${item.namespace}`;

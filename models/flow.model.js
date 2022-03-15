@@ -38,7 +38,7 @@ schema.pre('save', function (next) {
 		}
 	}
 	if (!this.inputStage.options.path || !this.inputStage.options.path.trim()) {
-		this.inputStage.options.path = '/' + this.app + '/' + _.camelCase(this.name);
+		this.inputStage.options.path = '/' + _.camelCase(this.name);
 	}
 	if (!this.deploymentName) {
 		this.deploymentName = 'b2b-' + _.camelCase(this.name).toLowerCase();
