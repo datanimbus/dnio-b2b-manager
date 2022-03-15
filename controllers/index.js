@@ -7,7 +7,7 @@ const queryUtils = require('../utils/query.utils');
 const logger = log4js.getLogger('index.controller');
 const faasModel = mongoose.model('faas');
 
-router.get('/faas/fetchAll', (req, res) => {
+router.get('/faas/fetchAll', async (req, res) => {
 	try {
 		const filter = queryUtils.parseFilter(req.query.filter);
 		if (req.query.countOnly) {
