@@ -12,6 +12,7 @@ router.use(async (req, res) => {
     try {
         const path = req.path;
         const method = req.method;
+        logger.debug('Looking for path in map:', path, global.activeFlows[path]);
         if (!global.activeFlows[path]) {
             return res.status(400).json({ message: `No Flows with path ${path} Found` });
         }

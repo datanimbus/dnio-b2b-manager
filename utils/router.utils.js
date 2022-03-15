@@ -11,9 +11,9 @@ async function initRouterMap() {
         const flows = await flowModal.find().lean();
         global.activeFlows = {};
         flows.forEach(item => {
-            const appNamespace = (config.DATA_STACK_NAMESPACE + '-' + item.app).toLowerCase();
-            global.activeFlows[item.api] = `http://${item.deploymentName}.${appNamespace}`;
+            global.activeFlows[item.api] = `http://${item.deploymentName}.${item.namespace}`;
         });
+        logger.trace(global.activeFlows);
     } catch (err) {
         logger.error(err);
     }
