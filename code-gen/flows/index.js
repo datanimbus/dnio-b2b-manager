@@ -47,15 +47,15 @@ if (dockerReg.length > 0 && !dockerReg.endsWith('/') && dockerRegistryType != 'E
 
 
 function getDockerFile(release, port, flowData) {
-  let base = `${dockerReg}data.stack.bm:${process.env.IMAGE_TAG}`;
-  if (dockerRegistryType == 'ECR') base = `${dockerReg}:data.stack.bm:${process.env.IMAGE_TAG}`;
+  let base = `${dockerReg}data.stack.bm:${config.imageTag}`;
+  if (dockerRegistryType == 'ECR') base = `${dockerReg}:data.stack.bm:${config.imageTag}`;
   logger.debug(`Base image :: ${base}`);
   return `
     FROM ${base}
 
-    WORKDIR /app
+    WORKDIR /generated
 
-    RUN rm -rf *
+    RUN cp -r /app/node_modules .
 
     COPY . .
 
