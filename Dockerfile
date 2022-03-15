@@ -26,9 +26,6 @@ ENV NODE_ENV='production'
 EXPOSE 10011
 EXPOSE 10443
 
-#RUN adduser -D appuser
-#RUN chown -R appuser /app
-RUN chmod -R 777 /app
-#USER appuser
+# RUN chmod -R 777 /app
 
 CMD [ "node", "app.js" ]
