@@ -12,6 +12,9 @@ const flowModel = mongoose.model('flow');
 router.get('/', async (req, res) => {
 	try {
 		const filter = queryUtils.parseFilter(req.query.filter);
+		if (filter) {
+			filter.app = req.locals.app;
+		}
 		if (req.query.countOnly) {
 			const count = await flowModel.countDocuments(filter);
 			return res.status(200).json(count);

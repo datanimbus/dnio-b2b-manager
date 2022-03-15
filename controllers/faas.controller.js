@@ -11,6 +11,9 @@ const faasModel = mongoose.model('faas');
 router.get('/', async (req, res) => {
 	try {
 		const filter = queryUtils.parseFilter(req.query.filter);
+		if (filter) {
+			filter.app = req.locals.app;
+		}
 		if (req.query.countOnly) {
 			const count = await faasModel.countDocuments(filter);
 			return res.status(200).json(count);
