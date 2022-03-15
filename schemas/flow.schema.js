@@ -30,6 +30,9 @@ const definition = {
 	'deploymentName': {					 //Internal
 		'type': 'String'
 	},
+	'namespace': {					 //Internal
+		'type': 'String'
+	},
 	'status': {                          //Internal
 		'type': 'String',
 		'enum': ['Pending', 'Stopped', 'Error', 'Active', 'Draft'],

@@ -20,7 +20,7 @@ const schema = new mongoose.Schema(definition, {
 });
 
 schema.index({ name: 1, app: 1 }, { unique: '__CUSTOM_NAME_DUPLICATE_ERROR__', sparse: true, collation: { locale: 'en_US', strength: 2 } });
-schema.index({ 'inputStage.incoming.path': 1, app: 1 }, { unique: '__CUSTOM_API_DUPLICATE_ERROR__', sparse: true, collation: { locale: 'en_US', strength: 2 } });
+schema.index({ 'inputStage.options.path': 1, app: 1 }, { unique: '__CUSTOM_API_DUPLICATE_ERROR__', sparse: true, collation: { locale: 'en_US', strength: 2 } });
 
 schema.plugin(mongooseUtils.metadataPlugin());
 
@@ -28,17 +28,17 @@ schema.pre('save', function (next) {
 	if (!this.inputStage || !this.inputStage.type) {
 		return next(new Error('Input Stage is Mandatory'));
 	}
-	if (!this.inputStage || !this.inputStage.incoming) {
-		this.inputStage.incoming = {};
+	if (!this.inputStage || !this.inputStage.options) {
+		this.inputStage.options = {};
 	}
-	if (this.inputStage && this.inputStage.incoming && this.inputStage.incoming.path && this.inputStage.incoming.path.trim()) {
-		this.inputStage.incoming.path = this.inputStage.incoming.path.trim();
-		if (this.inputStage.incoming.path.trim().charAt(0) != '/') {
-			this.inputStage.incoming.path = '/' + this.inputStage.incoming.path;
+	if (this.inputStage && this.inputStage.options && this.inputStage.options.path && this.inputStage.options.path.trim()) {
+		this.inputStage.options.path = this.inputStage.options.path.trim();
+		if (this.inputStage.options.path.trim().charAt(0) != '/') {
+			this.inputStage.options.path = '/' + this.inputStage.options.path;
 		}
 	}
-	if (!this.inputStage.incoming.path || !this.inputStage.incoming.path.trim()) {
-		this.inputStage.incoming.path = '/' + this.app + '/' + _.camelCase(this.name);
+	if (!this.inputStage.options.path || !this.inputStage.options.path.trim()) {
+		this.inputStage.options.path = '/' + this.app + '/' + _.camelCase(this.name);
 	}
 	if (!this.deploymentName) {
 		this.deploymentName = 'b2b-' + _.camelCase(this.name).toLowerCase();

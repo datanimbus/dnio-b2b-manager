@@ -21,10 +21,11 @@ async function createProject(flowJSON) {
 
     mkdirp.sync(folderPath);
 
-    copy(__dirname, folderPath);
+    await copy(__dirname, folderPath);
 
     fs.rmdirSync(path.join(folderPath, `test`), { recursive: true });
     fs.rmdirSync(path.join(folderPath, `generators`), { recursive: true });
+    fs.rmSync(path.join(folderPath, `index.js`));
 
     fs.writeFileSync(path.join(folderPath, `route.js`), codeGen.parseFlow(flowJSON));
     fs.writeFileSync(path.join(folderPath, `stage.utils.js`), codeGen.parseStages(flowJSON));
@@ -69,7 +70,7 @@ function getDockerFile(release, port, flowData) {
     ENV RELEASE="${release}"
     ENV PORT="${port}"
     ENV IMAGE_TAG="${flowData._id}:${flowData.version}"
-    ENV DATA_DB="${config.dataStackNS}-${flowData.appName}"
+    ENV DATA_DB="${config.DATA_STACK_NAMESPACE}-${flowData.app}"
 
     EXPOSE ${port}
 
