@@ -23,7 +23,7 @@ function tab(len) {
 function parseFlow(dataJson) {
 	const inputStage = dataJson.inputStage;
 	const stages = dataJson.stages;
-	let api = inputStage.options.path;
+	let api = '/' + dataJson.app + inputStage.options.path;
 	let code = [];
 	code.push('const router = require(\'express\').Router();');
 	code.push('const log4js = require(\'log4js\');');
@@ -34,7 +34,7 @@ function parseFlow(dataJson) {
 	code.push('const logger = log4js.getLogger(global.loggerName);');
 	code.push('');
 	// TODO: Method to be fixed.
-	code.push(`router.post('${api}', async function (req, res) {`);
+	code.push(`router.${(inputStage.options.method || 'POST').toLowerCase()}('${api}', async function (req, res) {`);
 	code.push(`${tab(1)}let txnId = req.headers['data-stack-txn-id'];`);
 	code.push(`${tab(1)}let remoteTxnId = req.headers['data-stack-remote-txn-id'];`);
 	code.push(`${tab(1)}let response = req;`);
