@@ -11,7 +11,7 @@ async function initRouterMap() {
         const flows = await flowModal.find().lean();
         global.activeFlows = {};
         flows.forEach(item => {
-            global.activeFlows[item.api] = `http://${item.deploymentName}.${item.namespace}`;
+            global.activeFlows[item.inputStage.options.path] = `http://${item.deploymentName}.${item.namespace}`;
         });
         logger.trace(global.activeFlows);
     } catch (err) {
