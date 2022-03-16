@@ -16,7 +16,7 @@ router.use(async (req, res) => {
         if (!global.activeFlows[path]) {
             return res.status(400).json({ message: `No Flows with path ${path} Found` });
         }
-        const headers = req.headers;
+        const headers = JSON.parse(JSON.stringify(req.headers));
         headers['data-stack-txn-id'] = uuid();
         if (!req.header('data-stack-remote-txn-id')) {
             headers['data-stack-remote-txn-id'] = uuid();
