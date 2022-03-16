@@ -1,5 +1,3 @@
-const crypto = require('crypto');
-const sh = require('shorthash');
 const got = require('got');
 // import got from 'got';
 /**
