@@ -1,6 +1,7 @@
 const log4js = require('log4js');
 const router = require('express').Router();
 const { v4: uuid } = require('uuid');
+const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const httpClient = require('./http-client');
 const routerUtils = require('./utils/router.utils');
@@ -28,13 +29,14 @@ router.use(async (req, res) => {
         delete headers['content-length'];
         const proxyPath = global.activeFlows[path] + '/api/b2b' + path;
         logger.info('Proxying request to: ', proxyPath);
-        const resp = await httpClient.httpRequest({
-            method,
-            url: proxyPath,
-            headers: headers,
-            json: req.body
-        });
-        res.status(resp.statusCode).json(resp.body);
+        createProxyMiddleware({ target: proxyPath, changeOrigin: true })(req, res);
+        // const resp = await httpClient.httpRequest({
+        //     method,
+        //     url: proxyPath,
+        //     headers: headers,
+        //     json: req.body
+        // });
+        // res.status(resp.statusCode).json(resp.body);
     } catch (err) {
         logger.error(err);
         res.status(500).json({ message: err.message });
