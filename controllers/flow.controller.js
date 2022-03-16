@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const log4js = require('log4js');
 const mongoose = require('mongoose');
+const _ = require('lodash');
 
 const queryUtils = require('../utils/query.utils');
 const flowUtils = require('../utils/flow.utils');
@@ -89,13 +90,15 @@ router.put('/:id', async (req, res) => {
 				message: 'Data Model Not Found'
 			});
 		}
+		delete payload._id;
 		delete payload.__v;
 		delete payload.version;
 		delete payload.deploymentName;
 		delete payload.namespace;
-		Object.keys(payload).forEach(key => {
-			doc[key] = payload[key];
-		});
+		_.merge(doc, payload);
+		// Object.keys(payload).forEach(key => {
+		// 	doc[key] = payload[key];
+		// });
 		doc._req = req;
 		const status = await doc.save();
 		res.status(200).json(status);
