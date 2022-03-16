@@ -58,8 +58,8 @@ schema.pre('save', function (next) {
 schema.post('save', function (error, doc, next) {
 	if ((error.errors && error.errors.name) || error.name === 'ValidationError' ||
 		error.message.indexOf('E11000') > -1 || error.message.indexOf('__CUSTOM_NAME_DUPLICATE_ERROR__') > -1) {
-		logger.error('flow - Function name is already in use, not saving doc - ' + doc._id);
-		next(new Error('Function name is already in use'));
+		logger.error('flow - Flow name is already in use, not saving doc - ' + doc._id);
+		next(new Error('Flow name is already in use'));
 	} else {
 		next(error);
 	}
