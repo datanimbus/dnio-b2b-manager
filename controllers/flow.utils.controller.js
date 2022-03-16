@@ -42,6 +42,7 @@ router.put('/:id/init', async (req, res) => {
 		doc.status = 'Active';
 		doc.isNew = false;
 		doc._req = req;
+		doc.markModified('status');
 		await doc.save();
 		res.status(200).json({ message: 'Flow Status Updated' });
 		routerUtils.initRouterMap();
@@ -69,6 +70,9 @@ router.put('/:id/deploy', async (req, res) => {
 		if (status.statusCode != 200 || status.statusCode != 202) {
 			return res.status(status.statusCode).json({ message: 'Unable to deploy Flow' });
 		}
+		doc.status = 'Pending';
+		doc.isNew = false;
+		doc.markModified('status');
 		res.status(200).json({ message: 'Flow Deployed' });
 	} catch (err) {
 		logger.error(err);
@@ -95,6 +99,8 @@ router.put('/:id/repair', async (req, res) => {
 			return res.status(status.statusCode).json({ message: 'Unable to repair Flow' });
 		}
 		doc.status = 'Pending';
+		doc.isNew = false;
+		doc.markModified('status');
 		doc._req = req;
 		res.status(200).json({ message: 'Flow Repaired' });
 	} catch (err) {
@@ -121,6 +127,8 @@ router.put('/:id/start', async (req, res) => {
 			return res.status(status.statusCode).json({ message: 'Unable to start Flow' });
 		}
 		doc.status = 'Pending';
+		doc.isNew = false;
+		doc.markModified('status');
 		doc._req = req;
 		res.status(200).json({ message: 'Flow Started' });
 	} catch (err) {
@@ -147,6 +155,8 @@ router.put('/:id/stop', async (req, res) => {
 			return res.status(status.statusCode).json({ message: 'Unable to stop Flow' });
 		}
 		doc.status = 'Stopped';
+		doc.isNew = false;
+		doc.markModified('status');
 		doc._req = req;
 		await doc.save();
 		res.status(200).json({ message: 'Flow Stopped' });
