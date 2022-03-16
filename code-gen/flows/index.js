@@ -19,6 +19,9 @@ async function createProject(flowJSON) {
     const folderPath = path.join(process.cwd(), 'generatedFlows', flowJSON._id);
     logger.info('Creating Project Folder:', folderPath);
 
+    if (fs.existsSync(folderPath)) {
+      fs.rmdirSync(folderPath, { recursive: true });
+    }
     mkdirp.sync(folderPath);
 
     await copy(__dirname, folderPath);
