@@ -103,7 +103,7 @@ function generateCode(stage, stages) {
 	code.push(`${tab(2)}logger.error(err);`);
 	code.push(`${tab(2)}return isResponseSent ? true : res.status(500).json({ message: err.message });`);
 	code.push(`${tab(1)}}`);
-	let tempStages = (inputStage.onSuccess || []);
+	let tempStages = (stage.onSuccess || []);
 	for (let index = 0; index < tempStages.length; index++) {
 		const ss = tempStages[index];
 		const nextStage = stages.find(e => e._id === ss._id);
