@@ -94,6 +94,8 @@ router.put('/:id/repair', async (req, res) => {
 		if (status.statusCode !== 200 || status.statusCode !== 202) {
 			return res.status(status.statusCode).json({ message: 'Unable to repair Flow' });
 		}
+		doc.status = 'Pending';
+		doc._req = req;
 		res.status(200).json({ message: 'Flow Repaired' });
 	} catch (err) {
 		logger.error(err);
@@ -118,6 +120,8 @@ router.put('/:id/start', async (req, res) => {
 		if (status.statusCode !== 200 || status.statusCode !== 202) {
 			return res.status(status.statusCode).json({ message: 'Unable to start Flow' });
 		}
+		doc.status = 'Pending';
+		doc._req = req;
 		res.status(200).json({ message: 'Flow Started' });
 	} catch (err) {
 		logger.error(err);
