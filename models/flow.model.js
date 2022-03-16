@@ -28,30 +28,27 @@ schema.pre('save', function (next) {
 	if (!this.inputStage || !this.inputStage.type) {
 		return next(new Error('Input Stage is Mandatory'));
 	}
-	if (!this.inputStage || !this.inputStage.options) {
-		this.inputStage.options = {};
-	}
-	if (this.inputStage && this.inputStage.options && this.inputStage.options.path && this.inputStage.options.path.trim()) {
-		this.inputStage.options.path = this.inputStage.options.path.trim();
-		if (this.inputStage.options.path.trim().charAt(0) != '/') {
-			this.inputStage.options.path = '/' + this.inputStage.options.path;
+	if (this.isNew) {
+		if (!this.inputStage || !this.inputStage.options) {
+			this.inputStage.options = {};
+		}
+		if (this.inputStage && this.inputStage.options && this.inputStage.options.path && this.inputStage.options.path.trim()) {
+			this.inputStage.options.path = this.inputStage.options.path.trim();
+			if (this.inputStage.options.path.trim().charAt(0) != '/') {
+				this.inputStage.options.path = '/' + this.inputStage.options.path;
+			}
+		}
+		if (!this.inputStage.options.path || !this.inputStage.options.path.trim()) {
+			this.inputStage.options.path = '/' + _.camelCase(this.name);
+		}
+		if (!this.deploymentName) {
+			this.deploymentName = 'b2b-' + _.camelCase(this.name).toLowerCase();
+		}
+		if (!this.namespace) {
+			this.namespace = (config.DATA_STACK_NAMESPACE + '-' + this.app).toLowerCase();
 		}
 	}
-	if (!this.inputStage.options.path || !this.inputStage.options.path.trim()) {
-		this.inputStage.options.path = '/' + _.camelCase(this.name);
-	}
-	if (!this.deploymentName) {
-		this.deploymentName = 'b2b-' + _.camelCase(this.name).toLowerCase();
-	}
-	if (!this.namespace) {
-		this.namespace = (config.DATA_STACK_NAMESPACE + '-' + this.app).toLowerCase();
-	}
 	this.increment();
-	// if (!this.version) {
-	// 	this.version = 1;
-	// } else {
-	// 	this.version += 1;
-	// }
 	next();
 });
 
