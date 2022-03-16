@@ -145,13 +145,15 @@ router.put('/:id/start', async (req, res) => {
 });
 
 router.put('/:id/stop', async (req, res) => {
+	logger.info(`Flow stop request :: ${req.params.id}`)
 	try {
 		const doc = await flowModel.findById(req.params.id);
 		if (!doc) {
 			return res.status(400).json({ message: 'Invalid Flow' });
 		}
 		const status = await deployUtils.stop(doc);
-		if (status.statusCode !== 200 || status.statusCode !== 202) {
+		if (status.statusCode !== 200 && status.statusCode !== 202) {
+			logger.error('K8S :: Error stopping flow');
 			return res.status(status.statusCode).json({ message: 'Unable to stop Flow' });
 		}
 		doc.status = 'Stopped';

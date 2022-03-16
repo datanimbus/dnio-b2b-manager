@@ -107,16 +107,16 @@ async function repair(data, type) {
 async function start(data) {
 	const deployNamespace = config.DATA_STACK_NAMESPACE + '-' + data.app.toLowerCase().replace(/ /g, '');
 	const status = await kubeutil.deployment.scaleDeployment(deployNamespace, data.deploymentName, 1);
-	logger.info(`Deployment ${data.deploymentName} Scaled to 1`);
-	logger.debug(status);
+	logger.info(`Namespace ${deployNamespace} :: Deployment ${data.deploymentName} Scaled to 1`);
+	logger.debug(JSON.stringify(status));
 	return status;
 }
 
 async function stop(data) {
 	const deployNamespace = config.DATA_STACK_NAMESPACE + '-' + data.app.toLowerCase().replace(/ /g, '');
 	const status = await kubeutil.deployment.scaleDeployment(deployNamespace, data.deploymentName, 0);
-	logger.info(`Deployment ${data.deploymentName} Scaled to 0`);
-	logger.debug(status);
+	logger.info(`Namespace ${deployNamespace} :: Deployment ${data.deploymentName} Scaled to 0`);
+	logger.debug(JSON.stringify(status));
 	return status;
 }
 
@@ -124,8 +124,8 @@ async function stop(data) {
 async function scale(data, scaleValue) {
 	const deployNamespace = config.DATA_STACK_NAMESPACE + '-' + data.app.toLowerCase().replace(/ /g, '');
 	const status = await kubeutil.deployment.scaleDeployment(deployNamespace, data.deploymentName, scaleValue);
-	logger.info(`Deployment ${data.deploymentName} Scaled to ${scaleValue}`);
-	logger.debug(status);
+	logger.info(`Namespace ${deployNamespace} :: Deployment ${data.deploymentName} Scaled to ${scaleValue}`);
+	logger.debug(JSON.stringify(status));
 	return status;
 }
 
@@ -133,11 +133,11 @@ async function scale(data, scaleValue) {
 async function undeploy(data) {
 	const deployNamespace = config.DATA_STACK_NAMESPACE + '-' + data.app.toLowerCase().replace(/ /g, '');
 	let status = await kubeutil.service.deleteService(deployNamespace, data.deploymentName);
-	logger.info('Service Deleted for', data.deploymentName);
-	logger.debug(status);
+	logger.info(`Namespace ${deployNamespace} :: Service Deleted  ${data.deploymentName}`);
+	logger.debug(JSON.stringify(status));
 	status = await kubeutil.deployment.deleteDeployment(deployNamespace, data.deploymentName);
-	logger.info('Deployment Deleted for', data.deploymentName);
-	logger.debug(status);
+	logger.info(`Namespace ${deployNamespace} :: Deployment Deleted ${data.deploymentName}`);
+	logger.debug(JSON.stringify(status));
 	return status;
 }
 
