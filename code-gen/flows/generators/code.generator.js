@@ -42,12 +42,11 @@ function parseFlow(dataJson) {
 	code.push(`${tab(1)}let stage = {};`);
 	code.push(`${tab(1)}stage['${inputStage._id}'] = state;`);
 	code.push(`${tab(1)}let isResponseSent = false;`);
-	(inputStage.onSuccess || []).map(ss => {
-		const stageCondition = ss.condition;
-		const temp = stages.find(e => e._id === ss._id);
-		temp.condition = stageCondition;
-		return temp;
-	}).forEach((stage, i) => {
+	let tempStages = (inputStage.onSuccess || []);
+	for (let index = 0; index < tempStages.length; index++) {
+		const ss = tempStages[index];
+		const stage = stages.find(e => e._id === ss._id);
+		stage.condition = ss.condition;
 		if (visitedStages.indexOf(stage._id) > -1) {
 			return;
 		}
@@ -55,7 +54,21 @@ function parseFlow(dataJson) {
 		if (stage.condition) code.push(`${tab(1)}if (${stage.condition}) {`);
 		code = code.concat(generateCode(stage, stages));
 		if (stage.condition) code.push(`${tab(1)}}`);
-	});
+	}
+	// (inputStage.onSuccess || []).map(ss => {
+	// 	const stageCondition = ss.condition;
+	// 	const temp = stages.find(e => e._id === ss._id);
+	// 	temp.condition = stageCondition;
+	// 	return temp;
+	// }).forEach((stage, i) => {
+	// 	if (visitedStages.indexOf(stage._id) > -1) {
+	// 		return;
+	// 	}
+	// 	visitedStages.push(stage._id);
+	// 	if (stage.condition) code.push(`${tab(1)}if (${stage.condition}) {`);
+	// 	code = code.concat(generateCode(stage, stages));
+	// 	if (stage.condition) code.push(`${tab(1)}}`);
+	// });
 	code.push(`${tab(1)}return isResponseSent ? true : res.status((response.statusCode || 200)).json(response.body)`);
 	code.push('});');
 	code.push('module.exports = router;');
@@ -90,20 +103,33 @@ function generateCode(stage, stages) {
 	code.push(`${tab(2)}logger.error(err);`);
 	code.push(`${tab(2)}return isResponseSent ? true : res.status(500).json({ message: err.message });`);
 	code.push(`${tab(1)}}`);
-	(stage.onSuccess || []).map(ss => {
-		const stageCondition = ss.condition;
-		const temp = stages.find(e => e._id === ss._id);
-		temp.condition = stageCondition;
-		return temp;
-	}).forEach((stage, i) => {
-		if (visitedStages.indexOf(stage._id) > -1) {
+	let tempStages = (inputStage.onSuccess || []);
+	for (let index = 0; index < tempStages.length; index++) {
+		const ss = tempStages[index];
+		const nextStage = stages.find(e => e._id === ss._id);
+		nextStage.condition = ss.condition;
+		if (visitedStages.indexOf(nextStage._id) > -1) {
 			return;
 		}
-		visitedStages.push(stage._id);
-		if (stage.condition) code.push(`${tab(1)}if (${stage.condition}) {`);
+		visitedStages.push(nextStage._id);
+		if (nextStage.condition) code.push(`${tab(1)}if (${nextStage.condition}) {`);
 		code = code.concat(generateCode(stage, stages));
-		if (stage.condition) code.push(`${tab(1)}}`);
-	});
+		if (nextStage.condition) code.push(`${tab(1)}}`);
+	}
+	// (stage.onSuccess || []).map(ss => {
+	// 	const stageCondition = ss.condition;
+	// 	const temp = stages.find(e => e._id === ss._id);
+	// 	temp.condition = stageCondition;
+	// 	return temp;
+	// }).forEach((stage, i) => {
+	// 	if (visitedStages.indexOf(stage._id) > -1) {
+	// 		return;
+	// 	}
+	// 	visitedStages.push(stage._id);
+	// 	if (stage.condition) code.push(`${tab(1)}if (${stage.condition}) {`);
+	// 	code = code.concat(generateCode(stage, stages));
+	// 	if (stage.condition) code.push(`${tab(1)}}`);
+	// });
 	return code;
 }
 
