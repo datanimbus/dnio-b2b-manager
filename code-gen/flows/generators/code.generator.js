@@ -56,7 +56,7 @@ function parseFlow(dataJson) {
 		code = code.concat(generateCode(stage, stages));
 		if (stage.condition) code.push(`${tab(1)}}`);
 	});
-	code.push(`${tab(1)}return isResponseSent ? true : res.status(response.statusCode).json(response.body)`);
+	code.push(`${tab(1)}return isResponseSent ? true : res.status((response.statusCode || 200)).json(response.body)`);
 	code.push('});');
 	code.push('module.exports = router;');
 	return code.join('\n');
@@ -73,7 +73,7 @@ function generateCode(stage, stages) {
 	code.push(`${tab(1)}try {`);
 	if (stage.type === 'RESPONSE') {
 		code.push(`${tab(2)}isResponseSent = true;`);
-		code.push(`${tab(2)}res.status(response.statusCode).json(response.body)`);
+		code.push(`${tab(2)}res.status((response.statusCode || 200)).json(response.body)`);
 	} else {
 		code.push(`${tab(2)}state = stateUtils.getState(response, '${stage._id}');`);
 		code.push(`${tab(2)}response = await stageUtils.${_.camelCase(stage._id)}(req, state, stage);`);
@@ -82,7 +82,7 @@ function generateCode(stage, stages) {
 			code.push(`${tab(3)}state = stateUtils.getState(response, '${stage.onError[0]._id}');`);
 			code.push(`${tab(3)}await stageUtils.${_.camelCase(stage.onError[0]._id)}(req, state, stage);`);
 		} else {
-			code.push(`${tab(3)}return isResponseSent ? true : res.status(response.statusCode).json(response.body)`);
+			code.push(`${tab(3)}return isResponseSent ? true : res.status((response.statusCode || 200)).json(response.body)`);
 		}
 		code.push(`${tab(2)}}`);
 	}
