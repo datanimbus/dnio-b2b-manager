@@ -107,12 +107,16 @@ async function repair(data, type) {
 async function start(data) {
 	const deployNamespace = config.DATA_STACK_NAMESPACE + '-' + data.app.toLowerCase().replace(/ /g, '');
 	const status = await kubeutil.deployment.scaleDeployment(deployNamespace, data.deploymentName, 1);
+	logger.info(`Deployment ${data.deploymentName} Scaled to 1`);
+	logger.debug(status);
 	return status;
 }
 
 async function stop(data) {
 	const deployNamespace = config.DATA_STACK_NAMESPACE + '-' + data.app.toLowerCase().replace(/ /g, '');
 	const status = await kubeutil.deployment.scaleDeployment(deployNamespace, data.deploymentName, 0);
+	logger.info(`Deployment ${data.deploymentName} Scaled to 0`);
+	logger.debug(status);
 	return status;
 }
 
@@ -120,6 +124,8 @@ async function stop(data) {
 async function scale(data, scaleValue) {
 	const deployNamespace = config.DATA_STACK_NAMESPACE + '-' + data.app.toLowerCase().replace(/ /g, '');
 	const status = await kubeutil.deployment.scaleDeployment(deployNamespace, data.deploymentName, scaleValue);
+	logger.info(`Deployment ${data.deploymentName} Scaled to ${scaleValue}`);
+	logger.debug(status);
 	return status;
 }
 
