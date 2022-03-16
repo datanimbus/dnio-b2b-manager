@@ -59,6 +59,10 @@ router.post('/', async (req, res) => {
 		if (errorMsg) {
 			return res.status(400).json({ message: errorMsg });
 		}
+		delete payload.__v;
+		delete payload.version;
+		delete payload.deploymentName;
+		delete payload.namespace;
 		const doc = new flowModel(payload);
 		doc._req = req;
 		const status = await doc.save();
@@ -85,6 +89,10 @@ router.put('/:id', async (req, res) => {
 				message: 'Data Model Not Found'
 			});
 		}
+		delete payload.__v;
+		delete payload.version;
+		delete payload.deploymentName;
+		delete payload.namespace;
 		Object.keys(payload).forEach(key => {
 			doc[key] = payload[key];
 		});

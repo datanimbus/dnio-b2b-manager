@@ -42,7 +42,7 @@ function parseFlow(dataJson) {
 	code.push(`${tab(1)}let stage = {};`);
 	code.push(`${tab(1)}stage['${inputStage._id}'] = state;`);
 	code.push(`${tab(1)}let isResponseSent = false;`);
-	inputStage.onSuccess.map(ss => {
+	(inputStage.onSuccess||[]).map(ss => {
 		const stageCondition = ss.condition;
 		const temp = stages.find(e => e._id === ss._id);
 		temp.condition = stageCondition;
@@ -90,7 +90,7 @@ function generateCode(stage, stages) {
 	code.push(`${tab(2)}logger.error(err);`);
 	code.push(`${tab(2)}return isResponseSent ? true : res.status(500).json({ message: err.message });`);
 	code.push(`${tab(1)}}`);
-	stage.onSuccess.map(ss => {
+	(stage.onSuccess||[]).map(ss => {
 		const stageCondition = ss.condition;
 		const temp = stages.find(e => e._id === ss._id);
 		temp.condition = stageCondition;
