@@ -29,14 +29,14 @@ router.use(async (req, res) => {
         delete headers['content-length'];
         const proxyPath = global.activeFlows[path] + '/api/b2b' + path;
         logger.info('Proxying request to: ', proxyPath);
-        req.pipe(request(proxyPath)).pipe(res);
-        // const resp = await httpClient.httpRequest({
-        //     method,
-        //     url: proxyPath,
-        //     headers: headers,
-        //     json: req.body
-        // });
-        // res.status(resp.statusCode).json(resp.body);
+        // req.pipe(request(proxyPath)).pipe(res);
+        const resp = await httpClient.httpRequest({
+            method,
+            url: proxyPath,
+            headers: headers,
+            json: req.body
+        });
+        res.status(resp.statusCode).json(resp.body);
     } catch (err) {
         logger.error(err);
         res.status(500).json({ message: err.message });
