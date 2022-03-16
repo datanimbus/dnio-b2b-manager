@@ -124,6 +124,18 @@ async function scale(data, scaleValue) {
 }
 
 
+async function undeploy(data) {
+	const deployNamespace = config.DATA_STACK_NAMESPACE + '-' + data.app.toLowerCase().replace(/ /g, '');
+	let status = await kubeutil.service.deleteService(deployNamespace, data.deploymentName);
+	logger.info('Service Deleted for', data.deploymentName);
+	logger.debug(status);
+	status = await kubeutil.deployment.deleteDeployment(deployNamespace, data.deploymentName);
+	logger.info('Deployment Deleted for', data.deploymentName);
+	logger.debug(status);
+	return status;
+}
+
+
 
 
 function zipAFolder(src, dest) {
@@ -164,3 +176,4 @@ module.exports.repair = repair;
 module.exports.start = start;
 module.exports.stop = stop;
 module.exports.scale = scale;
+module.exports.undeploy = undeploy;

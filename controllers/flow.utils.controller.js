@@ -62,14 +62,14 @@ router.put('/:id/deploy', async (req, res) => {
 	try {
 		const doc = await flowModel.findById(req.params.id).lean();
 		if (!doc) {
-			return res.status(400).json({ message: 'Invalid Function' });
+			return res.status(400).json({ message: 'Invalid Flow' });
 		}
 		await codeGen.createProject(doc);
 		const status = await deployUtils.deploy(doc, 'flow');
 		if (status.statusCode != 200 || status.statusCode != 202) {
-			return res.status(status.statusCode).json({ message: 'Unable to deploy function' });
+			return res.status(status.statusCode).json({ message: 'Unable to deploy Flow' });
 		}
-		res.status(200).json({ message: 'Function Deployed' });
+		res.status(200).json({ message: 'Flow Deployed' });
 	} catch (err) {
 		logger.error(err);
 		if (typeof err === 'string') {
@@ -87,14 +87,14 @@ router.put('/:id/repair', async (req, res) => {
 	try {
 		const doc = await flowModel.findById(req.params.id).lean();
 		if (!doc) {
-			return res.status(400).json({ message: 'Invalid Function' });
+			return res.status(400).json({ message: 'Invalid Flow' });
 		}
 		await codeGen.createProject(doc, req.header('txnId'));
 		const status = await deployUtils.repair(doc, 'flow');
 		if (status.statusCode !== 200 || status.statusCode !== 202) {
-			return res.status(status.statusCode).json({ message: 'Unable to repair function' });
+			return res.status(status.statusCode).json({ message: 'Unable to repair Flow' });
 		}
-		res.status(200).json({ message: 'Function Repaired' });
+		res.status(200).json({ message: 'Flow Repaired' });
 	} catch (err) {
 		logger.error(err);
 		if (typeof err === 'string') {
@@ -112,13 +112,13 @@ router.put('/:id/start', async (req, res) => {
 	try {
 		const doc = await flowModel.findById(req.params.id).lean();
 		if (!doc) {
-			return res.status(400).json({ message: 'Invalid Function' });
+			return res.status(400).json({ message: 'Invalid Flow' });
 		}
 		const status = await deployUtils.start(doc);
 		if (status.statusCode !== 200 || status.statusCode !== 202) {
-			return res.status(status.statusCode).json({ message: 'Unable to start function' });
+			return res.status(status.statusCode).json({ message: 'Unable to start Flow' });
 		}
-		res.status(200).json({ message: 'Function Started' });
+		res.status(200).json({ message: 'Flow Started' });
 	} catch (err) {
 		logger.error(err);
 		if (typeof err === 'string') {
@@ -136,16 +136,16 @@ router.put('/:id/stop', async (req, res) => {
 	try {
 		const doc = await flowModel.findById(req.params.id);
 		if (!doc) {
-			return res.status(400).json({ message: 'Invalid Function' });
+			return res.status(400).json({ message: 'Invalid Flow' });
 		}
 		const status = await deployUtils.stop(doc);
 		if (status.statusCode !== 200 || status.statusCode !== 202) {
-			return res.status(status.statusCode).json({ message: 'Unable to stop Function' });
+			return res.status(status.statusCode).json({ message: 'Unable to stop Flow' });
 		}
 		doc.status = 'Stopped';
 		doc._req = req;
 		await doc.save();
-		res.status(200).json({ message: 'Function Stopped' });
+		res.status(200).json({ message: 'Flow Stopped' });
 	} catch (err) {
 		logger.error(err);
 		if (typeof err === 'string') {

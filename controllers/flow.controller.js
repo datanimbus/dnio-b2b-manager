@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const _ = require('lodash');
 
 const queryUtils = require('../utils/query.utils');
+const deployUtils = require('../utils/deploy.utils');
 const flowUtils = require('../utils/flow.utils');
 
 const logger = log4js.getLogger('flow.controller');
@@ -40,7 +41,7 @@ router.get('/:id', async (req, res) => {
 		let doc = await mongoQuery.lean();
 		if (!doc) {
 			return res.status(404).json({
-				message: 'Data Model Not Found'
+				message: 'Flow Not Found'
 			});
 		}
 		res.status(200).json(doc);
@@ -87,7 +88,7 @@ router.put('/:id', async (req, res) => {
 		let doc = await flowModel.findById(req.params.id);
 		if (!doc) {
 			return res.status(404).json({
-				message: 'Data Model Not Found'
+				message: 'Flow Not Found'
 			});
 		}
 		delete payload._id;
@@ -115,10 +116,19 @@ router.delete('/:id', async (req, res) => {
 		let doc = await flowModel.findById(req.params.id);
 		if (!doc) {
 			return res.status(404).json({
-				message: 'Data Model Not Found'
+				message: 'Flow Not Found'
+			});
+		}
+		if (doc.status != 'Undeployed' || doc.status != 'Draft') {
+			return res.status(400).json({
+				message: 'Running flows cannot be deleted'
 			});
 		}
 		doc._req = req;
+		const status = await deployUtils.undeploy(doc);
+		if (status.statusCode !== 200 || status.statusCode !== 202) {
+			return res.status(status.statusCode).json({ message: 'Unable to stop Flow' });
+		}
 		await doc.remove();
 		res.status(200).json({
 			message: 'Document Deleted'

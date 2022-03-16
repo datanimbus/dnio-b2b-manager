@@ -44,7 +44,7 @@ schema.pre('save', function (next) {
 		this.deploymentName = 'b2b-' + _.camelCase(this.name).toLowerCase();
 	}
 	if (!this.namespace) {
-		this.namespace = (config.DATA_STACK_NAMESPACE + '-' + this.app).toLowerCase()
+		this.namespace = (config.DATA_STACK_NAMESPACE + '-' + this.app).toLowerCase();
 	}
 	this.increment();
 	// if (!this.version) {
