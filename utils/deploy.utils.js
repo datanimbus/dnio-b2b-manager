@@ -85,8 +85,13 @@ async function deploy(data, type) {
 			throw new Error(errorMsg);
 		}
 		logger.info('Upload successful!  Server responded with:', httpResponse.body);
-		deleteProjectFolder(folderPath);
-		removeFile(zipPath);
+		try {
+			deleteProjectFolder(folderPath);
+			removeFile(zipPath);
+		} catch (err) {
+			logger.warn('Unable to delete folders');
+			logger.error(err);
+		}
 		return { statusCode: 200, body: { message: 'Process queued in DM' } };
 	} catch (err) {
 		logger.error('upload failed:', err);
