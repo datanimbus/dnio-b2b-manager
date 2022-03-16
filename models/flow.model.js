@@ -46,11 +46,12 @@ schema.pre('save', function (next) {
 	if (!this.namespace) {
 		this.namespace = (config.DATA_STACK_NAMESPACE + '-' + this.app).toLowerCase()
 	}
-	if (!this.version) {
-		this.version = 1;
-	} else {
-		this.version += 1;
-	}
+	this.increment();
+	// if (!this.version) {
+	// 	this.version = 1;
+	// } else {
+	// 	this.version += 1;
+	// }
 	next();
 });
 
