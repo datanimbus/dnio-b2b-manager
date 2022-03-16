@@ -119,7 +119,7 @@ router.delete('/:id', async (req, res) => {
 				message: 'Flow Not Found'
 			});
 		}
-		if (doc.status != 'Stopped' || doc.status != 'Draft') {
+		if (doc.status != 'Stopped' && doc.status != 'Draft') {
 			return res.status(400).json({
 				message: 'Running flows cannot be deleted'
 			});
