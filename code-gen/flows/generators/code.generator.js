@@ -48,7 +48,7 @@ function parseFlow(dataJson) {
 	for (let index = 0; index < tempStages.length; index++) {
 		const ss = tempStages[index];
 		const stage = stages.find(e => e._id === ss._id);
-		stage.condition = ss.condition;
+		stage.condition = ss.condition.replaceAll('{{', '').replaceAll('}}', '');
 		if (visitedStages.indexOf(stage._id) > -1) {
 			return;
 		}
@@ -121,7 +121,7 @@ function generateCode(stage, stages) {
 	for (let index = 0; index < tempStages.length; index++) {
 		const ss = tempStages[index];
 		const nextStage = stages.find(e => e._id === ss._id);
-		nextStage.condition = ss.condition;
+		nextStage.condition = ss.condition.replaceAll('{{', '').replaceAll('}}', '');
 		if (visitedStages.indexOf(nextStage._id) > -1) {
 			return;
 		}
@@ -474,7 +474,6 @@ function generateDataStructures(stage, stages) {
 	for (let index = 0; index < tempStages.length; index++) {
 		const ss = tempStages[index];
 		const nextStage = stages.find(e => e._id === ss._id);
-		nextStage.condition = ss.condition;
 		if (visitedValidation.indexOf(nextStage._id) > -1) {
 			return;
 		}
