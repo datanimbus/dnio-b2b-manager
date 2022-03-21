@@ -296,13 +296,16 @@ function generateStages(stage) {
 			code.push(`${tab(2)}return { statusCode: 200, body: newBody, headers: state.headers };`);
 		} else if (stage.type === 'VALIDATION' && stage.validation) {
 			code.push(`${tab(2)}let errors = {};`);
-			stage.validation.forEach(field => {
-				const formulaCode = [];
+			Object.keys(stage.validation).forEach(field => {
 				const formulaID = 'formula_' + _.camelCase(uuid());
-				field.formulaID = formulaID;
+				stage.validation[field] = {
+					code: stage.validation[field],
+					formulaID
+				}
+				const formulaCode = [];
 				formulaCode.push(`function ${formulaID}(data) {`);
 				formulaCode.push(`${tab(1)}try {`);
-				formulaCode.push(`${tab(2)}${field.code}`);
+				formulaCode.push(`${tab(2)}${stage.validation[field].code}`);
 				formulaCode.push(`${tab(1)}} catch(err) {`);
 				formulaCode.push(`${tab(2)}logger.error(err);`);
 				formulaCode.push(`${tab(2)}throw err;`);
@@ -313,10 +316,10 @@ function generateStages(stage) {
 			code.push(`${tab(2)}if (Array.isArray(state.body)) {`);
 			code.push(`${tab(3)}state.body.forEach(item => {`);
 			code.push(`${tab(4)}let error;`);
-			stage.validation.forEach(field => {
-				code.push(`${tab(4)}error = ${field.formulaID}(item));`);
+			Object.keys(stage.validation).forEach(field => {
+				code.push(`${tab(4)}error = ${stage.validation[field].formulaID}(item));`);
 				code.push(`${tab(4)}if (error) {`);
-				code.push(`${tab(5)}errors['${field.dataPath}'] = error;`);
+				code.push(`${tab(5)}errors['${field}'] = error;`);
 				code.push(`${tab(4)}}`);
 			});
 			code.push(`${tab(3)}if (Object.keys(errors).length > 0) {`);
