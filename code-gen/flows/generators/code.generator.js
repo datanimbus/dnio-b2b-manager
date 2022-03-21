@@ -438,6 +438,8 @@ function parseBody(body) {
 function parseDataStructures(dataJson) {
 	visitedValidation = [];
 	const code = [];
+	code.push('const fs = require(\'fs\');');
+	code.push('const path = require(\'path\');');
 	code.push('const log4js = require(\'log4js\');');
 	code.push(`const Ajv = require(\'ajv\');`);
 	code.push('const _ = require(\'lodash\');');
