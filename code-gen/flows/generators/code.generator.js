@@ -179,7 +179,7 @@ function generateStages(stage) {
 			code.push(`${tab(2)}let customHeaders = {};`);
 			code.push(`${tab(2)}let customBody = state.body;`);
 			if (stage.type === 'API' && stage.options) {
-				code.push(`${tab(2)}state.url = '${stage.options.host}${stage.options.path}';`);
+				code.push(`${tab(2)}state.url = \`${stage.options.host}${stage.options.path}\`;`);
 				code.push(`${tab(2)}state.method = '${stage.options.method}';`);
 				code.push(`${tab(2)}options.url = state.url;`);
 				code.push(`${tab(2)}options.method = state.method;`);
@@ -317,7 +317,7 @@ function generateStages(stage) {
 			code.push(`${tab(3)}state.body.forEach(item => {`);
 			code.push(`${tab(4)}let error;`);
 			Object.keys(stage.validation).forEach(field => {
-				code.push(`${tab(4)}error = ${stage.validation[field].formulaID}(item));`);
+				code.push(`${tab(4)}error = ${stage.validation[field].formulaID}(item);`);
 				code.push(`${tab(4)}if (error) {`);
 				code.push(`${tab(5)}errors['${field}'] = error;`);
 				code.push(`${tab(4)}}`);
@@ -328,10 +328,10 @@ function generateStages(stage) {
 			code.push(`${tab(3)}});`);
 			code.push(`${tab(2)}} else {`);
 			code.push(`${tab(3)}let error;`);
-			stage.validation.forEach(field => {
-				code.push(`${tab(3)}error = ${field.formulaID}(state.body));`);
+			Object.keys(stage.validation).forEach(field => {
+				code.push(`${tab(3)}error = ${stage.validation[field].formulaID}(state.body);`);
 				code.push(`${tab(3)}if (error) {`);
-				code.push(`${tab(4)}errors['${field.dataPath}'] = error;`);
+				code.push(`${tab(4)}errors['${field}'] = error;`);
 				code.push(`${tab(3)}}`);
 			});
 			code.push(`${tab(3)}if (Object.keys(errors).length > 0) {`);
