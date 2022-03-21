@@ -5,7 +5,8 @@ const config = require('../config');
 
 // const logger = log4js.getLogger(global.loggerName);
 
-const visitedStages = [];
+let visitedStages = [];
+let visitedValidation = [];
 
 function tab(len) {
 	let d = '';
@@ -21,6 +22,7 @@ function tab(len) {
  * @param {any} dataJson 
  */
 function parseFlow(dataJson) {
+	visitedStages = [];
 	const inputStage = dataJson.inputStage;
 	const stages = dataJson.stages;
 	let api = '/' + dataJson.app + inputStage.options.path;
@@ -88,12 +90,12 @@ function generateCode(stage, stages) {
 		code.push(`${tab(2)}isResponseSent = true;`);
 		code.push(`${tab(2)}let statusCode;`);
 		code.push(`${tab(2)}let responseBody;`);
-		if (stage.options.statusCode) {
+		if (stage.options && stage.options.statusCode) {
 			code.push(`${tab(2)}statusCode = ${stage.options.statusCode};`);
 		} else {
 			code.push(`${tab(2)}statusCode = response.statusCode;`);
 		}
-		if (stage.options.body) {
+		if (stage.options && stage.options.body) {
 			code.push(`${tab(2)}responseBody = JSON.parse(\`${parseBody(stage.options.body)}\`);`);
 		} else {
 			code.push(`${tab(2)}responseBody = response.body;`);
@@ -125,7 +127,7 @@ function generateCode(stage, stages) {
 		}
 		visitedStages.push(nextStage._id);
 		if (nextStage.condition) code.push(`${tab(1)}if (${nextStage.condition}) {`);
-		code = code.concat(generateCode(stage, stages));
+		code = code.concat(generateCode(nextStage, stages));
 		if (nextStage.condition) code.push(`${tab(1)}}`);
 	}
 	// (stage.onSuccess || []).map(ss => {
@@ -146,12 +148,14 @@ function generateCode(stage, stages) {
 }
 
 function parseStages(dataJson) {
+	visitedStages = [];
 	const code = [];
 	code.push('const log4js = require(\'log4js\');');
 	code.push('const _ = require(\'lodash\');');
 	code.push('const httpClient = require(\'./http-client\');');
 	code.push('const commonUtils = require(\'./common.utils\');');
 	code.push('const stateUtils = require(\'./state.utils\');');
+	code.push('const validationUtils = require(\'./validation.utils\');');
 	code.push('');
 	code.push('const logger = log4js.getLogger(global.loggerName);');
 	code.push('');
@@ -169,7 +173,8 @@ function generateStages(stage) {
 		code.push(`async function ${_.camelCase(stage._id)}(req, state, stage) {`);
 		code.push(`${tab(1)}logger.info(\`[\${req.header('data-stack-txn-id')}] [\${req.header('data-stack-remote-txn-id')}] Starting ${_.camelCase(stage._id)} Stage\`);`);
 		code.push(`${tab(1)}try {`);
-		if (stage.type === 'API' || stage.type === 'DATASERVICE' || stage.type === 'FAAS' || stage.type === 'AUTH-DATASTACK') {
+		let functionName = 'validate_structure_' + _.camelCase(stage._id);
+		if (stage.type === 'API' || stage.type === 'DATASERVICE' || stage.type === 'FAAS' || stage.type === 'FLOW' || stage.type === 'AUTH-DATASTACK') {
 			code.push(`${tab(2)}const options = {};`);
 			code.push(`${tab(2)}let customHeaders = {};`);
 			code.push(`${tab(2)}let customBody = state.body;`);
@@ -194,7 +199,17 @@ function generateStages(stage) {
 				}
 			} else if (stage.type === 'FAAS') {
 				code.push(`${tab(2)}const faas = await commonUtils.getFaaS('${stage.options._id}');`);
-				code.push(`${tab(2)}state.url = '${config.baseUrlBM}/faas/' + faas.app + faas.api`);
+				code.push(`${tab(2)}state.url = \`${config.baseUrlBM}/\${faas.app}/faas/\${faas.api}\`;`);
+				code.push(`${tab(2)}state.method = '${stage.options.method}';`);
+				code.push(`${tab(2)}options.url = state.url;`);
+				code.push(`${tab(2)}options.method = state.method;`);
+				code.push(`${tab(2)}customHeaders = JSON.parse(\`${parseHeaders(stage.options.headers)}\`);`);
+				if (stage.options.body && !_.isEmpty(stage.options.body)) {
+					code.push(`${tab(2)}customBody = JSON.parse(\`${parseBody(stage.options.body)}\`);`);
+				}
+			} else if (stage.type === 'FLOW') {
+				code.push(`${tab(2)}const flow = await commonUtils.getFlow('${stage.options._id}');`);
+				code.push(`${tab(2)}state.url = \`${config.baseUrlBM}/\${flow.app}/flow/\${flow.inputStage.options.path}\`;`);
 				code.push(`${tab(2)}state.method = '${stage.options.method}';`);
 				code.push(`${tab(2)}options.url = state.url;`);
 				code.push(`${tab(2)}options.method = state.method;`);
@@ -204,7 +219,7 @@ function generateStages(stage) {
 				}
 			} else if (stage.type === 'AUTH-DATASTACK') {
 				code.push(`${tab(2)}const password = '${stage.options.password}'`);
-				code.push(`${tab(2)}state.url = '${config.baseUrlUSR}/login'`);
+				code.push(`${tab(2)}state.url = '${config.baseUrlUSR}/auth/login'`);
 				code.push(`${tab(2)}state.method = 'POST';`);
 				code.push(`${tab(2)}options.url = state.url;`);
 				code.push(`${tab(2)}options.method = state.method;`);
@@ -227,6 +242,14 @@ function generateStages(stage) {
 			code.push(`${tab(3)}logger.info(\`[\${req.header('data-stack-txn-id')}] [\${req.header('data-stack-remote-txn-id')}] Ending ${_.camelCase(stage._id)} Stage with not 200\`);`);
 			code.push(`${tab(3)}return { statusCode: response.statusCode, body: response.body, headers: response.headers };`);
 			code.push(`${tab(2)}}`);
+
+			code.push(`${tab(2)}const errors = validationUtils.${functionName}(req, response.body);`);
+			code.push(`${tab(2)}if (errors) {`);
+			code.push(`${tab(3)}state.status = "ERROR";`);
+			code.push(`${tab(3)}logger.info(\`[\${req.header('data-stack-txn-id')}] [\${req.header('data-stack-remote-txn-id')}] Ending ${_.camelCase(stage._id)} Stage with not 200\`);`);
+			code.push(`${tab(3)}return { statusCode: 400, body: { message:errors }, headers: response.headers };`);
+			code.push(`${tab(2)}}`);
+
 			code.push(`${tab(2)}state.status = "SUCCESS";`);
 			code.push(`${tab(2)}logger.info(\`[\${req.header('data-stack-txn-id')}] [\${req.header('data-stack-remote-txn-id')}] Ending ${_.camelCase(stage._id)} Stage with 200\`);`);
 			code.push(`${tab(2)}return { statusCode: response.statusCode, body: response.body, headers: response.headers };`);
@@ -262,6 +285,14 @@ function generateStages(stage) {
 				code.push(`${tab(3)}_.set(newBody, '${mappingData.target.dataPath}', ${mappingData.formulaID}(state.body));`);
 			});
 			code.push(`${tab(2)}}`);
+
+			code.push(`${tab(2)}const errors = validationUtils.${functionName}(req, newBody);`);
+			code.push(`${tab(2)}if (errors) {`);
+			code.push(`${tab(3)}state.status = "ERROR";`);
+			code.push(`${tab(3)}logger.info(\`[\${req.header('data-stack-txn-id')}] [\${req.header('data-stack-remote-txn-id')}] Ending ${_.camelCase(stage._id)} Stage with not 200\`);`);
+			code.push(`${tab(3)}return { statusCode: 400, body: { message:errors }, headers: response.headers };`);
+			code.push(`${tab(2)}}`);
+
 			code.push(`${tab(2)}return { statusCode: 200, body: newBody, headers: state.headers };`);
 		} else if (stage.type === 'VALIDATION') {
 			code.push(`${tab(2)}let errors = {};`);
@@ -305,26 +336,6 @@ function generateStages(stage) {
 			code.push(`${tab(3)}}`);
 			code.push(`${tab(2)}}`);
 			code.push(`${tab(2)}return { statusCode: 200, body: newBody, headers: state.headers };`);
-		} else if (stage.type === 'FLOW') {
-			if (stage.parallel && stage.parallel.length > 0) {
-				code.push(`${tab(2)}let promiseArray = [];`);
-				stage.parallel.forEach(flow => {
-					code.push(`${tab(2)}promiseArray.push(callFlow('${flow._id}', state))`);
-				});
-				code.push(`${tab(2)}const promises = await Promise.all(promiseArray)`);
-				code.push(`${tab(2)}const allBody = promises.map(e=>e.body)`);
-				code.push(`${tab(2)}const allHeaders = promises.reduce((prev,curr)=>_.merge(prev,curr.headers),{})`);
-				code.push(`${tab(2)}return { statusCode: 200, body: allBody, headers: allHeaders };`);
-			} else if (stage.sequence && stage.sequence.length > 0) {
-				code.push(`${tab(2)}let response = state;`);
-				stage.sequence.forEach(flow => {
-					code.push(`${tab(2)}response = await callFlow('${flow._id}', response)`);
-					code.push(`${tab(2)}if( response && response.statusCode != 200 ) {`);
-					code.push(`${tab(3)}logger.info(\`[\${req.header('data-stack-txn-id')}] [\${req.header('data-stack-remote-txn-id')}] Ending ${_.camelCase(stage._id)} Stage with not 200\`);`);
-					code.push(`${tab(3)}return { statusCode: response.statusCode, body: response.body, headers: response.headers };`);
-					code.push(`${tab(2)}}`);
-				});
-			}
 		} else if (stage.type === 'FOREACH' || stage.type === 'REDUCE') {
 			loopCode = generateStages(stage);
 			code.push(`${tab(2)}let temp = JSON.parse(JSON.stringify(state.body));`);
@@ -417,5 +428,60 @@ function parseBody(body) {
 }
 
 
+function parseDataStructures(dataJson) {
+	visitedValidation = [];
+	const code = [];
+	code.push('const log4js = require(\'log4js\');');
+	code.push(`const Ajv = require(\'ajv\');`);
+	code.push('const _ = require(\'lodash\');');
+	code.push(`const ajv = new Ajv();`);
+	code.push('');
+	code.push('const logger = log4js.getLogger(global.loggerName);');
+	code.push('');
+	if (dataJson.dataStructures && Object.keys(dataJson.dataStructures).length > 0) {
+		Object.keys(dataJson.dataStructures).forEach(schemaID => {
+			code.push(`const schema_${schemaID} = fs.readFileSync(\`./schemas/${schemaID}.schema.json\`).toString();`);
+			code.push(`schema_${schemaID} = JSON.parse(schema_${schemaID});`);
+			code.push(`const validate_${schemaID} = ajv.compile(schema_${schemaID});`);
+		});
+	}
+	return _.concat(code, generateDataStructures(dataJson.inputStage, dataJson.stages)).join('\n');
+}
+
+function generateDataStructures(stage, stages) {
+	let code = [];
+	const exportsCode = [];
+	let schemaID;
+	if (stage.dataStructure && stage.dataStructure.outgoing && stage.dataStructure.outgoing._id) {
+		schemaID = _.camelCase(stage.dataStructure.outgoing._id);
+	}
+	const functionName = 'validate_structure_' + _.camelCase(stage._id);
+	exportsCode.push(`module.exports.${functionName} = ${functionName};`);
+	code.push(`async function ${functionName}(req, data) {`);
+	if (schemaID) {
+		code.push(`${tab(1)}logger.info(\`[\${req.header('data-stack-txn-id')}] [\${req.header('data-stack-remote-txn-id')}] Validation Data Structure ${_.camelCase(stage._id)} Stage\`);`);
+		code.push(`${tab(1)}const valid = validate_${schemaID}(data);`);
+		code.push(`${tab(1)}if (!valid) throw Error(ajv.errorsText(validate_${schemaID}.errors));`);
+	} else {
+		code.push(`${tab(1)}logger.info(\`[\${req.header('data-stack-txn-id')}] [\${req.header('data-stack-remote-txn-id')}] No Data Structure found for ${_.camelCase(stage._id)} Stage\`);`);
+	}
+	code.push(`${tab(1)}return null;`);
+	code.push('}');
+	let tempStages = (stage.onSuccess || []);
+	for (let index = 0; index < tempStages.length; index++) {
+		const ss = tempStages[index];
+		const nextStage = stages.find(e => e._id === ss._id);
+		nextStage.condition = ss.condition;
+		if (visitedValidation.indexOf(nextStage._id) > -1) {
+			return;
+		}
+		visitedValidation.push(nextStage._id);
+		code = code.concat(generateDataStructures(nextStage, stages));
+	}
+	return _.concat(code, exportsCode).join('\n');
+}
+
+
 module.exports.parseFlow = parseFlow;
 module.exports.parseStages = parseStages;
+module.exports.parseDataStructures = parseDataStructures;
