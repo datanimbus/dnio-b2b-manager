@@ -294,7 +294,7 @@ function generateStages(stage) {
 			code.push(`${tab(2)}}`);
 
 			code.push(`${tab(2)}return { statusCode: 200, body: newBody, headers: state.headers };`);
-		} else if (stage.type === 'VALIDATION') {
+		} else if (stage.type === 'VALIDATION' && stage.validation) {
 			code.push(`${tab(2)}let errors = {};`);
 			stage.validation.forEach(field => {
 				const formulaCode = [];
