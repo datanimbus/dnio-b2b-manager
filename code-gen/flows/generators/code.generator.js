@@ -231,7 +231,9 @@ function generateStages(stage) {
 				code.push(`${tab(2)}customBody = { username: '${stage.options.username}', password: '${stage.options.password}' };`);
 			}
 			code.push(`${tab(2)}options.headers = _.merge(state.headers, customHeaders);`);
-			code.push(`${tab(2)}options.json = customBody;`);
+			code.push(`${tab(2)}if (options.method == 'POST' || options.method == 'PUT') {`);
+			code.push(`${tab(3)}options.json = customBody;`);
+			code.push(`${tab(2)}}`);
 			code.push(`${tab(2)}delete options.headers['cookie'];`);
 			code.push(`${tab(2)}delete options.headers['host'];`);
 			code.push(`${tab(2)}delete options.headers['connection'];`);
