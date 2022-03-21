@@ -86,7 +86,19 @@ function generateCode(stage, stages) {
 	code.push(`${tab(1)}try {`);
 	if (stage.type === 'RESPONSE') {
 		code.push(`${tab(2)}isResponseSent = true;`);
-		code.push(`${tab(2)}res.status((response.statusCode || 200)).json(response.body)`);
+		code.push(`${tab(2)}let statusCode;`);
+		code.push(`${tab(2)}let responseBody;`);
+		if (stage.options.statusCode) {
+			code.push(`${tab(2)}statusCode = ${stage.options.statusCode};`);
+		} else {
+			code.push(`${tab(2)}statusCode = response.statusCode;`);
+		}
+		if (stage.options.body) {
+			code.push(`${tab(2)}responseBody = JSON.parse(\`${parseBody(stage.options.body)}\`);`);
+		} else {
+			code.push(`${tab(2)}responseBody = response.body;`);
+		}
+		code.push(`${tab(2)}res.status(statusCode).json(responseBody)`);
 	} else {
 		code.push(`${tab(2)}state = stateUtils.getState(response, '${stage._id}');`);
 		code.push(`${tab(2)}response = await stageUtils.${_.camelCase(stage._id)}(req, state, stage);`);
@@ -219,7 +231,7 @@ function generateStages(stage) {
 			code.push(`${tab(2)}logger.info(\`[\${req.header('data-stack-txn-id')}] [\${req.header('data-stack-remote-txn-id')}] Ending ${_.camelCase(stage._id)} Stage with 200\`);`);
 			code.push(`${tab(2)}return { statusCode: response.statusCode, body: response.body, headers: response.headers };`);
 		} else if ((stage.type === 'TRANSFORM' || stage.type === 'MAPPING') && stage.mapping) {
-			code.push(`${tab(2)}const newBody = {};`);
+			code.push(`${tab(2)}let newBody = {};`);
 			stage.mapping.forEach(mappingData => {
 				const formulaCode = [];
 				const formulaID = 'formula_' + _.camelCase(uuid());
@@ -237,15 +249,60 @@ function generateStages(stage) {
 				code.push(formulaCode.join('\n'));
 			});
 			code.push(`${tab(2)}if (Array.isArray(state.body)) {`);
+			code.push(`${tab(2)}newBody = [];`);
 			code.push(`${tab(3)}state.body.forEach(item => {`);
+			code.push(`${tab(2)}let tempBody = {};`);
 			stage.mapping.forEach(mappingData => {
-				code.push(`${tab(4)}_.set(newBody, '${mappingData.target.dataPath}', ${mappingData.formulaID}(item));`);
+				code.push(`${tab(4)}_.set(tempBody, '${mappingData.target.dataPath}', ${mappingData.formulaID}(item));`);
 			});
+			code.push(`${tab(2)}newBody.push(tempBody);`);
 			code.push(`${tab(3)}});`);
 			code.push(`${tab(2)}} else {`);
 			stage.mapping.forEach(mappingData => {
 				code.push(`${tab(3)}_.set(newBody, '${mappingData.target.dataPath}', ${mappingData.formulaID}(state.body));`);
 			});
+			code.push(`${tab(2)}}`);
+			code.push(`${tab(2)}return { statusCode: 200, body: newBody, headers: state.headers };`);
+		} else if (stage.type === 'VALIDATION') {
+			code.push(`${tab(2)}let errors = {};`);
+			stage.validation.forEach(field => {
+				const formulaCode = [];
+				const formulaID = 'formula_' + _.camelCase(uuid());
+				field.formulaID = formulaID;
+				formulaCode.push(`function ${formulaID}(data) {`);
+				formulaCode.push(`${tab(1)}try {`);
+				formulaCode.push(`${tab(2)}${field.code}`);
+				formulaCode.push(`${tab(1)}} catch(err) {`);
+				formulaCode.push(`${tab(2)}logger.error(err);`);
+				formulaCode.push(`${tab(2)}throw err;`);
+				formulaCode.push(`${tab(1)}}`);
+				formulaCode.push('}');
+				code.push(formulaCode.join('\n'));
+			});
+			code.push(`${tab(2)}if (Array.isArray(state.body)) {`);
+			code.push(`${tab(3)}state.body.forEach(item => {`);
+			code.push(`${tab(4)}let error;`);
+			stage.validation.forEach(field => {
+				code.push(`${tab(4)}error = ${field.formulaID}(item));`);
+				code.push(`${tab(4)}if (error) {`);
+				code.push(`${tab(5)}errors['${field.dataPath}'] = error;`);
+				code.push(`${tab(4)}}`);
+			});
+			code.push(`${tab(3)}if (Object.keys(errors).length > 0) {`);
+			code.push(`${tab(4)} throw errors;`);
+			code.push(`${tab(3)}}`);
+			code.push(`${tab(3)}});`);
+			code.push(`${tab(2)}} else {`);
+			code.push(`${tab(3)}let error;`);
+			stage.validation.forEach(field => {
+				code.push(`${tab(3)}error = ${field.formulaID}(state.body));`);
+				code.push(`${tab(3)}if (error) {`);
+				code.push(`${tab(4)}errors['${field.dataPath}'] = error;`);
+				code.push(`${tab(3)}}`);
+			});
+			code.push(`${tab(3)}if (Object.keys(errors).length > 0) {`);
+			code.push(`${tab(4)} throw errors;`);
+			code.push(`${tab(3)}}`);
 			code.push(`${tab(2)}}`);
 			code.push(`${tab(2)}return { statusCode: 200, body: newBody, headers: state.headers };`);
 		} else if (stage.type === 'FLOW') {
