@@ -449,7 +449,7 @@ function parseDataStructures(dataJson) {
 	code.push('');
 	if (dataJson.dataStructures && Object.keys(dataJson.dataStructures).length > 0) {
 		Object.keys(dataJson.dataStructures).forEach(schemaID => {
-			code.push(`const schema_${schemaID} = fs.readFileSync(\`./schemas/${schemaID}.schema.json\`).toString();`);
+			code.push(`let schema_${schemaID} = fs.readFileSync(\`./schemas/${schemaID}.schema.json\`).toString();`);
 			code.push(`schema_${schemaID} = JSON.parse(schema_${schemaID});`);
 			code.push(`const validate_${schemaID} = ajv.compile(schema_${schemaID});`);
 		});
