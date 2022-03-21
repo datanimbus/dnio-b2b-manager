@@ -40,6 +40,7 @@ const definition = {
 	},
 	'inputStage': { 'type': 'Object' },
 	'stages': { 'type': 'Object' },
+	'dataStructures': { 'type': 'Object' },
 	'port': { 'type': 'String' },
 	'description': { 'type': 'String' }
 };

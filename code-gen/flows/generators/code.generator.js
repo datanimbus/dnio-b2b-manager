@@ -453,7 +453,7 @@ function generateDataStructures(stage, stages) {
 	const exportsCode = [];
 	let schemaID;
 	if (stage.dataStructure && stage.dataStructure.outgoing && stage.dataStructure.outgoing._id) {
-		schemaID = _.camelCase(stage.dataStructure.outgoing._id);
+		schemaID = (stage.dataStructure.outgoing._id);
 	}
 	const functionName = 'validate_structure_' + _.camelCase(stage._id);
 	exportsCode.push(`module.exports.${functionName} = ${functionName};`);
