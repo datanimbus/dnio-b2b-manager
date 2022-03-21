@@ -34,8 +34,9 @@ async function createProject(flowJSON) {
     if (flowJSON.dataStructures && Object.keys(flowJSON.dataStructures).length > 0) {
       Object.keys(flowJSON.dataStructures).forEach(schemaID => {
         let schema = flowJSON.dataStructures[schemaID];
+        schema._id = schemaID;
         if (schema.definition) {
-          fs.writeFileSync(path.join(folderPath, 'schemas', `${schemaID}.schema.json`), JSON.stringify(schemaUtils.convertToJSONSchema(schema.definition)));
+          fs.writeFileSync(path.join(folderPath, 'schemas', `${schemaID}.schema.json`), JSON.stringify(schemaUtils.convertToJSONSchema(schema)));
         }
       });
     }
