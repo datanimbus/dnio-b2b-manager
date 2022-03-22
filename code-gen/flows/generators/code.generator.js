@@ -187,7 +187,9 @@ function generateStages(stage) {
 				code.push(`${tab(2)}state.method = '${stage.options.method}';`);
 				code.push(`${tab(2)}options.url = state.url;`);
 				code.push(`${tab(2)}options.method = state.method;`);
-				code.push(`${tab(2)}customHeaders = JSON.parse(\`${parseHeaders(stage.options.headers)}\`);`);
+				if (stage.options.headers && !_.isEmpty(stage.options.headers)) {
+					code.push(`${tab(2)}customHeaders = JSON.parse(\`${parseHeaders(stage.options.headers)}\`);`);
+				}
 				if (stage.options.body && !_.isEmpty(stage.options.body)) {
 					code.push(`${tab(2)}customBody = JSON.parse(\`${parseBody(stage.options.body)}\`);`);
 				}
@@ -411,9 +413,17 @@ function generateStages(stage) {
 		}
 		code.push(`${tab(1)}} catch (err) {`);
 		code.push(`${tab(2)}state.statusCode = 500;`);
-		code.push(`${tab(2)}state.body = err;`);
+		code.push(`${tab(2)}if (err.body) {`);
+		code.push(`${tab(3)}state.body = err.body;`);
+		code.push(`${tab(3)}logger.error(err.body);`);
+		code.push(`${tab(2)}} else if (err.message) {`);
+		code.push(`${tab(3)}state.body = { message: err.message };`);
+		code.push(`${tab(3)}logger.error(err.message);`);
+		code.push(`${tab(2)}} else {`);
+		code.push(`${tab(3)}state.body = err;`);
+		code.push(`${tab(3)}logger.error(err);`);
+		code.push(`${tab(2)}}`);
 		code.push(`${tab(2)}state.status = "ERROR";`);
-		code.push(`${tab(2)}logger.error(err);`);
 		code.push(`${tab(2)}return { statusCode: 500, body: err, headers: state.headers };`);
 		code.push(`${tab(1)}} finally {`);
 		code.push(`${tab(2)}stage['${stage._id}'] = state;`);
