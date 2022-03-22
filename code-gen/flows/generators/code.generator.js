@@ -331,18 +331,27 @@ function generateStages(stage) {
 				code.push(formulaCode.join('\n'));
 			});
 			code.push(`${tab(2)}if (Array.isArray(state.body)) {`);
+			code.push(`${tab(3)}errors = [];`);
 			code.push(`${tab(3)}state.body.forEach(item => {`);
 			code.push(`${tab(4)}let error;`);
+			code.push(`${tab(4)}let errorObj;`);
 			Object.keys(stage.validation).forEach(field => {
 				code.push(`${tab(4)}error = ${stage.validation[field].formulaID}(item);`);
 				code.push(`${tab(4)}if (error) {`);
-				code.push(`${tab(5)}errors['${field}'] = error;`);
+				code.push(`${tab(5)}errorObj['${field}'] = error;`);
 				code.push(`${tab(4)}}`);
 			});
-			code.push(`${tab(3)}if (Object.keys(errors).length > 0) {`);
-			code.push(`${tab(4)} throw errors;`);
+			code.push(`${tab(3)}if (Object.keys(errorObj).length > 0) {`);
+			code.push(`${tab(4)}errors.push(errorObj);`);
 			code.push(`${tab(3)}}`);
 			code.push(`${tab(3)}});`);
+			code.push(`${tab(3)}if (errors && errors.length > 0) {`);
+			code.push(`${tab(4)}state.status = 'ERROR'`);
+			code.push(`${tab(4)}state.statusCode = 400;`);
+			code.push(`${tab(4)}state.body = errors;`);
+			code.push(`${tab(4)}logger.info(\`[\${req.header('data-stack-txn-id')}] [\${req.header('data-stack-remote-txn-id')}] Validation Error ${_.camelCase(stage._id)} \`, errors);`);
+			code.push(`${tab(4)}return { statusCode: 400, body: errors, headers: state.headers };`);
+			code.push(`${tab(3)}}`);
 			code.push(`${tab(2)}} else {`);
 			code.push(`${tab(3)}let error;`);
 			Object.keys(stage.validation).forEach(field => {
@@ -355,11 +364,11 @@ function generateStages(stage) {
 			code.push(`${tab(4)}state.status = 'ERROR'`);
 			code.push(`${tab(4)}state.statusCode = 400;`);
 			code.push(`${tab(4)}state.body = errors;`);
-			code.push(`${tab(3)}logger.info(\`[\${req.header('data-stack-txn-id')}] [\${req.header('data-stack-remote-txn-id')}] Validation Error ${_.camelCase(stage._id)} \`, errors);`);
-			code.push(`${tab(4)}throw errors;`);
+			code.push(`${tab(4)}logger.info(\`[\${req.header('data-stack-txn-id')}] [\${req.header('data-stack-remote-txn-id')}] Validation Error ${_.camelCase(stage._id)} \`, errors);`);
+			code.push(`${tab(4)}return { statusCode: 400, body: errors, headers: state.headers };`);
 			code.push(`${tab(3)}}`);
 			code.push(`${tab(2)}}`);
-			code.push(`${tab(2)}return { statusCode: 200, body: newBody, headers: state.headers };`);
+			code.push(`${tab(2)}return { statusCode: 200, body: state.body, headers: state.headers };`);
 		} else if (stage.type === 'FOREACH' || stage.type === 'REDUCE') {
 			loopCode = generateStages(stage);
 			code.push(`${tab(2)}let temp = JSON.parse(JSON.stringify(state.body));`);
@@ -443,12 +452,14 @@ function parseDynamicVariable(value) {
 function parseHeaders(headers) {
 	let tempHeaders = {};
 	if (headers) {
-		if (typeof headers === 'string' && headers.indexOf('{{') > -1) {
-			return parseDynamicVariable(headers);
-		} else if (typeof headers === 'object') {
+		if (typeof headers === 'object') {
 			Object.keys(headers).forEach(key => {
 				tempHeaders[key] = parseHeaders(headers[key]);
 			});
+		} else if (typeof headers === 'string' && headers.indexOf('{{') > -1) {
+			return parseDynamicVariable(headers);
+		} else {
+			return headers;
 		}
 	}
 	return JSON.stringify(tempHeaders);
@@ -457,12 +468,14 @@ function parseHeaders(headers) {
 function parseBody(body) {
 	let tempBody = {};
 	if (body) {
-		if (typeof body === 'string' && body.indexOf('{{') > -1) {
-			return parseDynamicVariable(body);
-		} else if (typeof body === 'object') {
+		if (typeof body === 'object') {
 			Object.keys(body).forEach(key => {
 				tempBody[key] = parseBody(body[key]);
 			});
+		} else if (typeof body === 'string' && body.indexOf('{{') > -1) {
+			return parseDynamicVariable(body);
+		} else {
+			return body;
 		}
 	}
 	return JSON.stringify(tempBody);
@@ -500,7 +513,7 @@ function generateDataStructures(stage, stages) {
 	}
 	const functionName = 'validate_structure_' + _.camelCase(stage._id);
 	exportsCode.push(`module.exports.${functionName} = ${functionName};`);
-	code.push(`async function ${functionName}(req, data) {`);
+	code.push(`function ${functionName}(req, data) {`);
 	if (schemaID) {
 		code.push(`${tab(1)}logger.info(\`[\${req.header('data-stack-txn-id')}] [\${req.header('data-stack-remote-txn-id')}] Validation Data Structure ${_.camelCase(stage._id)} Stage\`);`);
 		code.push(`${tab(1)}const valid = validate_${schemaID}(data);`);
