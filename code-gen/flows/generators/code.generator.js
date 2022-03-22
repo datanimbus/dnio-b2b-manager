@@ -183,7 +183,7 @@ function generateStages(stage) {
 			code.push(`${tab(2)}let customHeaders = {};`);
 			code.push(`${tab(2)}let customBody = state.body;`);
 			if (stage.type === 'API' && stage.options) {
-				code.push(`${tab(2)}state.url = \`${stage.options.host}${stage.options.path}\`;`);
+				code.push(`${tab(2)}state.url = \`${parseDynamicVariable(stage.options.host)}${parseDynamicVariable(stage.options.path)}\`;`);
 				code.push(`${tab(2)}state.method = '${stage.options.method}';`);
 				code.push(`${tab(2)}options.url = state.url;`);
 				code.push(`${tab(2)}options.method = state.method;`);
@@ -408,11 +408,17 @@ function generateStages(stage) {
 	return _.concat(code, loopCode, exportsCode).join('\n');
 }
 
+function parseDynamicVariable(value) {
+	if (value) {
+		return value.replaceAll('{{', '${').replaceAll('}}', '}');
+	}
+}
+
 function parseHeaders(headers) {
 	let tempHeaders = {};
 	if (headers) {
 		if (typeof headers === 'string' && headers.indexOf('{{') > -1) {
-			return headers.replaceAll('{{', '${').replaceAll('}}', '}');
+			return parseDynamicVariable(headers);
 		} else if (typeof headers === 'object') {
 			Object.keys(headers).forEach(key => {
 				tempHeaders[key] = parseHeaders(headers[key]);
@@ -426,7 +432,7 @@ function parseBody(body) {
 	let tempBody = {};
 	if (body) {
 		if (typeof body === 'string' && body.indexOf('{{') > -1) {
-			return body.replaceAll('{{', '${').replaceAll('}}', '}');
+			return parseDynamicVariable(body);
 		} else if (typeof body === 'object') {
 			Object.keys(body).forEach(key => {
 				tempBody[key] = parseBody(body[key]);
