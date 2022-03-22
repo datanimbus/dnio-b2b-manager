@@ -240,6 +240,7 @@ function generateStages(stage) {
 			code.push(`${tab(2)}delete options.headers['user-agent'];`);
 			code.push(`${tab(2)}delete options.headers['content-length'];`);
 			code.push(`${tab(2)}const response = await httpClient.request(options);`);
+			code.push(`${tab(3)}logger.trace(\`[\${req.header('data-stack-txn-id')}] [\${req.header('data-stack-remote-txn-id')}] Reponse Data of ${_.camelCase(stage._id)} \`, response.statusCode, response.headers, response.body);`);
 			code.push(`${tab(2)}state.statusCode = response.statusCode;`);
 			code.push(`${tab(2)}state.body = response.body;`);
 			code.push(`${tab(2)}state.headers = response.headers;`);
@@ -247,7 +248,7 @@ function generateStages(stage) {
 			code.push(`${tab(3)}state.status = "ERROR";`);
 			code.push(`${tab(3)}state.statusCode = response && response.statusCode ? response.statusCode : 400;`);
 			code.push(`${tab(3)}state.body = response && response.body ? response.body : { message: 'Unable to reach the URL' };`);
-			code.push(`${tab(3)}logger.info(\`[\${req.header('data-stack-txn-id')}] [\${req.header('data-stack-remote-txn-id')}] Ending ${_.camelCase(stage._id)} Stage with not 200\`);`);
+			code.push(`${tab(3)}logger.info(\`[\${req.header('data-stack-txn-id')}] [\${req.header('data-stack-remote-txn-id')}] Ending ${_.camelCase(stage._id)} Stage with not 200\`, response.statusCode);`);
 			code.push(`${tab(3)}return { statusCode: response.statusCode, body: response.body, headers: response.headers };`);
 			code.push(`${tab(2)}}`);
 
@@ -302,6 +303,7 @@ function generateStages(stage) {
 			code.push(`${tab(3)}state.status = "ERROR";`);
 			code.push(`${tab(3)}state.statusCode = 400;`);
 			code.push(`${tab(3)}state.body = { message: errors };`);
+			code.push(`${tab(3)}logger.info(\`[\${req.header('data-stack-txn-id')}] [\${req.header('data-stack-remote-txn-id')}] Validation Error ${_.camelCase(stage._id)} \`, errors);`);
 			code.push(`${tab(3)}logger.info(\`[\${req.header('data-stack-txn-id')}] [\${req.header('data-stack-remote-txn-id')}] Ending ${_.camelCase(stage._id)} Stage with not 200\`);`);
 			code.push(`${tab(3)}return { statusCode: 400, body: { message: errors }, headers: response.headers };`);
 			code.push(`${tab(2)}}`);
@@ -351,6 +353,7 @@ function generateStages(stage) {
 			code.push(`${tab(4)}state.status = 'ERROR'`);
 			code.push(`${tab(4)}state.statusCode = 400;`);
 			code.push(`${tab(4)}state.body = errors;`);
+			code.push(`${tab(3)}logger.info(\`[\${req.header('data-stack-txn-id')}] [\${req.header('data-stack-remote-txn-id')}] Validation Error ${_.camelCase(stage._id)} \`, errors);`);
 			code.push(`${tab(4)}throw errors;`);
 			code.push(`${tab(3)}}`);
 			code.push(`${tab(2)}}`);
