@@ -55,7 +55,7 @@ schema.pre('save', async function (next, req) {
 schema.pre('remove', async function (next, req) {
 	try {
 		this._req = req;
-		const flows = await mongoose.model('flows').find({ dataFormat: this._id }).lean(true);
+		const flows = await mongoose.model('b2b.flows').find({ dataFormat: this._id }).lean(true);
 		if (flows.length > 0) {
 			return next(new Error('Flows ' + flows.map(f => f.name) + ' still use this data format'));
 		}

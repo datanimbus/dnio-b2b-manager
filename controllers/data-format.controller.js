@@ -35,7 +35,7 @@ router.get('/:id', async (req, res) => {
 		let doc = await mongoQuery.lean();
 		if (!doc) {
 			return res.status(404).json({
-				message: 'Data Model Not Found'
+				message: 'Document Not Found'
 			});
 		}
 		res.status(200).json(doc);
@@ -50,15 +50,6 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
 	try {
 		const payload = req.body;
-		const key = payload.jsonSchema.title.toCamelCase();
-		logger.info(key);
-		let doc = await dataFormatModel.findOne({ key });
-		if (doc) {
-			return res.status(400).json({
-				message: 'Data Model with Same Key Exist'
-			});
-		}
-		payload.key = key;
 		doc = new dataFormatModel(payload);
 		doc._req = req;
 		const status = await doc.save();
@@ -77,7 +68,7 @@ router.put('/:id', async (req, res) => {
 		let doc = await dataFormatModel.findById(req.params.id);
 		if (!doc) {
 			return res.status(404).json({
-				message: 'Data Model Not Found'
+				message: 'Document Not Found'
 			});
 		}
 		Object.keys(payload).forEach(key => {
@@ -99,7 +90,7 @@ router.delete('/:id', async (req, res) => {
 		let doc = await dataFormatModel.findById(req.params.id);
 		if (!doc) {
 			return res.status(404).json({
-				message: 'Data Model Not Found'
+				message: 'Document Not Found'
 			});
 		}
 		doc._req = req;
