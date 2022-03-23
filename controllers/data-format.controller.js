@@ -3,6 +3,7 @@ const log4js = require('log4js');
 const mongoose = require('mongoose');
 
 const queryUtils = require('../utils/query.utils');
+const commonUtils = require('../utils/common.utils');
 
 const logger = log4js.getLogger('dataFormat.controller');
 const dataFormatModel = mongoose.model('dataFormat');
@@ -50,6 +51,12 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
 	try {
 		const payload = req.body;
+		if (payload.definition && payload.definition.length > 0) {
+			const errors = commonUtils.validateDefinition(payload.definition);
+			if (errors) {
+				return res.status(400).json({ message: 'Validation Failed', errors: errors });
+			}
+		}
 		doc = new dataFormatModel(payload);
 		doc._req = req;
 		const status = await doc.save();
@@ -65,6 +72,10 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
 	try {
 		const payload = req.body;
+		const errors = commonUtils.validateDefinition(payload.definition);
+		if (errors) {
+			return res.status(400).json({ message: 'Validation Failed', errors: errors });
+		}
 		let doc = await dataFormatModel.findById(req.params.id);
 		if (!doc) {
 			return res.status(404).json({
