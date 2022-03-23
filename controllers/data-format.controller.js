@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const log4js = require('log4js');
 const mongoose = require('mongoose');
+const _ = require('lodash');
 
 const queryUtils = require('../utils/query.utils');
 const commonUtils = require('../utils/common.utils');
@@ -51,8 +52,9 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
 	try {
 		const payload = req.body;
+		payload.app = req.locals.app;
 		if (payload.definition && payload.definition.length > 0) {
-			const errors = commonUtils.validateDefinition(payload.definition);
+			const errors = commonUtils.validateDefinition(payload.definition[0].definition);
 			if (errors) {
 				return res.status(400).json({ message: 'Validation Failed', errors: errors });
 			}
@@ -72,9 +74,11 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
 	try {
 		const payload = req.body;
-		const errors = commonUtils.validateDefinition(payload.definition);
-		if (errors) {
-			return res.status(400).json({ message: 'Validation Failed', errors: errors });
+		if (payload.definition && payload.definition.length > 0) {
+			const errors = commonUtils.validateDefinition(payload.definition[0].definition);
+			if (errors) {
+				return res.status(400).json({ message: 'Validation Failed', errors: errors });
+			}
 		}
 		let doc = await dataFormatModel.findById(req.params.id);
 		if (!doc) {
@@ -82,9 +86,12 @@ router.put('/:id', async (req, res) => {
 				message: 'Document Not Found'
 			});
 		}
-		Object.keys(payload).forEach(key => {
-			doc[key] = payload[key];
-		});
+		delete payload._metadata;
+		delete payload.__v;
+		// Object.keys(payload).forEach(key => {
+		// 	doc[key] = payload[key];
+		// });
+		_.merge(doc, payload);
 		doc._req = req;
 		const status = await doc.save();
 		res.status(200).json(status);
