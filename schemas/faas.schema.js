@@ -29,7 +29,7 @@ const definition = {
 	},
 	'port': {
 		'type': 'Number',
-		'required': true
+		'required': false
 	},
 	'code': {
 		'type': 'String'

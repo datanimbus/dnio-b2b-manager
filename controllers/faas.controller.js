@@ -6,6 +6,7 @@ const queryUtils = require('../utils/query.utils');
 
 const logger = log4js.getLogger('faas.controller');
 const faasModel = mongoose.model('faas');
+const _ = require('lodash');
 
 
 router.get('/', async (req, res) => {
@@ -53,9 +54,9 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
 	try {
 		const payload = req.body;
-		const key = payload.jsonSchema.title.toCamelCase();
+		const key = _.camelCase(payload.name);
 		logger.info(key);
-		let doc = await faasModel.findOne({ key });
+		let doc = await faasModel.findOne({ name: key });
 		if (doc) {
 			return res.status(400).json({
 				message: 'Data Model with Same Key Exist'

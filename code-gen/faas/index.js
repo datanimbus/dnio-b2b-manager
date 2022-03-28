@@ -3,9 +3,10 @@ const path = require('path');
 const mkdirp = require('mkdirp');
 const copy = require('recursive-copy');
 const config = require('../../config')
+const log4js = require('log4js');
 
 const { getFaasContent } = require('./generators/faas.generator');
-const logger = global.logger;
+const logger = log4js.getLogger(global.loggerName);
 
 
 async function createProject(functionJSON, txnId) {
@@ -24,11 +25,11 @@ async function createProject(functionJSON, txnId) {
     mkdirp.sync(path.join(folderPath, 'routes'));
     mkdirp.sync(path.join(folderPath, 'utils'));
 
-    fs.copyFileSync(path.join('./config.js'), path.join(folderPath, 'config.js'));
-    fs.copyFileSync(path.join('./app.js'), path.join(folderPath, 'app.js'));
-    const cpUtils = await copy(path.join('./utils'), path.join(folderPath, 'utils'));
+    fs.copyFileSync(path.join('./code-gen/faas/config.js'), path.join(folderPath, 'config.js'));
+    fs.copyFileSync(path.join('./code-gen/faas/app.js'), path.join(folderPath, 'app.js'));
+    const cpUtils = await copy(path.join('./code-gen/faas/utils'), path.join(folderPath, 'utils'));
     logger.info(`[${txnId}] Copied utils - ${cpUtils ? cpUtils.length : 0}`);
-    const cpRoutes = await copy(path.join('./routes'), path.join(folderPath, 'routes'));
+    const cpRoutes = await copy(path.join('./code-gen/faas/routes'), path.join(folderPath, 'routes'));
     logger.info(`[${txnId}] Copied routes - ${cpRoutes ? cpRoutes.length : 0}`);
 
     let { content: faasContent } = await getFaasContent(functionJSON);
