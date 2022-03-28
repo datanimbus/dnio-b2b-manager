@@ -59,7 +59,7 @@ router.post('/', async (req, res) => {
 				return res.status(400).json({ message: 'Validation Failed', errors: errors });
 			}
 		}
-		doc = new dataFormatModel(payload);
+		let doc = new dataFormatModel(payload);
 		doc._req = req;
 		const status = await doc.save();
 		res.status(200).json(status);

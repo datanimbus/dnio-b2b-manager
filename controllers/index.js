@@ -24,9 +24,10 @@ router.get('/faas/fetchAll', async (req, res) => {
 		});
 	}
 });
+router.use('/auth', paramParser, require('./agent-auth.controller'));
 router.use('/app', require('./app.controller'));
-// router.use('/:app/agent', paramParser, require('./agent.controller'));
-// router.use('/:app/agentRegistry', paramParser, require('./agent-registry.controller'));
+router.use('/:app/agent', paramParser, require('./agent.controller'));
+router.use('/:app/agent/utils', paramParser, require('./agent.utils.controller'));
 router.use('/:app/dataFormat', paramParser, require('./data-format.controller'));
 router.use('/:app/faas', paramParser, require('./faas.controller'));
 router.use('/:app/faas/utils', paramParser, require('./faas.utils.controller'));

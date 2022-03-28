@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
-const utils = require('@appveen/utils');
 const dataStackUtils = require('@appveen/data.stack-utils');
+// const utils = require('@appveen/utils');
 // const _ = require('lodash');
 
 const definition = require('../schemas/data-format.schema').definition;

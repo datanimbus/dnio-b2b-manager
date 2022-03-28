@@ -5,9 +5,6 @@ const definition = {
     'app': {
         'type': 'String'
     },
-    'partner': {
-        'type': 'String'
-    },
     'agentId': {
         'type': 'String'
     },
@@ -37,10 +34,16 @@ const definition = {
     'password': {
         'type': 'String'
     },
+    'secret': {
+        'type': 'String'
+    },
     'absolutePath': {
         'type': 'String'
     },
     'lastInvokedAt': {
+        'type': 'Date'
+    },
+    'lastLoggedIn': {
         'type': 'Date'
     },
     'encryptFile': {
@@ -59,20 +62,9 @@ const definition = {
     'schedule': {
         'type': 'String'
     },
-    '_metadata': {
-        'type': {
-            'version': {
-                'release': { 'type': 'Number' }
-            }
-        }
-    },
     'internal': {
         'type': 'Boolean',
         'default': false
-    },
-    'vaultVersion': {
-        'type': 'Number',
-        'default': 1
     }
 };
 
