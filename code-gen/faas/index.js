@@ -27,7 +27,7 @@ async function createProject(functionJSON, txnId) {
 
     fs.copyFileSync(path.join(__dirname, '/config.js'), path.join(folderPath, 'config.js'));
     fs.copyFileSync(path.join(__dirname, '/app.js'), path.join(folderPath, 'app.js'));
-    fs.copyFileSync(path.join(__dirname, '/package.json'), path.join(folderPath, 'package.json'));
+    fs.copyFileSync(path.join('package.json'), path.join(folderPath, 'package.json'));
     const cpUtils = await copy(path.join(__dirname, '/utils'), path.join(folderPath, 'utils'));
     logger.info(`[${txnId}] Copied utils - ${cpUtils ? cpUtils.length : 0}`);
     const cpRoutes = await copy(path.join(__dirname, '/routes'), path.join(folderPath, 'routes'));

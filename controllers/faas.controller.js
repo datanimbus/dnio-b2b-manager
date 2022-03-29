@@ -54,15 +54,6 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
 	try {
 		const payload = req.body;
-		const key = _.camelCase(payload.name);
-		logger.info(key);
-		let doc = await faasModel.findOne({ name: key });
-		if (doc) {
-			return res.status(400).json({
-				message: 'Data Model with Same Key Exist'
-			});
-		}
-		payload.key = key;
 		doc = new faasModel(payload);
 		doc._req = req;
 		const status = await doc.save();
