@@ -58,7 +58,7 @@ const temp = {
   baseUrlWF: get('wf') + '/workflow',
   baseUrlSEC: get('sec') + '/sec',
   baseUrlDM: get('dm') + '/dm',
-  baseUrlPM: get('pm') + '/pm',
+  baseUrlPM: get('pm') + '/bm',
   baseUrlGW: get('gw'),
   isK8sEnv: isK8sEnv,
   isDockerEnv: isDockerEnv,

@@ -1,0 +1,47 @@
+{
+  "name": "ds-functions",
+  "version": "1.1.2",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js",
+    "test": "node generator/test.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@appveen/data.stack-utils": "^1.0.17",
+    "@appveen/ds-sdk": "^1.0.0",
+    "@appveen/utils": "1.2.6",
+    "async": "^3.2.0",
+    "express": "^4.17.1",
+    "express-fileupload": "^1.1.7-alpha.4",
+    "faker": "5.5.2",
+    "fast-csv": "^4.3.1",
+    "fast-xml-parser": "^3.17.4",
+    "got": "11.8.2",
+    "lodash": "4.17.21",
+    "log4js": "6.3.0",
+    "moment": "2.29.1",
+    "mongodb": "^3.5.9",
+    "mongoose": "^5.10.5",
+    "node-schedule": "^1.3.2",
+    "request": "^2.88.2",
+    "uuid": "8.3.2",
+    "validator": "13.5.2",
+    "xlsx": "^0.16.5",
+    "xlsx-populate": "^1.21.0"
+  },
+  "devDependencies": {
+    "dotenv": "^8.2.0",
+    "inquirer": "^7.3.3",
+    "nodemon": "^2.0.4",
+    "recursive-copy": "^2.0.10"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://kavi-appveen@bitbucket.org/appveen/ds-b2b-functions.git"
+  },
+  "homepage": "https://bitbucket.org/appveen/ds-b2b-functions#readme",
+  "description": ""
+}

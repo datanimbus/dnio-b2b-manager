@@ -2,6 +2,7 @@ if (process.env.NODE_ENV !== 'production') {
 	require('dotenv').config();
 }
 
+const socket = require('socket.io');
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
@@ -15,6 +16,16 @@ require('./db-factory');
 const logger = log4js.getLogger(global.loggerName);
 logger.level = process.env.LOG_LEVEL || 'info';
 global.activeRequest = 0;
+
+function initSocket(server) {
+	const io = socket(server);
+	app.set('socket', io);
+	global.socket = io;
+	logger.info('Initializing socket connection');
+	io.on('connection', function (socket) {
+		logger.info('Connection accepted from : ' + socket.id);
+	});
+}
 
 const app = express();
 
@@ -38,8 +49,7 @@ app.use((req, res, next) => {
 });
 
 app.use('/b2b', require('./router'));
-app.use('/bm', AuthCacheMW({ permittedUrls: ['/{app}/flow/utils/{id}/init'], secret: config.secret, decodeOnly: true }), require('./controllers'));
-
+app.use('/bm', AuthCacheMW({ permittedUrls: ['/{app}/flow/utils/{id}/init', '/{app}/faas/utils/{id}/statusChange'], secret: config.secret, decodeOnly: true }), require('./controllers'));
 
 const server = app.listen(config.port, () => {
 	logger.info('HTTP Server is listening on:', config.port);
@@ -51,6 +61,9 @@ const httpsServer = https.createServer({
 }, app).listen(config.httpsPort, () => {
 	logger.info('HTTPs Server is listening on:', config.httpsPort);
 });
+
+initSocket(server);
+initSocket(httpsServer);
 
 process.on('SIGTERM', () => {
 	try {

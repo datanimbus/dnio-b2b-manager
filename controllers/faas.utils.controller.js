@@ -155,4 +155,44 @@ router.put('/:id/stop', async (req, res) => {
 	}
 });
 
+router.put('/:id/statusChange', async (req, res) => {
+	let id = req.params.id;
+	let status = req.query.status;
+	let socket = req.app.get('socket');
+
+	logger.info(`[${req.get('TxnId')}] Faas status update params - ${JSON.stringify({ id, status })}`);
+	try {
+		const doc = await faasModel.findById(id);
+		if (!doc) {
+			return res.status(400).json({ message: 'Invalid Function' });
+		}
+
+		doc.status = status;
+
+		if (doc._metadata && doc._metadata.lastUpdated) doc._metadata.lastUpdated = new Date();
+
+		doc._req = req;
+		await doc.save();
+
+		logger.debug(`[${req.get('TxnId')}] Emitting socket event - ${JSON.stringify({ _id: id, app: doc.app, message: status })}`);
+		socket.emit('faasStatus', {
+			_id: id,
+			app: doc.app,
+			message: status
+		});
+
+		res.status(200).json({ message: 'Status Updated' });
+	} catch (err) {
+		logger.error(err);
+		if (typeof err === 'string') {
+			return res.status(500).json({
+				message: err
+			});
+		}
+		res.status(500).json({
+			message: err.message
+		});
+	}
+});
+
 module.exports = router;
