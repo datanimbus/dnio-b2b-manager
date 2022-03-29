@@ -9,7 +9,7 @@ const definition = {
         'type': 'String'
     },
     'metaData': {
-        'type': 'String'
+        'type': 'Object'
     },
     'sentOrRead': {
         'type': 'Boolean',

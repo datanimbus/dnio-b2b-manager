@@ -99,7 +99,8 @@ router.post('/:id/heartbeat', async (req, res) => {
 
 router.get('/:id/password', async (req, res) => {
 	try {
-		let doc = await agentModel.findById({ agentId: req.params.id }).lean();
+		const agentId = req.params.id;
+		let doc = await agentModel.findById({ agentId: agentId }).lean();
 		if (!doc) {
 			return res.status(404).json({
 				message: 'Agent Not Found'
@@ -122,7 +123,8 @@ router.get('/:id/password', async (req, res) => {
 
 router.put('/:id/password', async (req, res) => {
 	try {
-		let doc = await agentModel.findById({ agentId: req.params.id });
+		const agentId = req.params.id;
+		let doc = await agentModel.findById({ agentId: agentId });
 		if (!doc) {
 			return res.status(404).json({
 				message: 'Agent Not Found'
@@ -137,9 +139,49 @@ router.put('/:id/password', async (req, res) => {
 		});
 		actionDoc._req = req;
 		status = await actionDoc.save();
-		status = await cacheUtils.endSession(req.params.id);
+		status = await cacheUtils.endSession(agentId);
 		logger.debug('Agent Password Change Status: ', status);
 		return res.status(200).json({ message: 'Password Changed Successfully' });
+	} catch (err) {
+		logger.error(err);
+		res.status(500).json({
+			message: err.message
+		});
+	}
+});
+
+router.put('/:id/re-issue', async (req, res) => {
+	try {
+		const agentId = req.params.id;
+		let doc = await agentModel.findById({ agentId: agentId }).lean();
+		if (!doc) {
+			return res.status(404).json({
+				message: 'Agent Not Found'
+			});
+		}
+		const temp = JSON.parse(JSON.stringify(doc));
+		delete temp.password;
+		delete temp.secret;
+		delete temp.status;
+
+		const token = JWT.sign(temp, config.secret, { expiresIn: '2h' });
+		await cacheUtils.endSession(agentId);
+		await cacheUtils.whitelistToken(agentId, token);
+
+		logger.debug('Agent Logged In :', doc.lastLoggedIn);
+		res.status(200).json(temp);
+
+		const actionDoc = new agentActionModel({
+			agentId: doc.agentId,
+			action: 'TOKEN-REISSUED',
+			metaData: {
+				token
+			}
+		});
+		actionDoc._req = req;
+		let status = await actionDoc.save();
+		logger.debug('Agent Token Re-Issued: ', status);
+		return res.status(200).json({ message: 'Agent Token Re-Issued' });
 	} catch (err) {
 		logger.error(err);
 		res.status(500).json({
@@ -158,7 +200,7 @@ router.delete('/:id/session', async (req, res) => {
 		}
 		const actionDoc = new agentActionModel({
 			agentId: doc.agentId,
-			action: 'SESSION-END'
+			action: 'SESSION-ENDED'
 		});
 		actionDoc._req = req;
 		let status = await actionDoc.save();
