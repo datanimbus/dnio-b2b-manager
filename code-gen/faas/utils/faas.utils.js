@@ -17,7 +17,7 @@ function getErrorResponse(err, code) {
 
 
 function informPM() {
-  const url = config.baseUrlPM + `/faas/${config.dataStackFaasId}/statusChange?status=Active&version=${config.dataStackFaasVersion}`;
+  const url = config.baseUrlPM + `/${config.dataStackAppName}/faas/utils/${config.dataStackFaasId}/statusChange?status=Active`;
   logger.debug('Informing PM :', url);
   request({
     url,

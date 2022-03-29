@@ -208,7 +208,7 @@ schema.post('save', function (error, doc, next) {
 });
 
 
-schema.pre('save', utils.counter.getIdGenerator('FS', 'faas', null, null, 2000));
+schema.pre('save', mongooseUtils.generateId('FS', 'faas', null, 4, 2000));
 
 schema.pre('save', dataStackUtils.auditTrail.getAuditPreSaveHook('faas'));
 

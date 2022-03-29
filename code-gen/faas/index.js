@@ -3,9 +3,10 @@ const path = require('path');
 const mkdirp = require('mkdirp');
 const copy = require('recursive-copy');
 const config = require('../../config')
+const log4js = require('log4js');
 
 const { getFaasContent } = require('./generators/faas.generator');
-const logger = global.logger;
+const logger = log4js.getLogger(global.loggerName);
 
 
 async function createProject(functionJSON, txnId) {
@@ -24,11 +25,12 @@ async function createProject(functionJSON, txnId) {
     mkdirp.sync(path.join(folderPath, 'routes'));
     mkdirp.sync(path.join(folderPath, 'utils'));
 
-    fs.copyFileSync(path.join('./config.js'), path.join(folderPath, 'config.js'));
-    fs.copyFileSync(path.join('./app.js'), path.join(folderPath, 'app.js'));
-    const cpUtils = await copy(path.join('./utils'), path.join(folderPath, 'utils'));
+    fs.copyFileSync(path.join(__dirname, '/config.js'), path.join(folderPath, 'config.js'));
+    fs.copyFileSync(path.join(__dirname, '/app.js'), path.join(folderPath, 'app.js'));
+    fs.copyFileSync(path.join('package.json'), path.join(folderPath, 'package.json'));
+    const cpUtils = await copy(path.join(__dirname, '/utils'), path.join(folderPath, 'utils'));
     logger.info(`[${txnId}] Copied utils - ${cpUtils ? cpUtils.length : 0}`);
-    const cpRoutes = await copy(path.join('./routes'), path.join(folderPath, 'routes'));
+    const cpRoutes = await copy(path.join(__dirname, '/routes'), path.join(folderPath, 'routes'));
     logger.info(`[${txnId}] Copied routes - ${cpRoutes ? cpRoutes.length : 0}`);
 
     let { content: faasContent } = await getFaasContent(functionJSON);
@@ -66,7 +68,7 @@ function getDockerFile(release, port, functionData) {
     COPY . .
 
     ENV NODE_ENV="production"
-    ENV DATA_STACK_NAMESPACE="${config.dataStackNS}"
+    ENV DATA_STACK_NAMESPACE="${config.DATA_STACK_NAMESPACE}"
     ENV DATA_STACK_APP="${functionData.app}"
     ENV DATA_STACK_PARTNER_ID="${functionData.partnerID}"
     ENV DATA_STACK_PARTNER_NAME="${functionData.partnerName}"
@@ -77,7 +79,7 @@ function getDockerFile(release, port, functionData) {
     ENV DATA_STACK_DEPLOYMENT_NAME="${functionData.deploymentName}"
     ENV RELEASE="${release}"
     ENV PORT="${port}"
-    ENV DATA_DB="${config.dataStackNS}-${functionData.app}"
+    ENV DATA_DB="${config.DATA_STACK_NAMESPACE}-${functionData.app}"
     ENV STREAMING_HOST="${config.streamingConfig.url}"
     ENV STREAMING_USER="${config.streamingConfig.user}"
     ENV STREAMING_PASS="${config.streamingConfig.pass}"
@@ -93,7 +95,7 @@ function getDockerFile(release, port, functionData) {
 
 function getEnvFile(release, port, functionData) {
   return `
-    DATA_STACK_NAMESPACE="${config.dataStackNS}"
+    DATA_STACK_NAMESPACE="${config.DATA_STACK_NAMESPACE}"
     DATA_STACK_APP="${functionData.app}"
     DATA_STACK_PARTNER_ID="${functionData.partnerID}"
     DATA_STACK_PARTNER_NAME="${functionData.partnerName}"
@@ -109,7 +111,7 @@ function getEnvFile(release, port, functionData) {
     STREAMING_RECONN_TIMEWAIT_MILLI="${config.streamingConfig.stanMaxPingOut}"
     RELEASE="${release}"
     PORT="${port}"
-    DATA_DB="${config.dataStackNS}-${functionData.app}"
+    DATA_DB="${config.DATA_STACK_NAMESPACE}-${functionData.app}"
     LOG_LEVEL="debug"
   `
 }
