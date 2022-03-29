@@ -63,7 +63,6 @@ const httpsServer = https.createServer({
 });
 
 initSocket(server);
-initSocket(httpsServer);
 
 process.on('SIGTERM', () => {
 	try {
