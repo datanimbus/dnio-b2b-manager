@@ -205,8 +205,58 @@ router.delete('/:id/session', async (req, res) => {
 		actionDoc._req = req;
 		let status = await actionDoc.save();
 		status = await cacheUtils.endSession(req.params.id);
-		logger.debug('Agent Session Terminated ', status);
-		return res.status(200).json({ message: 'Agent Session Terminated' });
+		logger.debug('Agent Session Termination Triggered ', status);
+		return res.status(200).json({ message: 'Agent Session Termination Triggered' });
+	} catch (err) {
+		logger.error(err);
+		res.status(500).json({
+			message: err.message
+		});
+	}
+});
+
+router.put('/:id/stop', async (req, res) => {
+	try {
+		let doc = await agentModel.findById({ agentId: req.params.id }).lean();
+		if (!doc) {
+			return res.status(404).json({
+				message: 'Agent Not Found'
+			});
+		}
+		const actionDoc = new agentActionModel({
+			agentId: doc.agentId,
+			action: 'AGENT-STOPPED'
+		});
+		actionDoc._req = req;
+		let status = await actionDoc.save();
+		status = await cacheUtils.endSession(req.params.id);
+		logger.debug('Agent Stop Triggered ', status);
+		return res.status(200).json({ message: 'Agent Stop Triggered' });
+	} catch (err) {
+		logger.error(err);
+		res.status(500).json({
+			message: err.message
+		});
+	}
+});
+
+router.put('/:id/update', async (req, res) => {
+	try {
+		let doc = await agentModel.findById({ agentId: req.params.id }).lean();
+		if (!doc) {
+			return res.status(404).json({
+				message: 'Agent Not Found'
+			});
+		}
+		const actionDoc = new agentActionModel({
+			agentId: doc.agentId,
+			action: 'AGENT-UPDATED'
+		});
+		actionDoc._req = req;
+		let status = await actionDoc.save();
+		status = await cacheUtils.endSession(req.params.id);
+		logger.debug('Agent Update Triggered ', status);
+		return res.status(200).json({ message: 'Agent Update Triggered' });
 	} catch (err) {
 		logger.error(err);
 		res.status(500).json({
