@@ -5,6 +5,7 @@ const JWT = require('jsonwebtoken');
 
 const config = require('../config');
 const securityUtils = require('../utils/security.utils');
+const cacheUtils = require('../utils/cache.utils');
 
 const logger = log4js.getLogger('agent.controller');
 const agentModel = mongoose.model('agent');
@@ -16,24 +17,29 @@ router.post('/login', async (req, res) => {
 		const agentPassword = req.body.password;
 		const doc = await agentModel.findOne({ agentId: agentId });
 		if (!doc) {
-			return res.status(404).json({
+			return res.status(400).json({
 				message: 'Invalid Credentials'
+			});
+		}
+		if (doc && !doc.active) {
+			return res.status(400).json({
+				message: 'Agent is marked disabled'
 			});
 		}
 		let result = await securityUtils.decryptText(doc.app, doc.password);
 		if (!result || result.statusCode != 200) {
-			return res.status(404).json({
+			return res.status(400).json({
 				message: 'Invalid Credentials'
 			});
 		}
 		if (result.body.data != agentPassword) {
-			return res.status(404).json({
+			return res.status(400).json({
 				message: 'Invalid Credentials'
 			});
 		}
 		result = await securityUtils.decryptText(doc.app, doc.secret);
 		if (!result || result.statusCode != 200) {
-			return res.status(404).json({
+			return res.status(400).json({
 				message: 'Unable to Decrypt Text'
 			});
 		}
@@ -44,13 +50,15 @@ router.post('/login', async (req, res) => {
 
 		const token = JWT.sign(temp, config.secret, { expiresIn: '2h' });
 
+		await cacheUtils.whitelistToken(agentId, token);
+
 		temp.token = token;
 		temp.secret = result.body.data;
 		doc.lastLoggedIn = new Date();
 		doc.status = 'RUNNING';
 		doc._req = req;
 		result = await doc.save();
-		logger.debug('Agent Status Updated', result);
+		logger.debug('Agent Logged In :', doc.lastLoggedIn);
 		res.status(200).json(temp);
 	} catch (err) {
 		logger.error(err);

@@ -1,13 +1,18 @@
 const router = require('express').Router();
 const log4js = require('log4js');
 const mongoose = require('mongoose');
+const _ = require('lodash');
 
 const config = require('../config');
 const queryUtils = require('../utils/query.utils');
 const securityUtils = require('../utils/security.utils');
+const cacheUtils = require('../utils/cache.utils');
 
 const logger = log4js.getLogger('agent.controller');
+
 const agentModel = mongoose.model('agent');
+const agentActionModel = mongoose.model('agent-action');
+const flowModel = mongoose.model('flow');
 
 
 router.get('/count', async (req, res) => {
@@ -23,106 +28,69 @@ router.get('/count', async (req, res) => {
 	}
 });
 
-router.post('/heartbeat', async (req, res) => {
+router.post('/:id/init', async (req, res) => {
 	try {
-		logger.info(`[${req.get('TxnId')}] Processing HeartBeat Action`);
-		logger.trace(`[${req.get('TxnId')}] HeartBeat Action Body - `, JSON.stringify(req.body));
-
 		const txnId = req.header('txnId');
-		let monitoringLedgerEntries = req.body.monitoringLedgerEntries;
-		let agentList = monitoringLedgerEntries.map(item => item.agentId);
-		let promises = [];
+		const agentId = req.params.id;
+		logger.info(`[${txnId}] Processing Agent Init Action of -`, agentId);
+		logger.trace(`[${txnId}] Agent Init Action Body -`, JSON.stringify(req.body));
 
-		logger.debug(`[${req.get('TxnId')}] Monitoring Ledger Entries length - `, monitoringLedgerEntries.length);
-
-		if (monitoringLedgerEntries) {
-			promises = monitoringLedgerEntries.map(async (entry) => {
-				logger.trace(`[${req.get('TxnId')}] Monitor Ledger Entry - `, JSON.stringify(entry));
-				entry.timestamp = new Date(entry.timestamp);
-				let agent;
-				try {
-					agent = await agentModel.findOne({ agentId: entry.agentId, '_metadata.deleted': false });
-				} catch (err) {
-					logger.error(`[${req.get('TxnId')}] Error finding Agent Registry - `, err);
-					throw err;
-				}
-				logger.debug(`[${req.get('TxnId')}] Agent Registry found - `, entry.agentId, agent._metadata.lastUpdated);
-				if (agent._metadata && !agent._metadata.deleted && agent.status !== 'DISABLED') {
-					entry.appName = agent.app;
-					entry.partnerName = agent.partner;
-					agent.status = entry.status;
-					if (entry.agentName) agent.name = entry.agentName;
-					let keys = ['macAddress', 'ipAddress', 'absolutePath', 'release', 'pendingFiles'];
-					keys.forEach(_k => {
-						agent[_k] = entry[_k];
-					});
-					agent.markModified('_metadata.lastUpdated');
-					agent._metadata.lastUpdated = new Date();
-					const status = await agent.save(req);
-					logger.debug(`[${req.get('TxnId')}] Agent Registry Updated - `, entry.agentId, agent._metadata.lastUpdated);
-					logger.trace(`[${req.get('TxnId')}] Agent Registry Update Response - `, JSON.stringify(status));
-				}
-				const savedEntry = await mongoose.model('agent.logs').create(entry);
-				logger.trace(`[${txnId}] Agent Logs Saved - `, savedEntry);
-
-				logger.info(`[${txnId}] Create Agent Monitoring Entry`);
-
-				logger.trace(`[${txnId}] Monitoring Entry Agent List - `, agentList);
-				const agents = await agentModel.find({ agentId: { $nin: agentList }, '_metadata.deleted': false });
-				let promises = agents.map(item => {
-					let ledgerEntry = {
-						'agentId': item.agentId,
-						'responseAgentID': '',
-						'heartBeatFrequency': config.hbFrequency.toString(),
-						'macAddress': item.macAddress,
-						'ipAddress': item.ipAddress,
-						'status': 'NO_RESPONSE',
-						'timestamp': new Date(),
-						'agentType': item.type,
-						'appName': item.app,
-						'release': item.release,
-						'pendingFiles': item.pendingFiles
-					};
-					logger.trace(`[${txnId}] Creating MonitorLedger Entry - ${JSON.stringify(ledgerEntry)}`);
-					return mongoose.model('agent.logs').create(ledgerEntry);
-				});
-				return Promise.all(promises);
+		let doc = await agentModel.findById({ agentId: agentId }).lean();
+		if (!doc) {
+			logger.trace(`[${txnId}] Agent Not Found -`, agentId);
+			return res.status(404).json({
+				message: 'Agent Not Found'
 			});
-			await Promise.all(promises);
-			let transferLedgerEntries = req.body.transferLedgerEntries;
-
-			logger.debug(`[${req.get('TxnId')}] Transfer Ledger Entries length - `, transferLedgerEntries.length);
-			logger.trace(`[${req.get('TxnId')}] Transfer Ledger Entries - `, JSON.stringify({ transferLedgerEntries }));
-
-			if (transferLedgerEntries && transferLedgerEntries.length > 0) {
-				transferLedgerEntries = transferLedgerEntries.map(_tLE => {
-					_tLE.timestamp = new Date(_tLE.timestamp);
-					return _tLE;
-				});
-				try {
-					transferLedgerEntries.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-				} catch (err) {
-					// do nothing
-				}
-
-				logger.trace(`[${req.get('TxnId')}] Transfer Ledger Entries after updating - `, JSON.stringify({ transferLedgerEntries }));
-
-				// return transferLedgerEntries.reduce((acc, curr) => {
-				// 	return acc.then(() => processTransferLedgerEntries(curr, req.get('TxnId')))
-				// 		.catch(err => {
-				// 			logger.error(`[${req.get('TxnId')}] Error in processing Transfer Ledger Entries - `, err.message);
-				// 			return Promise.resolve();
-				// 		});
-				// }, Promise.resolve());
-			}
 		}
+		const flows = await flowModel.find({ app: req.locals.app, $or: [{ 'inputStage.options.agentId': agentId }, { 'stages.options.agentId': agentId }] }).select('_id inputStage stages').lean();
+		const allFlows = [];
+		flows.map(flow => {
+			let agentStages = flow.stages.filter((ele) => ele.options.agentId = agentId);
+			agentStages.forEach(stage => {
+				allFlows.push({ flowId: flow._id, options: stage.options });
+			})
+			if (flow.inputStage && flow.inputStage.options && flow.inputStage.options.agentId == agentId) {
+				allFlows.push({ flowId: flow._id, options: flow.inputStage.options });
+			}
+		});
+		res.status(200).json({ result: allFlows });
 	} catch (err) {
 		logger.error(err);
-		if (typeof err === 'string') {
-			return res.status(500).json({
-				message: err
+		res.status(500).json({
+			message: err.message
+		});
+	}
+});
+
+router.post('/:id/heartbeat', async (req, res) => {
+	try {
+		const txnId = req.header('txnId');
+		const agentId = req.params.id;
+		logger.info(`[${txnId}] Processing Agent Init Action of -`, agentId);
+		logger.trace(`[${txnId}] Agent Init Action Body -`, JSON.stringify(req.body));
+
+		let doc = await agentModel.findById({ agentId: agentId }).lean();
+		if (!doc) {
+			logger.trace(`[${txnId}] Agent Not Found -`, agentId);
+			return res.status(404).json({
+				message: 'Agent Not Found'
 			});
 		}
+
+		const actions = [];
+		const docs = await agentActionModel.find({ agentId: agentId, sentOrRead: false }).select('action metaData timestamp');
+		if (docs.length > 0) {
+			await Promise.all(docs.map(async (doc) => {
+				actions.push(doc.toObject());
+				doc.sentOrRead = true;
+				doc._req = req;
+				await doc.save();
+			}));
+		}
+		res.status(200).json({ actions });
+
+	} catch (err) {
+		logger.error(err);
 		res.status(500).json({
 			message: err.message
 		});
@@ -131,7 +99,7 @@ router.post('/heartbeat', async (req, res) => {
 
 router.get('/:id/password', async (req, res) => {
 	try {
-		let doc = await agentModel.findById(req.params.id).lean();
+		let doc = await agentModel.findById({ agentId: req.params.id }).lean();
 		if (!doc) {
 			return res.status(404).json({
 				message: 'Agent Not Found'
@@ -154,7 +122,7 @@ router.get('/:id/password', async (req, res) => {
 
 router.put('/:id/password', async (req, res) => {
 	try {
-		let doc = await agentModel.findById(req.params.id);
+		let doc = await agentModel.findById({ agentId: req.params.id });
 		if (!doc) {
 			return res.status(404).json({
 				message: 'Agent Not Found'
@@ -162,9 +130,41 @@ router.put('/:id/password', async (req, res) => {
 		}
 		doc.password = null;
 		doc._req = req;
-		const status = await doc.save();
+		let status = await doc.save();
+		const actionDoc = new agentActionModel({
+			agentId: doc.agentId,
+			action: 'PASSWORD-CHANGED'
+		});
+		actionDoc._req = req;
+		status = await actionDoc.save();
+		status = await cacheUtils.endSession(req.params.id);
 		logger.debug('Agent Password Change Status: ', status);
 		return res.status(200).json({ message: 'Password Changed Successfully' });
+	} catch (err) {
+		logger.error(err);
+		res.status(500).json({
+			message: err.message
+		});
+	}
+});
+
+router.delete('/:id/session', async (req, res) => {
+	try {
+		let doc = await agentModel.findById({ agentId: req.params.id }).lean();
+		if (!doc) {
+			return res.status(404).json({
+				message: 'Agent Not Found'
+			});
+		}
+		const actionDoc = new agentActionModel({
+			agentId: doc.agentId,
+			action: 'SESSION-END'
+		});
+		actionDoc._req = req;
+		let status = await actionDoc.save();
+		status = await cacheUtils.endSession(req.params.id);
+		logger.debug('Agent Session Terminated ', status);
+		return res.status(200).json({ message: 'Agent Session Terminated' });
 	} catch (err) {
 		logger.error(err);
 		res.status(500).json({

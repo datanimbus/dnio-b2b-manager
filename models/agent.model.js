@@ -24,6 +24,7 @@ schema.plugin(mongooseUtils.metadataPlugin());
 
 
 schema.index({ name: 1, app: 1 }, { unique: '__CUSTOM_NAME_DUPLICATE_ERROR__', sparse: true, collation: { locale: 'en_US', strength: 2 } });
+schema.index({ agentId: 1 });
 
 schema.post('save', function (error, doc, next) {
 	if ((error.code === 11000

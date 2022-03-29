@@ -10,6 +10,7 @@ const schema = new mongoose.Schema(definition, {
 });
 
 schema.plugin(mongooseUtils.metadataPlugin());
+schema.plugin(mongooseUtils.generateId('ACTION', 'b2b.agent.actions', null, 4, 1000));
 schema.index({ timestamp: 1 }, { expireAfterSeconds: expiry });
 
 mongoose.model('agent-action', schema, 'b2b.agent.actions');
