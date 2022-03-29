@@ -6,6 +6,7 @@ const _ = require('lodash');
 const queryUtils = require('../utils/query.utils');
 const deployUtils = require('../utils/deploy.utils');
 const flowUtils = require('../utils/flow.utils');
+const config = require('../config');
 
 const logger = log4js.getLogger('flow.controller');
 const flowModel = mongoose.model('flow');
@@ -125,9 +126,11 @@ router.delete('/:id', async (req, res) => {
 			});
 		}
 		doc._req = req;
-		const status = await deployUtils.undeploy(doc);
-		if (status.statusCode !== 200 || status.statusCode !== 202) {
-			return res.status(status.statusCode).json({ message: 'Unable to stop Flow' });
+		if (config.isK8sEnv()) {
+			const status = await deployUtils.undeploy(doc);
+			if (status.statusCode !== 200 && status.statusCode !== 202) {
+				return res.status(status.statusCode).json({ message: 'Unable to stop Flow' });
+			}
 		}
 		await doc.remove();
 		res.status(200).json({

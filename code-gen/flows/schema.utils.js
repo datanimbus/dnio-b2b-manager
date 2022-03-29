@@ -1,20 +1,19 @@
 
 /**
  *
- * @param {object} definition The Data Stack schema definition
+ * @param {object} flowData The Data Stack schema flowData
  */
-function convertToJSONSchema(definition) {
-	const tempSchema = {
-		$schema: 'http://json-schema.org/draft-07/schema#',
-		$id: 'http://appveen.com/product.schema.json',
-		title: 'Product',
-		description: 'A product in the catalog',
-		type: 'object'
-	};
-	const converted = getProperties(definition);
-	tempSchema.properties = converted.properties;
-	tempSchema.required = converted.required;
-	return tempSchema;
+ function convertToJSONSchema(flowData) {
+    const tempSchema = {
+        $schema: "http://json-schema.org/draft-07/schema#",
+        $id: `http://appveen.com/${flowData._id}.schema.json`,
+        title: flowData._id,
+        type: "object"
+    };
+    const converted = getProperties(flowData.definition);
+    tempSchema.properties = converted.properties;
+    tempSchema.required = converted.required;
+    return tempSchema;
 }
 
 

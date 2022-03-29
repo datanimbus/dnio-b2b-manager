@@ -7,7 +7,7 @@ const copy = require('recursive-copy');
 const config = require('../../config')
 // const schemaUtils = require('@appveen/utils').schemaUtils;
 const codeGen = require('./generators/code.generator');
-// const fileUtilsGenerator = require('./generators/file.utils');
+const schemaUtils = require('./schema.utils');
 
 const logger = log4js.getLogger(global.loggerName);
 
@@ -23,6 +23,7 @@ async function createProject(flowJSON) {
       fs.rmdirSync(folderPath, { recursive: true });
     }
     mkdirp.sync(folderPath);
+    mkdirp.sync(path.join(folderPath, 'schemas'));
 
     await copy(__dirname, folderPath);
 
@@ -30,8 +31,18 @@ async function createProject(flowJSON) {
     fs.rmdirSync(path.join(folderPath, `generators`), { recursive: true });
     fs.rmSync(path.join(folderPath, `index.js`));
 
+    if (flowJSON.dataStructures && Object.keys(flowJSON.dataStructures).length > 0) {
+      Object.keys(flowJSON.dataStructures).forEach(schemaID => {
+        let schema = flowJSON.dataStructures[schemaID];
+        schema._id = schemaID;
+        if (schema.definition) {
+          fs.writeFileSync(path.join(folderPath, 'schemas', `${schemaID}.schema.json`), JSON.stringify(schemaUtils.convertToJSONSchema(schema)));
+        }
+      });
+    }
     fs.writeFileSync(path.join(folderPath, `route.js`), codeGen.parseFlow(flowJSON));
     fs.writeFileSync(path.join(folderPath, `stage.utils.js`), codeGen.parseStages(flowJSON));
+    fs.writeFileSync(path.join(folderPath, `validation.utils.js`), codeGen.parseDataStructures(flowJSON));
     fs.writeFileSync(path.join(folderPath, 'Dockerfile'), getDockerFile(config.imageTag, flowJSON.port, flowJSON));
     fs.writeFileSync(path.join(folderPath, 'flow.json'), JSON.stringify(flowJSON));
     fs.writeFileSync(path.join(folderPath, '.env'), getEnvFile(config.release, flowJSON.port, flowJSON));

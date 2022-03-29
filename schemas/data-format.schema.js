@@ -32,13 +32,6 @@ const definition = {
 	'attributeCount': {
 		'type': 'Number',
 		'default': 0
-	},
-	'_metadata': {
-		'type': {
-			'version': {
-				'release': { 'type': 'Number' }
-			}
-		}
 	}
 };
 module.exports.definition = definition;
