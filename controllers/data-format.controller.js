@@ -1,8 +1,10 @@
 const router = require('express').Router();
 const log4js = require('log4js');
 const mongoose = require('mongoose');
+const _ = require('lodash');
 
 const queryUtils = require('../utils/query.utils');
+const commonUtils = require('../utils/common.utils');
 
 const logger = log4js.getLogger('dataFormat.controller');
 const dataFormatModel = mongoose.model('dataFormat');
@@ -35,7 +37,7 @@ router.get('/:id', async (req, res) => {
 		let doc = await mongoQuery.lean();
 		if (!doc) {
 			return res.status(404).json({
-				message: 'Data Model Not Found'
+				message: 'Document Not Found'
 			});
 		}
 		res.status(200).json(doc);
@@ -50,16 +52,14 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
 	try {
 		const payload = req.body;
-		const key = payload.jsonSchema.title.toCamelCase();
-		logger.info(key);
-		let doc = await dataFormatModel.findOne({ key });
-		if (doc) {
-			return res.status(400).json({
-				message: 'Data Model with Same Key Exist'
-			});
+		payload.app = req.locals.app;
+		if (payload.definition && payload.definition.length > 0) {
+			const errors = commonUtils.validateDefinition(payload.definition[0].definition);
+			if (errors) {
+				return res.status(400).json({ message: 'Validation Failed', errors: errors });
+			}
 		}
-		payload.key = key;
-		doc = new dataFormatModel(payload);
+		let doc = new dataFormatModel(payload);
 		doc._req = req;
 		const status = await doc.save();
 		res.status(200).json(status);
@@ -74,15 +74,24 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
 	try {
 		const payload = req.body;
+		if (payload.definition && payload.definition.length > 0) {
+			const errors = commonUtils.validateDefinition(payload.definition[0].definition);
+			if (errors) {
+				return res.status(400).json({ message: 'Validation Failed', errors: errors });
+			}
+		}
 		let doc = await dataFormatModel.findById(req.params.id);
 		if (!doc) {
 			return res.status(404).json({
-				message: 'Data Model Not Found'
+				message: 'Document Not Found'
 			});
 		}
-		Object.keys(payload).forEach(key => {
-			doc[key] = payload[key];
-		});
+		delete payload._metadata;
+		delete payload.__v;
+		// Object.keys(payload).forEach(key => {
+		// 	doc[key] = payload[key];
+		// });
+		_.merge(doc, payload);
 		doc._req = req;
 		const status = await doc.save();
 		res.status(200).json(status);
@@ -99,7 +108,7 @@ router.delete('/:id', async (req, res) => {
 		let doc = await dataFormatModel.findById(req.params.id);
 		if (!doc) {
 			return res.status(404).json({
-				message: 'Data Model Not Found'
+				message: 'Document Not Found'
 			});
 		}
 		doc._req = req;

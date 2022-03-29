@@ -6,6 +6,7 @@ const queryUtils = require('../utils/query.utils');
 const deployUtils = require('../utils/deploy.utils');
 const codeGen = require('../code-gen/flows');
 const routerUtils = require('../utils/router.utils');
+const config = require('../config');
 
 const logger = log4js.getLogger('flow.utils.controller');
 const flowModel = mongoose.model('flow');
@@ -42,7 +43,6 @@ router.put('/:id/init', async (req, res) => {
 		doc.status = 'Active';
 		doc.isNew = false;
 		doc._req = req;
-		doc.markModified('status');
 		await doc.save();
 		res.status(200).json({ message: 'Flow Status Updated' });
 		routerUtils.initRouterMap();
@@ -66,13 +66,16 @@ router.put('/:id/deploy', async (req, res) => {
 			return res.status(400).json({ message: 'Invalid Flow' });
 		}
 		await codeGen.createProject(doc);
-		const status = await deployUtils.deploy(doc, 'flow');
-		if (status.statusCode != 200 || status.statusCode != 202) {
-			return res.status(status.statusCode).json({ message: 'Unable to deploy Flow' });
+		if (config.isK8sEnv()) {
+			const status = await deployUtils.deploy(doc, 'flow');
+			logger.info('Deploy API called');
+			logger.debug(status);
+			if (status.statusCode != 200 && status.statusCode != 202) {
+				return res.status(status.statusCode).json({ message: 'Unable to deploy Flow' });
+			}
 		}
 		doc.status = 'Pending';
 		doc.isNew = false;
-		doc.markModified('status');
 		res.status(200).json({ message: 'Flow Deployed' });
 	} catch (err) {
 		logger.error(err);
@@ -94,13 +97,16 @@ router.put('/:id/repair', async (req, res) => {
 			return res.status(400).json({ message: 'Invalid Flow' });
 		}
 		await codeGen.createProject(doc, req.header('txnId'));
-		const status = await deployUtils.repair(doc, 'flow');
-		if (status.statusCode !== 200 || status.statusCode !== 202) {
-			return res.status(status.statusCode).json({ message: 'Unable to repair Flow' });
+		if (config.isK8sEnv()) {
+			const status = await deployUtils.repair(doc, 'flow');
+			logger.info('Repair API called');
+			logger.debug(status);
+			if (status.statusCode !== 200 && status.statusCode !== 202) {
+				return res.status(status.statusCode).json({ message: 'Unable to repair Flow' });
+			}
 		}
 		doc.status = 'Pending';
 		doc.isNew = false;
-		doc.markModified('status');
 		doc._req = req;
 		res.status(200).json({ message: 'Flow Repaired' });
 	} catch (err) {
@@ -122,13 +128,16 @@ router.put('/:id/start', async (req, res) => {
 		if (!doc) {
 			return res.status(400).json({ message: 'Invalid Flow' });
 		}
-		const status = await deployUtils.start(doc);
-		if (status.statusCode !== 200 || status.statusCode !== 202) {
-			return res.status(status.statusCode).json({ message: 'Unable to start Flow' });
+		if (config.isK8sEnv()) {
+			const status = await deployUtils.start(doc);
+			logger.info('Start API called');
+			logger.debug(status);
+			if (status.statusCode !== 200 && status.statusCode !== 202) {
+				return res.status(status.statusCode).json({ message: 'Unable to start Flow' });
+			}
 		}
 		doc.status = 'Pending';
 		doc.isNew = false;
-		doc.markModified('status');
 		doc._req = req;
 		res.status(200).json({ message: 'Flow Started' });
 	} catch (err) {
@@ -145,20 +154,23 @@ router.put('/:id/start', async (req, res) => {
 });
 
 router.put('/:id/stop', async (req, res) => {
-	logger.info(`Flow stop request :: ${req.params.id}`)
+	logger.info(`Flow stop request :: ${req.params.id}`);
 	try {
 		const doc = await flowModel.findById(req.params.id);
 		if (!doc) {
 			return res.status(400).json({ message: 'Invalid Flow' });
 		}
-		const status = await deployUtils.stop(doc);
-		if (status.statusCode !== 200 && status.statusCode !== 202) {
-			logger.error('K8S :: Error stopping flow');
-			return res.status(status.statusCode).json({ message: 'Unable to stop Flow' });
+		if (config.isK8sEnv()) {
+			const status = await deployUtils.stop(doc);
+			logger.info('Stop API called');
+			logger.debug(status);
+			if (status.statusCode !== 200 && status.statusCode !== 202) {
+				logger.error('K8S :: Error stopping flow');
+				return res.status(status.statusCode).json({ message: 'Unable to stop Flow' });
+			}
 		}
 		doc.status = 'Stopped';
 		doc.isNew = false;
-		doc.markModified('status');
 		doc._req = req;
 		await doc.save();
 		res.status(200).json({ message: 'Flow Stopped' });

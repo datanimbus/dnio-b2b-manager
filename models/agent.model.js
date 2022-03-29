@@ -1,8 +1,8 @@
 const log4js = require('log4js');
 const mongoose = require('mongoose');
-const utils = require('@appveen/utils');
+// const utils = require('@appveen/utils');
 const dataStackUtils = require('@appveen/data.stack-utils');
-const {v4: uuid} = require('uuid');
+const { v4: uuid } = require('uuid');
 
 const config = require('../config');
 const definition = require('../schemas/agent.schema').definition;
@@ -36,6 +36,9 @@ schema.post('save', function (error, doc, next) {
 	}
 });
 
+// schema.pre('save', utils.counter.getIdGenerator('AGENT', 'b2b.agents', null, null, 1000));
+schema.pre('save', mongooseUtils.generateId('AGENT', 'b2b.agents', null, 4, 2000));
+
 schema.pre('save', dataStackUtils.auditTrail.getAuditPreSaveHook('b2b.agents'));
 
 schema.post('save', dataStackUtils.auditTrail.getAuditPostSaveHook('b2b.agents.audit', client, 'auditQueue'));
@@ -44,10 +47,9 @@ schema.pre('remove', dataStackUtils.auditTrail.getAuditPreRemoveHook());
 
 schema.post('remove', dataStackUtils.auditTrail.getAuditPostRemoveHook('b2b.agents.audit', client, 'auditQueue'));
 
-schema.pre('save', function (next, req) {
+schema.pre('save', function (next) {
 	let regex = /^[a-zA-Z0-9_ -]*$/;
 	this._isNew = this.isNew;
-	this._req = req;
 	if (this.name && this.name.length > 24) return next(new Error('Agent name cannot be more than 24 characters'));
 	if (this.name && regex.test(this.name)) return next();
 	return next(new Error('Agent name can contain alphanumeric characters with spaces, dashes and underscores only'));
@@ -58,21 +60,27 @@ schema.pre('save', async function (next) {
 		this._oldDoc = await mongoose.model('agent').findOne({ _id: this._id }).lean();
 		return next();
 	}
-	const agents = await mongoose.model('agent').find({ name: this.name, app: this.app }).collation({ locale: 'en_US', strength: 2 }).lean();
-	if (agents && agents.length > 0) {
-		return next(new Error('Agent name is already in use'));
-	}
 	return next();
 });
 
-schema.pre('save', utils.counter.getIdGenerator('AGENT', 'b2b.agents', null, null, 1000));
-
-schema.pre('save', async function (next, req) {
+schema.pre('save', async function (next) {
 	try {
 		if (!this.agentId) this.agentId = uuid();
 		if (!this.password) {
 			const text = securityUtils.generatePassword(8);
-			this.password = await securityUtils.encryptText(req, this.app, text);
+			const resp = await securityUtils.encryptText(this.app, text);
+			if (!resp || resp.statusCode != 200) {
+				return next(new Error('Unable to encrypt data'));
+			}
+			this.password = resp.body.data;
+		}
+		if (!this.secret) {
+			const text = securityUtils.md5(securityUtils.generatePassword(8));
+			const resp = await securityUtils.encryptText(this.app, text);
+			if (!resp || resp.statusCode != 200) {
+				return next(new Error('Unable to encrypt data'));
+			}
+			this.secret = resp.body.data;
 		}
 		next();
 	} catch (err) {
@@ -80,20 +88,20 @@ schema.pre('save', async function (next, req) {
 	}
 });
 
-schema.pre('remove', async function (next) {
-	try {
-		const flows = await mongoose.model('flows')
-			.find({ $or: [{ 'blocks.meta.source': this.agentId }, { 'blocks.meta.target': this.agentId }] })
-			.select('_id name').lean();
-		if (!flows || flows.length == 0) {
-			return next();
-		}
-		const flowNames = flows.map(e => e.name).join(', ');
-		next(new Error('Agent is being used by Flow(s) : ' + flowNames));
-	} catch (err) {
-		next(err);
-	}
-});
+// schema.pre('remove', async function (next) {
+// 	try {
+// 		const flows = await mongoose.model('flows')
+// 			.find({ $or: [{ 'blocks.meta.source': this.agentId }, { 'blocks.meta.target': this.agentId }] })
+// 			.select('_id name').lean();
+// 		if (!flows || flows.length == 0) {
+// 			return next();
+// 		}
+// 		const flowNames = flows.map(e => e.name).join(', ');
+// 		next(new Error('Agent is being used by Flow(s) : ' + flowNames));
+// 	} catch (err) {
+// 		next(err);
+// 	}
+// });
 
 schema.post('remove', function (doc, next) {
 	let obj = {
@@ -111,32 +119,32 @@ schema.post('remove', function (doc, next) {
 	return mongoose.model('agent-action').create(obj);
 });
 
-schema.post('remove', async function (doc, next) {
-	const req = doc._req;
-	// delete agent in security
-	try {
-		securityUtils.deleteKeys(req, doc);
-	} catch (err) {
-		logger.error(err);
-	} finally {
-		next();
-	}
-});
+// schema.post('remove', async function (doc, next) {
+// 	const req = doc._req;
+// 	// delete agent in security
+// 	try {
+// 		securityUtils.deleteKeys(req, doc);
+// 	} catch (err) {
+// 		logger.error(err);
+// 	} finally {
+// 		next();
+// 	}
+// });
 
-schema.post('save', async function (doc, next) {
-	// create agent in security
-	const req = doc._req;
-	try {
-		if (doc._isNew) {
-			securityUtils.createKeys(req, doc);
-		}
-		next();
-	} catch (err) {
-		logger.error(err);
-	} finally {
-		next();
-	}
-});
+// schema.post('save', async function (doc, next) {
+// 	// create agent in security
+// 	const req = doc._req;
+// 	try {
+// 		if (doc._isNew) {
+// 			securityUtils.createKeys(req, doc);
+// 		}
+// 		next();
+// 	} catch (err) {
+// 		logger.error(err);
+// 	} finally {
+// 		next();
+// 	}
+// });
 
 schema.post('save', function (doc, next) {
 	if (!doc._req) {

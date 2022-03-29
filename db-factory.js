@@ -4,6 +4,7 @@ const log4js = require('log4js');
 const config = require('./config');
 const models = require('./models');
 const queue = require('./queue');
+const init = require('./init');
 
 const LOGGER_NAME = config.isK8sEnv() ? `[${config.hostname}] [B2B-MANAGER v${config.imageTag}]` : `[B2B-MANAGER v${config.imageTag}]`
 const logger = log4js.getLogger(LOGGER_NAME);
@@ -51,3 +52,4 @@ mongoose.connection.on('reconnectFailed', () => { logger.error(` *** ${config.au
 
 queue.init();
 models.init();
+init.init();

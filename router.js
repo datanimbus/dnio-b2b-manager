@@ -38,8 +38,17 @@ router.use(async (req, res) => {
         });
         res.status(resp.statusCode).json(resp.body);
     } catch (err) {
+        let statusCode = err.statusCode ? err.statusCode : 500;
+        let responseBody;
+        if (err.body) {
+            responseBody = err.body;
+        } else if (err.message) {
+            responseBody = { message: err.message };
+        } else {
+            responseBody = err;
+        }
         logger.error(err);
-        res.status(500).json({ message: err.message });
+        res.status(statusCode).json(responseBody);
     }
 });
 
