@@ -25,7 +25,7 @@ function get(_service) {
     if (_service == 'dm') return 'http://' + getHostOSBasedLocation() + ':10709';
     if (_service == 'ne') return 'http://' + getHostOSBasedLocation() + ':10010';
     if (_service == 'sm') return 'http://' + getHostOSBasedLocation() + ':10003';
-    if (_service == 'pm') return 'http://' + getHostOSBasedLocation() + ':10011';
+    if (_service == 'bm') return 'http://' + getHostOSBasedLocation() + ':10011';
     if (_service == 'user') return 'http://' + getHostOSBasedLocation() + ':10004';
     if (_service == 'gw') return 'http://' + getHostOSBasedLocation() + ':9080';
     if (_service == 'wf') return 'http://' + getHostOSBasedLocation() + ':10006';
@@ -37,7 +37,7 @@ function get(_service) {
     if (_service == 'dm') return 'http://localhost:10709';
     if (_service == 'ne') return 'http://localhost:10010';
     if (_service == 'sm') return 'http://localhost:10003';
-    if (_service == 'pm') return 'http://localhost:10011';
+    if (_service == 'bm') return 'http://localhost:10011';
     if (_service == 'user') return 'http://localhost:10004';
     if (_service == 'gw') return 'http://localhost:9080';
     if (_service == 'wf') return 'http://localhost:10006';
@@ -58,7 +58,7 @@ const temp = {
   baseUrlWF: get('wf') + '/workflow',
   baseUrlSEC: get('sec') + '/sec',
   baseUrlDM: get('dm') + '/dm',
-  baseUrlPM: get('pm') + '/bm',
+  baseUrlPM: get('bm') + '/bm',
   baseUrlGW: get('gw'),
   isK8sEnv: isK8sEnv,
   isDockerEnv: isDockerEnv,
