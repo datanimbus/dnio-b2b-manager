@@ -61,9 +61,9 @@ function getDockerFile(release, port, functionData) {
   return `
     FROM ${base}
 
-    WORKDIR /app
+    WORKDIR /generated
 
-    RUN rm -rf *
+    RUN cp -r /app/node_modules .
 
     COPY . .
 
