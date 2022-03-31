@@ -110,6 +110,7 @@ module.exports = {
         useNewUrlParser: true,
         dbName: process.env.MONGO_LOGS_DBNAME || 'datastackLogs'
     },
+    verifyDeploymentUser: parseBoolean(process.env.VERIFY_DEPLOYMENT_USER) || false,
     TZ_DEFAULT: process.env.TZ_DEFAULT || 'Zulu',
     B2B_AGENT_MAX_FILE_SIZE: process.env.B2B_AGENT_MAX_FILE_SIZE || '100m',
     B2B_FLOW_REJECT_ZONE_ACTION: process.env.B2B_FLOW_REJECT_ZONE_ACTION || 'queue',

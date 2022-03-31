@@ -6,6 +6,7 @@ const queryUtils = require('../utils/query.utils');
 
 const logger = log4js.getLogger('faas.controller');
 const faasModel = mongoose.model('faas');
+const faasDraftModel = mongoose.model('faas.draft');
 const _ = require('lodash');
 
 
@@ -32,17 +33,35 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
 	try {
+		let txnId = req.get('txnId');
+		let draft = req.query.draft;
+		let id = req.params.id;
+
+		logger.info(`[${txnId}] Faas show request received :: ${id} :: draft :: ${draft}`);
+
+		if (draft) {
+			let draftQuery = faasDraftModel.findById(id);
+			if (req.query.select) {
+				draftQuery = draftQuery.select(req.query.select);
+			}
+			let draftDoc = await draftQuery.lean();
+			if (draftDoc) {
+				return res.status(200).json(draftDoc);
+			}
+			logger.debug(`[${txnId}] Faas draft not found in draft collection, checking in main collection`);
+		}
 		let mongoQuery = faasModel.findById(req.params.id);
 		if (req.query.select) {
 			mongoQuery = mongoQuery.select(req.query.select);
 		}
 		let doc = await mongoQuery.lean();
 		if (!doc) {
+			logger.error(`[${txnId}] Function data not found`);
 			return res.status(404).json({
-				message: 'Data Model Not Found'
+				message: 'Function Not Found'
 			});
 		}
-		res.status(200).json(doc);
+		return res.status(200).json(doc);
 	} catch (err) {
 		logger.error(err);
 		res.status(500).json({
