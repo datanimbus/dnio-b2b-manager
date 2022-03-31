@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 const queryUtils = require('../utils/query.utils');
 const deployUtils = require('../utils/deploy.utils');
 const codeGen = require('../code-gen/faas');
-const envConfig = require('../config');
+const config = require('../config');
 
 const logger = log4js.getLogger('faas.controller');
 const faasModel = mongoose.model('faas');
@@ -64,103 +64,77 @@ router.put('/:id/deploy', async (req, res) => {
 
 		logger.info(`[${txnId}] Faas deployment request received :: ${id}`);
 
-		let user = req.get('User');
-		let isSuperAdmin = req.get('isSuperAdmin') ? JSON.parse(req.get('isSuperAdmin')) : false;
-		let verifyDeploymentUser = envConfig.verifyDeploymentUser;
+		let user = req.user;
+		let isSuperAdmin = user.isSuperAdmin;
+		let verifyDeploymentUser = config.verifyDeploymentUser;
 
 		logger.debug(`[${txnId}] User details - ${JSON.stringify({ user, isSuperAdmin, verifyDeploymentUser })}`);
 
-		const doc = await faasModel.findOne({ _id: id, '_metadata.deleted': false });
+		let doc = await faasModel.findOne({ _id: id, '_metadata.deleted': false });
 		if (!doc) {
 			logger.error(`[${txnId}] Faas data not found for id :: ${id}`);
 			return res.status(400).json({ message: 'Invalid Function' });
 		}
-
+		const oldFaasObj = doc.toObject();
 		logger.debug(`[${txnId}] Faas data found`);
 		logger.trace(`[${txnId}] Faas data found :: ${JSON.stringify(doc)}`);
 
 		if (doc.status === 'Active' && !doc.draftVersion) {
 			logger.error(`[${txnId}] Faas is already running, cannot deploy again`);
 			return res.status(400).json({ message: 'No changes to redeploy' });
-
 		} else if (doc.status != 'Draft' && !doc.draftVersion) {
 			logger.error(`[${txnId}] Faas has no draft version for deployment`);
 			return res.status(400).json({ message: 'No changes to redeploy' });
-
 		} else if (doc.status === 'Draft') {
 			logger.debug(`[${txnId}] Faas is in Draft status`);
-
 			if (verifyDeploymentUser && !isSuperAdmin && doc._metadata && doc._metadata.lastUpdatedBy == user) {
-
 				logger.error(`[${txnId}] Self deployment not allowed ::  ${{ lastUpdatedBy: doc._metadata.lastUpdatedBy, currentUser: user }}`);
 				return res.status(403).json({ message: 'You cannot deploy your own changes' });
 			}
-
-			doc.status = 'Pending';
-			doc._req = req;
-			await doc.save();
-
-			socket.emit('faasStatus', {
-				_id: id,
-				app: doc.app,
-				message: 'Deployed'
-			});
-
-			await codeGen.createProject(doc, txnId);
-			const status = await deployUtils.deploy(doc, 'faas');
-			if (status.statusCode !== 200 || status.statusCode !== 202) {
-				return res.status(status.statusCode).json({ message: 'Unable to deploy function' });
-			}
-			res.status(200).json({ message: 'Function Deployed' });
 		} else {
 			logger.debug(`[${txnId}] Faas is not in draft status, checking in draft collection :: ${doc.status}`);
 
-			const draftData = await faasDraftModel.findOne({ _id: id, '_metadata.deleted': false }).lean();
+			const draftDoc = await faasDraftModel.findOne({ _id: id, '_metadata.deleted': false });
 
-			if (!draftData) {
+			if (!draftDoc) {
 				logger.error(`[${txnId}] Faas has no draft version for deployment`);
 				return res.status(400).json({ message: 'No changes to redeploy' });
-			} else {
-				logger.debug(`[${txnId}] Faas data found in draft collection`);
-				logger.trace(`[${txnId}] Faas draft data :: ${JSON.stringify(draftData)}`);
-
-				if (verifyDeploymentUser && !isSuperAdmin && draftData._metadata && draftData._metadata.lastUpdatedBy == user) {
-
-					logger.error(`[${txnId}] Self deployment not allowed :: ${{ lastUpdatedBy: draftData._metadata.lastUpdatedBy, currentUser: user }}`);
-					return res.status(403).json({ message: 'You cannot deploy your own changes' });
-				}
-
-				if (draftData && draftData.app != doc.app) {
-					logger.error(`[${txnId}] App change not permitted`);
-					return res.status(400).json({ message: 'App change not permitted' });
-				}
-
-				let oldFaasObj = JSON.parse(JSON.stringify(doc));
-				let newFaasObj = JSON.parse(JSON.stringify(draftData));
-				delete newFaasObj.__v;
-				delete newFaasObj._metadata;
-
-				Object.assign(doc, newFaasObj);
-				doc.draftVersion = null;
-				doc.status = 'Pending';
-
-				await draftData.remove(req);
-				await doc.save(req);
-
-				socket.emit('faasStatus', {
-					_id: id,
-					app: faasData.app,
-					message: 'Deployed'
-				});
-
-				await codeGen.createProject(doc, txnId);
-				const status = await deployUtils.deploy(doc, 'faas');
-				if (status.statusCode !== 200 || status.statusCode !== 202) {
-					return res.status(status.statusCode).json({ message: 'Unable to deploy function' });
-				}
-				res.status(200).json({ message: 'Function Deployed' });
 			}
+			logger.debug(`[${txnId}] Faas data found in draft collection`);
+			logger.trace(`[${txnId}] Faas draft data :: ${JSON.stringify(draftDoc)}`);
+
+			if (verifyDeploymentUser && !isSuperAdmin && draftDoc._metadata && draftDoc._metadata.lastUpdatedBy == user) {
+				logger.error(`[${txnId}] Self deployment not allowed :: ${{ lastUpdatedBy: draftDoc._metadata.lastUpdatedBy, currentUser: user }}`);
+				return res.status(400).json({ message: 'You cannot deploy your own changes' });
+			}
+
+			if (draftDoc && draftDoc.app != doc.app) {
+				logger.error(`[${txnId}] App change not permitted`);
+				return res.status(400).json({ message: 'App change not permitted' });
+			}
+			const newFaasObj = draftDoc.toObject();
+			delete newFaasObj.__v;
+			delete newFaasObj._metadata;
+			Object.assign(doc, newFaasObj);
+			draftDoc._req = req;
+			await draftDoc.remove();
 		}
+		doc.draftVersion = null;
+		doc.status = 'Pending';
+		doc._req = req;
+		doc._oldData = oldFaasObj;
+		await doc.save();
+		socket.emit('faasStatus', {
+			_id: id,
+			app: doc.app,
+			message: 'Deployed'
+		});
+		await codeGen.createProject(doc, txnId);
+		const status = await deployUtils.deploy(doc, 'faas');
+		if (status.statusCode !== 200 || status.statusCode !== 202) {
+			return res.status(status.statusCode).json({ message: 'Unable to deploy function' });
+		}
+		res.status(200).json({ message: 'Function Deployed' });
 
 	} catch (err) {
 		logger.error(err);

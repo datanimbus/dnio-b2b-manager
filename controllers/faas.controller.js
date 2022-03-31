@@ -45,41 +45,23 @@ router.get('/:id', async (req, res) => {
 				draftQuery = draftQuery.select(req.query.select);
 			}
 			let draftDoc = await draftQuery.lean();
-
-			if (!draftDoc) {
-				logger.debug(`[${txnId}] Faas draft not found in draft collection, checking in main collection`);
-
-				let mongoQuery = faasModel.findById(id);
-				if (req.query.select) {
-					mongoQuery = mongoQuery.select(req.query.select);
-				}
-				let doc = await mongoQuery.lean();
-
-				if (!doc) {
-					logger.error(`[${txnId}] Function data not found`);
-					return res.status(404).json({
-						message: 'Draft Function Not Found'
-					});
-				} else {
-					return res.status(200).json(doc);
-				}
-			} else {
+			if (draftDoc) {
 				return res.status(200).json(draftDoc);
 			}
-		} else {
-			let mongoQuery = faasModel.findById(req.params.id);
-			if (req.query.select) {
-				mongoQuery = mongoQuery.select(req.query.select);
-			}
-			let doc = await mongoQuery.lean();
-			if (!doc) {
-				logger.error(`[${txnId}] Function data not found`);
-				return res.status(404).json({
-					message: 'Function Not Found'
-				});
-			}
-			return res.status(200).json(doc);
+			logger.debug(`[${txnId}] Faas draft not found in draft collection, checking in main collection`);
 		}
+		let mongoQuery = faasModel.findById(req.params.id);
+		if (req.query.select) {
+			mongoQuery = mongoQuery.select(req.query.select);
+		}
+		let doc = await mongoQuery.lean();
+		if (!doc) {
+			logger.error(`[${txnId}] Function data not found`);
+			return res.status(404).json({
+				message: 'Function Not Found'
+			});
+		}
+		return res.status(200).json(doc);
 	} catch (err) {
 		logger.error(err);
 		res.status(500).json({
