@@ -144,13 +144,6 @@ router.put('/:id/deploy', async (req, res) => {
 				doc.draftVersion = null;
 				doc.status = 'Pending';
 
-				if (oldFaasObj.name != newFaasObj.name) {
-					await nameUniqueCheck(newFaasObj.name, newFaasObj.app, id);
-				}
-				if (oldFaasObj.url != newFaasObj.url) {
-					return apiUniqueCheck(newFaasObj.url, newFaasObj.app, id);
-				}
-
 				await draftData.remove(req);
 				await doc.save(req);
 
@@ -297,58 +290,5 @@ router.put('/:id/statusChange', async (req, res) => {
 		});
 	}
 });
-
-async function nameUniqueCheck(name, app, id) {
-	logger.info('Checking if name is unique - ', name);
-
-	let nameRegex = new RegExp('^' + name + '$', 'i');
-	let filter = { 'app': app, 'name': nameRegex };
-
-	if (id) filter._id = { '$ne': id };
-	logger.debug(`Name unique check filter :: ${JSON.stringify(filter)}`);
-
-	return crudder.model.findOne(filter).lean(true)
-		.then(_d => {
-			if (_d) {
-				return Promise.reject(new Error('Entity name already in use'));
-			} else {
-				return draftCrudder.model.findOne(filter).lean(true)
-					.then(_e => {
-						if (_e) {
-							return Promise.reject(new Error('Entity name already in use with draft mode'));
-						} else {
-							return Promise.resolve();
-						}
-					});
-			}
-		});
-}
-
-async function apiUniqueCheck(api, app, id) {
-	logger.info('Checking if API endpoint is unique - ', api);
-
-	let apiRegex = new RegExp('^' + api + '$', 'i');
-	let filter = { 'app': app, 'api': apiRegex };
-
-	if (id) filter._id = { '$ne': id };
-	logger.debug(`API endpoint unique check filter :: ${JSON.stringify(filter)}`);
-
-	return crudder.model.findOne(filter).lean(true)
-		.then(_d => {
-			if (_d) {
-				return Promise.reject(new Error('API already in use'));
-			} else {
-				return draftCrudder.model.findOne(filter).lean(true)
-					.then(_e => {
-						if (_e) {
-							return Promise.reject(new Error('API already in use with draft mode'));
-						} else {
-							return Promise.resolve();
-						}
-					});
-
-			}
-		});
-}
 
 module.exports = router;
