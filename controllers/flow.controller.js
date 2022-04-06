@@ -102,6 +102,9 @@ router.put('/:id', async (req, res) => {
 		// 	doc[key] = payload[key];
 		// });
 		doc._req = req;
+		doc.markModified('inputStage');
+		doc.markModified('stages');
+		doc.markModified('dataStructures');
 		const status = await doc.save();
 		res.status(200).json(status);
 	} catch (err) {
