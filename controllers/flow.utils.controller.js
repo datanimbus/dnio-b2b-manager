@@ -2,15 +2,23 @@ const router = require('express').Router();
 const log4js = require('log4js');
 const mongoose = require('mongoose');
 
+// const codeGen = require('../code-gen/flows');
+// const deployUtils = require('../utils/deploy.utils');
+const k8sUtils = require('../utils/k8s.utils');
 const queryUtils = require('../utils/query.utils');
-const deployUtils = require('../utils/deploy.utils');
-const codeGen = require('../code-gen/flows');
 const routerUtils = require('../utils/router.utils');
 const config = require('../config');
 
 const logger = log4js.getLogger('flow.utils.controller');
 const flowModel = mongoose.model('flow');
 
+let dockerRegistryType = process.env.DOCKER_REGISTRY_TYPE ? process.env.DOCKER_REGISTRY_TYPE : '';
+if (dockerRegistryType.length > 0) dockerRegistryType = dockerRegistryType.toUpperCase();
+
+let dockerReg = process.env.DOCKER_REGISTRY_SERVER ? process.env.DOCKER_REGISTRY_SERVER : '';
+if (dockerReg.length > 0 && !dockerReg.endsWith('/') && dockerRegistryType != 'ECR') dockerReg += '/';
+let flowBaseImage = `${dockerReg}data.stack.b2b.base:${config.imageTag}`;
+if (dockerRegistryType == 'ECR') flowBaseImage = `${dockerReg}:data.stack.b2b.base:${config.imageTag}`;
 
 router.get('/count', async (req, res) => {
 	try {
@@ -65,9 +73,11 @@ router.put('/:id/deploy', async (req, res) => {
 		if (!doc) {
 			return res.status(400).json({ message: 'Invalid Flow' });
 		}
-		await codeGen.createProject(doc);
+		// await codeGen.createProject(doc);
 		if (config.isK8sEnv()) {
-			const status = await deployUtils.deploy(doc, 'flow');
+			// const status = await deployUtils.deploy(doc, 'flow');
+			doc.image = flowBaseImage;
+			const status = await k8sUtils.upsertDeployment(doc);
 			logger.info('Deploy API called');
 			logger.debug(status);
 			if (status.statusCode != 200 && status.statusCode != 202) {
@@ -96,9 +106,12 @@ router.put('/:id/repair', async (req, res) => {
 		if (!doc) {
 			return res.status(400).json({ message: 'Invalid Flow' });
 		}
-		await codeGen.createProject(doc, req.header('txnId'));
+		// await codeGen.createProject(doc, req.header('txnId'));
 		if (config.isK8sEnv()) {
-			const status = await deployUtils.repair(doc, 'flow');
+			// const status = await deployUtils.repair(doc, 'flow');
+			doc.image = flowBaseImage;
+			let status = await k8sUtils.deleteDeployment(doc);
+			status = await k8sUtils.upsertDeployment(doc);
 			logger.info('Repair API called');
 			logger.debug(status);
 			if (status.statusCode !== 200 && status.statusCode !== 202) {
@@ -129,7 +142,8 @@ router.put('/:id/start', async (req, res) => {
 			return res.status(400).json({ message: 'Invalid Flow' });
 		}
 		if (config.isK8sEnv()) {
-			const status = await deployUtils.start(doc);
+			// const status = await deployUtils.start(doc);
+			const status = await k8sUtils.scaleDeployment(doc, 1);
 			logger.info('Start API called');
 			logger.debug(status);
 			if (status.statusCode !== 200 && status.statusCode !== 202) {
@@ -161,7 +175,8 @@ router.put('/:id/stop', async (req, res) => {
 			return res.status(400).json({ message: 'Invalid Flow' });
 		}
 		if (config.isK8sEnv()) {
-			const status = await deployUtils.stop(doc);
+			// const status = await deployUtils.stop(doc);
+			const status = await k8sUtils.scaleDeployment(doc, 0);
 			logger.info('Stop API called');
 			logger.debug(status);
 			if (status.statusCode !== 200 && status.statusCode !== 202) {
