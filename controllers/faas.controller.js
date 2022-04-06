@@ -1,14 +1,18 @@
 const router = require('express').Router();
 const log4js = require('log4js');
 const mongoose = require('mongoose');
-
-const queryUtils = require('../utils/query.utils');
-
-const logger = log4js.getLogger('faas.controller');
-const faasModel = mongoose.model('faas');
-const faasDraftModel = mongoose.model('faas.draft');
 const _ = require('lodash');
 
+const dataStackUtils = require('@appveen/data.stack-utils');
+
+const envConfig = require('../config');
+const queryUtils = require('../utils/query.utils');
+
+const faasModel = mongoose.model('faas');
+const faasDraftModel = mongoose.model('faas.draft');
+
+const logger = log4js.getLogger('faas.controller');
+const kubeutil = dataStackUtils.kubeutil;
 
 router.get('/', async (req, res) => {
 	try {
@@ -71,38 +75,143 @@ router.get('/:id', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
+
+	let txnId = req.get('TxnId');
+	let socket = req.app.get('socket');
+	let payload = JSON.parse(JSON.stringify(req.body));
+
+	logger.info(`[${txnId}] Function create request received`);
+	logger.trace(`[${txnId}] Function details :: ${JSON.stringify(payload)}`);
 	try {
-		const payload = req.body;
+		delete payload.deploymentName;
+		delete payload.namespace;
+		payload.version = 1;
+		payload.deploymentName = (_.camelCase(payload.app) + '-' + _.camelCase(payload.name)).toLowerCase();
+		payload.namespace = (envConfig.dataStackNS + '-' + payload.app.toLowerCase().replace(/ /g, '')).toLowerCase();
+
+		let port = await getNextPort(txnId);
+		logger.debug(`[${txnId}] Next port number for function :: ${port}`);
+		payload.port = port;
+
+		logger.trace(`[${txnId}] Function create data :: ${JSON.stringify(payload)}`);
+
 		doc = new faasModel(payload);
 		doc._req = req;
 		const status = await doc.save();
+
+		socket.emit('faasCreated', {
+			app: payload.app,
+			message: payload.status
+		});
+
 		res.status(200).json(status);
 	} catch (err) {
 		logger.error(err);
-		res.status(500).json({
-			message: err.message
-		});
+
+		if (payload && payload._id) {
+			await faasModel.remove({ _id: payload._id });
+		}
+		if (!res.headersSent) {
+			res.status(500).json({
+				message: err.message
+			});
+		}
 	}
 });
 
 router.put('/:id', async (req, res) => {
 	try {
-		const payload = req.body;
-		let doc = await faasModel.findById(req.params.id);
+		let txnId = req.get('TxnId');
+		let id = req.params.id;
+		let socket = req.app.get('socket');
+		let payload = JSON.parse(JSON.stringify(req.body));
+
+		logger.info(`[${txnId}] Function update request received - ${id}`);
+
+		delete payload.version;
+		delete payload.draftVersion;
+		delete payload.status;
+		delete payload.port;
+		delete payload.deploymentName;
+		delete payload.namespace;
+		payload._id = id;
+
+		logger.trace(`[${txnId}] Function update data received + headers - ${JSON.stringify(payload)}`);
+
+		let doc = await faasModel.findOne({ _id: req.params.id, '_metadata.deleted': false });
+
 		if (!doc) {
+			logger.error(`[${txnId}] Function data not found in b2b.faas collection`);
 			return res.status(404).json({
-				message: 'Data Model Not Found'
+				message: 'Function Not Found'
 			});
 		}
-		Object.keys(payload).forEach(key => {
-			doc[key] = payload[key];
+
+		doc.deploymentName = doc.deploymentName ? doc.deploymentName : (_.camelCase(doc.app) + '-' + _.camelCase(doc.name)).toLowerCase();
+		doc.namespace = doc.namespace ? doc.namespace : (envConfig.dataStackNS + '-' + doc.app.toLowerCase().replace(/ /g, '')).toLowerCase();
+
+		logger.debug(`[${txnId}] Function found in b2b.faas collection for ID :: ${id}`);
+		logger.trace(`[${txnId}] Function data :: ${JSON.stringify(doc)}`);
+
+		let faasData = JSON.parse(JSON.stringify(doc));
+
+		if (payload.app && payload.app !== doc.app) {
+			logger.error(`[${txnId}] App change not permitted`);
+
+			return res.status(400).json({
+				message: 'App change not permitted'
+			});
+		}
+
+		if (faasData.status === 'Draft') {
+			Object.assign(doc, payload);
+
+			logger.info(`[${txnId}] Function is in draft status`);
+			logger.trace(`[${txnId}] Function data to be updated :: ${JSON.stringify(doc)}`);
+
+			doc._req = req;
+			doc.save();
+
+		} else if (faasData.draftVersion) {
+
+			logger.info(`[${txnId}] Function is not in draft status, but has a draft linked to it`);
+
+			let draftData = await faasDraftModel.findOne({ _id: id, '_metadata.deleted': false });
+
+			logger.trace(`[${txnId}] Linked function draft data found :: ${JSON.stringify(draftData)}`);
+			logger.trace(`[${txnId}] New function draft data to be updated :: ${JSON.stringify(payload)}`);
+
+			draftData = Object.assign(draftData, payload);
+			draftData._req = req;
+			draftData.save();
+
+		} else {
+			logger.info(`[${txnId}] Function is neither in draft status nor has a linked draft, creating a new draft`);
+
+			let newData = new faasDraftModel(Object.assign({}, JSON.parse(JSON.stringify(doc)), payload));
+			newData.version = faasData.version + 1;
+			newData.status = 'Draft';
+			doc.draftVersion = newData.version;
+
+			logger.trace(`[${txnId}] Function data to be updated :: ${JSON.stringify(doc)}`);
+			logger.trace(`[${txnId}] New draft function data to be created :: ${JSON.stringify(newData)}`);
+
+			newData._req = req;
+			doc._req = req;
+			await newData.save();
+			await doc.save();
+		}
+
+		res.status(200).json(doc.toObject());
+
+		socket.emit('faasStatus', {
+			_id: id,
+			app: faasData.app,
+			message: 'Updated'
 		});
-		doc._req = req;
-		const status = await doc.save();
-		res.status(200).json(status);
 	} catch (err) {
 		logger.error(err);
-		res.status(500).json({
+		return res.status(500).json({
 			message: err.message
 		});
 	}
@@ -110,16 +219,60 @@ router.put('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
 	try {
-		let doc = await faasModel.findById(req.params.id);
+		let id = req.params.id;
+		let txnId = req.get('TxnId');
+		let socket = req.app.get('socket');
+		logger.info(`[${txnId}] Function destroy request received :: ${id}`);
+
+		let doc = await faasModel.findOne({ _id: req.params.id, '_metadata.deleted': false });
 		if (!doc) {
+			logger.error(`[${txnId}] Function data not found for id :: ${id}`);
 			return res.status(404).json({
-				message: 'Data Model Not Found'
+				message: 'Function Not Found'
 			});
 		}
+
+		logger.info(`[${txnId}] Function data found for id :: ${id}`);
+		logger.trace(`[${txnId}] Function data :: ${JSON.stringify(doc)}`);
+
+		if (doc.status === 'Active') {
+			logger.error(`[${txnId}] Function is in Active state.`);
+			return res.status(400).json({ message: 'Can\'t delete while function is running' });
+		}
+
+		let draftData = await faasDraftModel.findOne({ _id: id, '_metadata.deleted': false });
+		if (!draftData) {
+			logger.info(`[${txnId}] Draft data not available for function :: ${id}`);
+		} else {
+			draftData._req = req;
+			await draftData.remove();
+		}
+
+		let status = await kubeutil.service.deleteService(doc.namespace, doc.deploymentName);
+		logger.debug(`[${txnId}] Service deleted :: ${status.statusCode}`);
+		logger.trace(`[${txnId}] Service deleted :: ${JSON.stringify(status)}`);
+
+		status = await kubeutil.deployment.deleteDeployment(doc.namespace, doc.deploymentName);
+		logger.debug(`[${txnId}] Deployment deleted :: ${status.statusCode}`);
+		logger.debug(`[${txnId}] Deployment deleted :: ${JSON.stringify(status)}`);
+
+		let eventId = 'EVENT_FAAS_DELETE';
+		logger.debug(`[${txnId}] Publishing Event :: ${eventId}`);
+		dataStackUtils.eventsUtil.publishEvent(eventId, 'faas', req, doc, null);
+
+		socket.emit('faasDeleted', {
+			_id: id,
+			app: doc.app,
+			message: 'Deleted'
+		});
+
 		doc._req = req;
 		await doc.remove();
+
+		logger.info(`[${txnId}] Destroyed function data :: ${id}`);
+
 		res.status(200).json({
-			message: 'Document Deleted'
+			message: 'Function Deleted'
 		});
 	} catch (err) {
 		logger.error(err);
@@ -128,5 +281,31 @@ router.delete('/:id', async (req, res) => {
 		});
 	}
 });
+
+function getNextVal(_docs) {
+	let nextPort = _docs[0].port + 1;
+	for (var i = 1; i < _docs.length; i++) {
+		if (nextPort !== _docs[i].port) break;
+		else nextPort++;
+	}
+	return nextPort;
+}
+
+function getNextPort(txnId) {
+	logger.debug(`[${txnId}] Fetching the next port number for the function`);
+
+	return mongoose.model('faas').find({}, 'port', {
+		sort: {
+			port: 1
+		}
+	})
+		.then((docs) => {
+			if (docs && docs.length > 0) {
+				return getNextVal(docs);
+			} else {
+				return startPort;
+			}
+		});
+}
 
 module.exports = router;

@@ -176,14 +176,44 @@ router.put('/:id/repair', async (req, res) => {
 
 router.put('/:id/start', async (req, res) => {
 	try {
+		let id = req.params.id;
+		let txnId = req.get('TxnId');
+		let socket = req.app.get('socket');
+		logger.info(`[${txnId}] Function start request received :: ${id}`);
+
 		const doc = await faasModel.findById(req.params.id).lean();
 		if (!doc) {
 			return res.status(400).json({ message: 'Invalid Function' });
 		}
+
+		logger.debug(`[${txnId}] Function data found for id :: ${id}`);
+		logger.trace(`[${txnId}] Function data :: ${JSON.stringify(doc)}`);
+
+		if (doc.status === 'Active') {
+			logger.error(`[${txnId}] Function is already running, cant start again`);
+			return res.status(400).json({ message: 'Can\'t restart running function' });
+		}
+
+		doc.status = 'Pending';
+		doc._req = req;
+		await doc.save();
+
+		let eventId = 'EVENT_FAAS_START';
+		logger.debug(`[${txnId}] Publishing Event :: ${eventId}`);
+		dataStackUtils.eventsUtil.publishEvent(eventId, 'faas', req, doc, null);
+
+		socket.emit('faasStatus', {
+			_id: id,
+			app: doc.app,
+			message: 'Started'
+		});
+
+		logger.info(`[${txnId}] Scaling up deployment :: ${doc.deploymentName}`);
 		const status = await deployUtils.start(doc);
 		if (status.statusCode !== 200 || status.statusCode !== 202) {
 			return res.status(status.statusCode).json({ message: 'Unable to start function' });
 		}
+
 		res.status(200).json({ message: 'Function Started' });
 	} catch (err) {
 		logger.error(err);
@@ -200,18 +230,91 @@ router.put('/:id/start', async (req, res) => {
 
 router.put('/:id/stop', async (req, res) => {
 	try {
+		let id = req.params.id;
+		let txnId = req.get('TxnId');
+		let socket = req.app.get('socket');
+		logger.info(`[${txnId}] Function stop request received :: ${id}`);
+
 		const doc = await faasModel.findById(req.params.id);
 		if (!doc) {
-			return res.status(400).json({ message: 'Invalid Function' });
+			return res.status(404).json({ message: 'Invalid Function' });
 		}
+
+		logger.debug(`[${txnId}] Function data found for id :: ${id}`);
+		logger.trace(`[${txnId}] Function data :: ${JSON.stringify(doc)}`);
+
+		if (doc.status !== 'Active') {
+			logger.debug(`[${txnId}] Function is not running, can't stop again`);
+			return res.status(400).json({ message: 'Can\'t stop inactive function' });
+		}
+
+		logger.info(`[${txnId}] Scaling down deployment :: ${JSON.stringify({ namespace: doc.namespace, deploymentName: doc.deploymentName })}`);
 		const status = await deployUtils.stop(doc);
 		if (status.statusCode !== 200 || status.statusCode !== 202) {
 			return res.status(status.statusCode).json({ message: 'Unable to stop Function' });
 		}
+
+		logger.debug(`[${txnId}] Deployment Scaled :: ${JSON.stringify(status)}`);
+
+		let eventId = 'EVENT_FAAS_STOP';
+		logger.debug(`[${txnId}] Publishing Event - ${eventId}`);
+		dataStackUtils.eventsUtil.publishEvent(eventId, 'faas', req, doc, null);
+
+		socket.emit('faasStatus', {
+			_id: id,
+			app: doc.app,
+			message: 'Stopped'
+		});
+
 		doc.status = 'Stopped';
 		doc._req = req;
 		await doc.save();
 		res.status(200).json({ message: 'Function Stopped' });
+	} catch (err) {
+		logger.error(err);
+		if (typeof err === 'string') {
+			return res.status(500).json({
+				message: err
+			});
+		}
+		res.status(500).json({
+			message: err.message
+		});
+	}
+});
+
+router.put('/:id/draftDelete', async (req, res) => {
+	try {
+		let id = req.params.id;
+		let txnId = req.get('TxnId');
+		logger.info(`[${txnId}] Function draft delete request received :: ${id}`);
+
+		let doc = await faasModel.findById(id);
+		if (!doc) {
+			logger.error(`[${txnId}] Function data not found for id :: ${id}`);
+			return res.status(404).json({ message: 'Invalid Function' });
+		}
+
+		let draftDoc = await faasDraftModel.findById(id);
+		if (!draftDoc) {
+			logger.debug(`[${txnId}] Function draft data not found for id :: ${id}`);
+		}
+
+		logger.debug(`[${txnId}] Function draft data found for id :: ${id}`);
+		logger.trace(`[${txnId}] Function draft data :: ${JSON.stringify(draftData)}`);
+		draftDoc._req = req;
+		await draftData.remove();
+
+		logger.debug(`[${txnId}] Function data found for id :: ${id}`);
+		logger.trace(`[${txnId}] Function data :: ${JSON.stringify(doc)}`);
+
+		doc.draftVersion = null;
+		doc._req = req;
+		await doc.remove();
+
+		dataStackUtils.eventsUtil.publishEvent('EVENT_FAAS_DISCARD_DRAFT', 'faas', req, doc);
+
+		res.status(200).json({ message: 'Draft deleted for ' + id });
 	} catch (err) {
 		logger.error(err);
 		if (typeof err === 'string') {
