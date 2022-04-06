@@ -2,14 +2,23 @@ const router = require('express').Router();
 const log4js = require('log4js');
 const mongoose = require('mongoose');
 
+// const codeGen = require('../code-gen/faas');
+// const deployUtils = require('../utils/deploy.utils');
 const queryUtils = require('../utils/query.utils');
-const deployUtils = require('../utils/deploy.utils');
-const codeGen = require('../code-gen/faas');
+const k8sUtils = require('../utils/k8s.utils');
 const config = require('../config');
 
 const logger = log4js.getLogger('faas.controller');
 const faasModel = mongoose.model('faas');
 const faasDraftModel = mongoose.model('faas.draft');
+
+let dockerRegistryType = process.env.DOCKER_REGISTRY_TYPE ? process.env.DOCKER_REGISTRY_TYPE : '';
+if (dockerRegistryType.length > 0) dockerRegistryType = dockerRegistryType.toUpperCase();
+
+let dockerReg = process.env.DOCKER_REGISTRY_SERVER ? process.env.DOCKER_REGISTRY_SERVER : '';
+if (dockerReg.length > 0 && !dockerReg.endsWith('/') && dockerRegistryType != 'ECR') dockerReg += '/';
+let flowBaseImage = `${dockerReg}data.stack.b2b.base:${config.imageTag}`;
+if (dockerRegistryType == 'ECR') flowBaseImage = `${dockerReg}:data.stack.b2b.base:${config.imageTag}`;
 
 router.get('/count', async (req, res) => {
 	try {
@@ -129,8 +138,10 @@ router.put('/:id/deploy', async (req, res) => {
 			app: doc.app,
 			message: 'Deployed'
 		});
-		await codeGen.createProject(doc, txnId);
-		const status = await deployUtils.deploy(doc, 'faas');
+		// await codeGen.createProject(doc, txnId);
+		// const status = await deployUtils.deploy(doc, 'faas');
+		doc.image = flowBaseImage;
+		const status = await k8sUtils.upsertDeployment(doc);
 		if (status.statusCode !== 200 || status.statusCode !== 202) {
 			return res.status(status.statusCode).json({ message: 'Unable to deploy function' });
 		}
@@ -155,8 +166,11 @@ router.put('/:id/repair', async (req, res) => {
 		if (!doc) {
 			return res.status(400).json({ message: 'Invalid Function' });
 		}
-		await codeGen.createProject(doc, req.header('txnId'));
-		const status = await deployUtils.repair(doc, 'faas');
+		// await codeGen.createProject(doc, req.header('txnId'));
+		// const status = await deployUtils.repair(doc, 'faas');
+		doc.image = flowBaseImage;
+		let status = await k8sUtils.deleteDeployment(doc);
+		status = await k8sUtils.upsertDeployment(doc);
 		if (status.statusCode !== 200 || status.statusCode !== 202) {
 			return res.status(status.statusCode).json({ message: 'Unable to repair function' });
 		}
@@ -180,7 +194,8 @@ router.put('/:id/start', async (req, res) => {
 		if (!doc) {
 			return res.status(400).json({ message: 'Invalid Function' });
 		}
-		const status = await deployUtils.start(doc);
+		// const status = await deployUtils.start(doc);
+		const status = await k8sUtils.scaleDeployment(doc, 1);
 		if (status.statusCode !== 200 || status.statusCode !== 202) {
 			return res.status(status.statusCode).json({ message: 'Unable to start function' });
 		}
@@ -204,7 +219,8 @@ router.put('/:id/stop', async (req, res) => {
 		if (!doc) {
 			return res.status(400).json({ message: 'Invalid Function' });
 		}
-		const status = await deployUtils.stop(doc);
+		// const status = await deployUtils.stop(doc);
+		const status = await k8sUtils.scaleDeployment(doc, 0);
 		if (status.statusCode !== 200 || status.statusCode !== 202) {
 			return res.status(status.statusCode).json({ message: 'Unable to stop Function' });
 		}
@@ -236,14 +252,10 @@ router.put('/:id/statusChange', async (req, res) => {
 		if (!doc) {
 			return res.status(400).json({ message: 'Invalid Function' });
 		}
-
 		doc.status = status;
-
 		if (doc._metadata && doc._metadata.lastUpdated) doc._metadata.lastUpdated = new Date();
-
 		doc._req = req;
 		await doc.save();
-
 		logger.debug(`[${req.get('TxnId')}] Emitting socket event - ${JSON.stringify({ _id: id, app: doc.app, message: status })}`);
 		socket.emit('faasStatus', {
 			_id: id,
