@@ -36,7 +36,7 @@ async function upsertDeployment(data) {
 				httpGet: {
 					path: '/api/b2b/internal/health/ready',
 					port: +(data.port || 8080),
-					scheme: 'HTTP'	
+					scheme: 'HTTP'
 				},
 				initialDelaySeconds: 5,
 				timeoutSeconds: 30,
@@ -45,10 +45,13 @@ async function upsertDeployment(data) {
 			}
 		};
 		let res = await k8sClient.deployment.getDeployment(data.namespace, data.deploymentName);
+		logger.debug('Deployment found for the name:', data.deploymentName, res.statusCode);
 		if (res.statusCode == 200) {
 			res = await k8sClient.deployment.updateDeployment(data.namespace, data.deploymentName, data.image, data.port, envVars, options);
+			logger.debug('Deployment Update Status:', data.deploymentName, res.statusCode);
 		} else {
 			res = await k8sClient.deployment.createDeployment(data.namespace, data.deploymentName, data.image, data.port, envVars, options, config.release);
+			logger.debug('Deployment Create Status:', data.deploymentName, res.statusCode);
 		}
 		return res;
 	} catch (err) {
