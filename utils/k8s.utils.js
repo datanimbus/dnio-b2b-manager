@@ -6,10 +6,13 @@ const logger = global.logger;
 async function upsertService(data) {
 	try {
 		let res = await k8sClient.service.getService(data.namespace, data.deploymentName);
+		logger.debug('Service found for the name:', data.deploymentName, res.statusCode);
 		if (res.statusCode == 200) {
 			res = await k8sClient.deployment.updateService(data.namespace, data.deploymentName, data.port);
+			logger.debug('Service Update Status:', data.deploymentName, res.statusCode);
 		} else {
 			res = await k8sClient.deployment.createService(data.namespace, data.deploymentName, data.port, config.release);
+			logger.debug('Service Create Status:', data.deploymentName, res.statusCode);
 		}
 		return res;
 	} catch (err) {

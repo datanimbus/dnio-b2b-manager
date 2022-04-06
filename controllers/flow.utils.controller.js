@@ -77,7 +77,8 @@ router.put('/:id/deploy', async (req, res) => {
 		if (config.isK8sEnv()) {
 			// const status = await deployUtils.deploy(doc, 'flow');
 			doc.image = flowBaseImage;
-			const status = await k8sUtils.upsertDeployment(doc);
+			let status = await k8sUtils.upsertService(doc);
+			status = await k8sUtils.upsertDeployment(doc);
 			logger.info('Deploy API called');
 			logger.debug(status);
 			if (status.statusCode != 200 && status.statusCode != 202) {
@@ -111,6 +112,8 @@ router.put('/:id/repair', async (req, res) => {
 			// const status = await deployUtils.repair(doc, 'flow');
 			doc.image = flowBaseImage;
 			let status = await k8sUtils.deleteDeployment(doc);
+			status = await k8sUtils.deleteService(doc);
+			status = await k8sUtils.upsertService(doc);
 			status = await k8sUtils.upsertDeployment(doc);
 			logger.info('Repair API called');
 			logger.debug(status);
