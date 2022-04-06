@@ -4,7 +4,7 @@ const mkdirp = require('mkdirp');
 const log4js = require('log4js');
 const copy = require('recursive-copy');
 
-const config = require('../../config')
+const config = require('../../config');
 // const schemaUtils = require('@appveen/utils').schemaUtils;
 const codeGen = require('./generators/code.generator');
 const schemaUtils = require('./schema.utils');
@@ -12,45 +12,45 @@ const schemaUtils = require('./schema.utils');
 const logger = log4js.getLogger(global.loggerName);
 
 async function createProject(flowJSON) {
-  try {
-    if (!flowJSON.port) {
-      flowJSON.port = 31000;
-    }
-    const folderPath = path.join(process.cwd(), 'generatedFlows', flowJSON._id);
-    logger.info('Creating Project Folder:', folderPath);
+	try {
+		if (!flowJSON.port) {
+			flowJSON.port = 31000;
+		}
+		const folderPath = path.join(process.cwd(), 'generatedFlows', flowJSON._id);
+		logger.info('Creating Project Folder:', folderPath);
 
-    if (fs.existsSync(folderPath)) {
-      fs.rmdirSync(folderPath, { recursive: true });
-    }
-    mkdirp.sync(folderPath);
-    mkdirp.sync(path.join(folderPath, 'schemas'));
+		if (fs.existsSync(folderPath)) {
+			fs.rmdirSync(folderPath, { recursive: true });
+		}
+		mkdirp.sync(folderPath);
+		mkdirp.sync(path.join(folderPath, 'schemas'));
 
-    await copy(__dirname, folderPath);
+		await copy(__dirname, folderPath);
 
-    fs.rmdirSync(path.join(folderPath, `test`), { recursive: true });
-    fs.rmdirSync(path.join(folderPath, `generators`), { recursive: true });
-    fs.rmSync(path.join(folderPath, `index.js`));
+		fs.rmdirSync(path.join(folderPath, 'test'), { recursive: true });
+		fs.rmdirSync(path.join(folderPath, 'generators'), { recursive: true });
+		fs.rmSync(path.join(folderPath, 'index.js'));
 
-    if (flowJSON.dataStructures && Object.keys(flowJSON.dataStructures).length > 0) {
-      Object.keys(flowJSON.dataStructures).forEach(schemaID => {
-        let schema = flowJSON.dataStructures[schemaID];
-        schema._id = schemaID;
-        if (schema.definition) {
-          fs.writeFileSync(path.join(folderPath, 'schemas', `${schemaID}.schema.json`), JSON.stringify(schemaUtils.convertToJSONSchema(schema)));
-        }
-      });
-    }
-    fs.writeFileSync(path.join(folderPath, `route.js`), codeGen.parseFlow(flowJSON));
-    fs.writeFileSync(path.join(folderPath, `stage.utils.js`), codeGen.parseStages(flowJSON));
-    fs.writeFileSync(path.join(folderPath, `validation.utils.js`), codeGen.parseDataStructures(flowJSON));
-    fs.writeFileSync(path.join(folderPath, 'Dockerfile'), getDockerFile(config.imageTag, flowJSON.port, flowJSON));
-    fs.writeFileSync(path.join(folderPath, 'flow.json'), JSON.stringify(flowJSON));
-    fs.writeFileSync(path.join(folderPath, '.env'), getEnvFile(config.release, flowJSON.port, flowJSON));
+		if (flowJSON.dataStructures && Object.keys(flowJSON.dataStructures).length > 0) {
+			Object.keys(flowJSON.dataStructures).forEach(schemaID => {
+				let schema = flowJSON.dataStructures[schemaID];
+				schema._id = schemaID;
+				if (schema.definition) {
+					fs.writeFileSync(path.join(folderPath, 'schemas', `${schemaID}.schema.json`), JSON.stringify(schemaUtils.convertToJSONSchema(schema)));
+				}
+			});
+		}
+		fs.writeFileSync(path.join(folderPath, 'route.js'), codeGen.parseFlow(flowJSON));
+		fs.writeFileSync(path.join(folderPath, 'stage.utils.js'), codeGen.parseStages(flowJSON));
+		fs.writeFileSync(path.join(folderPath, 'validation.utils.js'), codeGen.parseDataStructures(flowJSON));
+		fs.writeFileSync(path.join(folderPath, 'Dockerfile'), getDockerFile(config.imageTag, flowJSON.port, flowJSON));
+		fs.writeFileSync(path.join(folderPath, 'flow.json'), JSON.stringify(flowJSON));
+		fs.writeFileSync(path.join(folderPath, '.env'), getEnvFile(config.release, flowJSON.port, flowJSON));
 
-    logger.info('Project Folder Created!');
-  } catch (e) {
-    logger.error('Project Folder Error!', e);
-  }
+		logger.info('Project Folder Created!');
+	} catch (e) {
+		logger.error('Project Folder Error!', e);
+	}
 }
 
 let dockerRegistryType = process.env.DOCKER_REGISTRY_TYPE ? process.env.DOCKER_REGISTRY_TYPE : '';
@@ -61,10 +61,10 @@ if (dockerReg.length > 0 && !dockerReg.endsWith('/') && dockerRegistryType != 'E
 
 
 function getDockerFile(release, port, flowData) {
-  let base = `${dockerReg}data.stack.bm:${config.imageTag}`;
-  if (dockerRegistryType == 'ECR') base = `${dockerReg}:data.stack.bm:${config.imageTag}`;
-  logger.debug(`Base image :: ${base}`);
-  return `
+	let base = `${dockerReg}data.stack.bm:${config.imageTag}`;
+	if (dockerRegistryType == 'ECR') base = `${dockerReg}:data.stack.bm:${config.imageTag}`;
+	logger.debug(`Base image :: ${base}`);
+	return `
     FROM ${base}
 
     WORKDIR /generated
@@ -89,12 +89,12 @@ function getDockerFile(release, port, flowData) {
     EXPOSE ${port}
 
     CMD [ "node", "app.js" ]
-  `
+  `;
 }
 
 
 function getEnvFile(release, port, flowData) {
-  return `
+	return `
     DATA_STACK_NAMESPACE="${config.DATA_STACK_NAMESPACE}"
     DATA_STACK_APP="${flowData.app}"
     DATA_STACK_FLOW_NAMESPACE="${flowData.namespace}"
@@ -107,7 +107,7 @@ function getEnvFile(release, port, flowData) {
     ENV IMAGE_TAG="${flowData._id}:${flowData.version}"
     DATA_DB="${config.dataStackNS}-${flowData.appName}"
     LOG_LEVEL="debug"
-  `
+  `;
 }
 
 

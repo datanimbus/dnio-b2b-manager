@@ -7,7 +7,6 @@ const queryUtils = require('../utils/query.utils');
 const logger = log4js.getLogger('faas.controller');
 const faasModel = mongoose.model('faas');
 const faasDraftModel = mongoose.model('faas.draft');
-const _ = require('lodash');
 
 
 router.get('/', async (req, res) => {
@@ -73,7 +72,7 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
 	try {
 		const payload = req.body;
-		doc = new faasModel(payload);
+		const doc = new faasModel(payload);
 		doc._req = req;
 		const status = await doc.save();
 		res.status(200).json(status);

@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const log4js = require('log4js');
 const mongoose = require('mongoose');
-const _ = require('lodash');
+const JWT = require('jsonwebtoken');
 
 const config = require('../config');
 const queryUtils = require('../utils/query.utils');
@@ -48,7 +48,7 @@ router.post('/:id/init', async (req, res) => {
 			let agentStages = flow.stages.filter((ele) => ele.options.agentId = agentId);
 			agentStages.forEach(stage => {
 				allFlows.push({ flowId: flow._id, options: stage.options });
-			})
+			});
 			if (flow.inputStage && flow.inputStage.options && flow.inputStage.options.agentId == agentId) {
 				allFlows.push({ flowId: flow._id, options: flow.inputStage.options });
 			}
