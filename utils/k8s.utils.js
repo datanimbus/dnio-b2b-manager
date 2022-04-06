@@ -1,7 +1,9 @@
+const log4js = require('log4js');
 const k8sClient = require('@appveen/data.stack-utils').kubeutil;
+
 const config = require('../config');
 
-const logger = global.logger;
+const logger = log4js.getLogger(global.loggerName);
 
 async function upsertService(data) {
 	try {
