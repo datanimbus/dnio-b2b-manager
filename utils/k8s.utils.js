@@ -27,14 +27,14 @@ async function upsertService(data) {
 async function upsertDeployment(data) {
 	try {
 		const envKeys = ['FQDN', 'LOG_LEVEL', 'MONGO_APPCENTER_URL', 'MONGO_AUTHOR_DBNAME', 'MONGO_AUTHOR_URL', 'MONGO_LOGS_DBNAME', 'MONGO_LOGS_URL', 'MONGO_RECONN_TIME', 'MONGO_RECONN_TRIES', 'STREAMING_CHANNEL', 'STREAMING_HOST', 'STREAMING_PASS', 'STREAMING_RECONN_ATTEMPTS', 'STREAMING_RECONN_TIMEWAIT', 'STREAMING_USER', 'DATA_STACK_NAMESPACE', 'CACHE_CLUSTER', 'CACHE_HOST', 'CACHE_PORT', 'CACHE_RECONN_ATTEMPTS', 'CACHE_RECONN_TIMEWAIT_MILLI', 'RELEASE', 'TLS_REJECT_UNAUTHORIZED', 'API_REQUEST_TIMEOUT'];
-		const envVars = {};
+		const envVars = [];
 		for (let i in envKeys) {
 			let val = envKeys[i];
-			envVars[val] = process.env[val];
+			envVars.push({ name: val, value: process.env[val] });
 		}
-		envVars['DATA_STACK_APP_NS'] = (config.DATA_STACK_NAMESPACE + '-' + data.app).toLowerCase();
-		envVars['DATA_STACK_FLOW_ID'] = data._id;
-		envVars['DATA_STACK_APP'] = data.app;
+		envVars.push({ name: 'DATA_STACK_APP_NS', value: (config.DATA_STACK_NAMESPACE + '-' + data.app).toLowerCase() });
+		envVars.push({ name: 'DATA_STACK_FLOW_ID', value: data._id });
+		envVars.push({ name: 'DATA_STACK_APP', value: data.app });
 
 		const options = {
 			startupProbe: {
@@ -50,13 +50,13 @@ async function upsertDeployment(data) {
 			}
 		};
 		let res = await k8sClient.deployment.getDeployment(data.namespace, data.deploymentName);
-		logger.debug('Deployment found for the name:', data.deploymentName, res.statusCode);
+		logger.debug('Deployment found for the name:', data.deploymentName, res.statusCode, data.image);
 		if (res.statusCode == 200) {
-			res = await k8sClient.deployment.updateDeployment(data.namespace, data.deploymentName, data.image, data.port, envVars, options);
-			logger.debug('Deployment Update Status:', data.deploymentName, res.statusCode);
+			res = await k8sClient.deployment.updateDeployment(data.namespace, data.deploymentName, data.image, (data.port || 8080), envVars, options, null);
+			logger.debug('Deployment Update Status:', data.deploymentName, res.statusCode, data.image);
 		} else {
-			res = await k8sClient.deployment.createDeployment(data.namespace, data.deploymentName, data.image, data.port, envVars, options, config.release);
-			logger.debug('Deployment Create Status:', data.deploymentName, res.statusCode);
+			res = await k8sClient.deployment.createDeployment(data.namespace, data.deploymentName, data.image, (data.port || 8080), envVars, options, config.release);
+			logger.debug('Deployment Create Status:', data.deploymentName, res.statusCode, data.image);
 		}
 		return res;
 	} catch (err) {
