@@ -28,10 +28,10 @@ function md5(text) {
  * @param {string} txnId The txnId of the current request
  * @param {string} text The text data to send in thread for encryption/decryption
  */
-function executeCipher(txnId, action, app, text) {
+async function executeCipher(txnId, action, app, text) {
 	logger.debug(`[${txnId}] Exec. thread :: cipher`);
-	return new Promise(async (resolve, reject) => {
-		const data = await getKeys(app);
+	const data = await getKeys(app);
+	return await new Promise((resolve, reject) => {
 		const baseKey = data.baseKey;
 		const baseCert = data.baseCert;
 		const encryptionKey = data.encryptionKey;
@@ -161,7 +161,7 @@ async function getKeys(app) {
 			throw new Error(res.body);
 		}
 	} catch (err) {
-		logger.error(`Error pinging user-manager ::`, err);
+		logger.error('Error pinging user-manager ::', err);
 		throw err;
 	}
 }

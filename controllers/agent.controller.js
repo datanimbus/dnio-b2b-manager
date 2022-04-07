@@ -7,6 +7,7 @@ const queryUtils = require('../utils/query.utils');
 
 const logger = log4js.getLogger('agent.controller');
 const agentModel = mongoose.model('agent');
+const agentActionModel = mongoose.model('agent-action');
 
 
 router.get('/', async (req, res) => {
@@ -76,7 +77,14 @@ router.put('/:id', async (req, res) => {
 			doc[key] = payload[key];
 		});
 		doc._req = req;
-		const status = await doc.save();
+
+		const actionDoc = new agentActionModel({
+			agentId: doc.agentId,
+			action: 'AGENT-UPDATED'
+		});
+		actionDoc._req = req;
+		let status = await actionDoc.save();
+		status = await doc.save();
 		res.status(200).json(status);
 	} catch (err) {
 		logger.error(err);
@@ -95,7 +103,14 @@ router.delete('/:id', async (req, res) => {
 			});
 		}
 		doc._req = req;
-		await doc.remove();
+		const actionDoc = new agentActionModel({
+			agentId: doc.agentId,
+			action: 'AGENT-DELETED'
+		});
+		actionDoc._req = req;
+		let status = await actionDoc.save();
+		status = await doc.remove();
+		logger.debug('Agent Deleted', status);
 		res.status(200).json({
 			message: 'Agent Deleted'
 		});
