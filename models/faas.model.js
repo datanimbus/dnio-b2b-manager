@@ -142,7 +142,7 @@ schema.pre('save', function (next) {
 		this.deploymentName = 'faas-' + _.camelCase(this.name).toLowerCase();
 	}
 	if (!this.namespace) {
-		this.namespace = (envConfig.DATA_STACK_NAMESPACE + '-' + this.app.toLowerCase().replace(/ /g, '')).toLowerCase();
+		this.namespace = (process.env.DATA_STACK_NAMESPACE + '-' + this.app.toLowerCase().replace(/ /g, '')).toLowerCase();
 	}
 	if (!this.port) {
 		this.port = getNextPort(txnId) || 31000;
@@ -180,7 +180,7 @@ draftSchema.pre('save', function (next) {
 		this.deploymentName = 'faas-' + _.camelCase(this.name).toLowerCase();
 	}
 	if (!this.namespace) {
-		this.namespace = (envConfig.DATA_STACK_NAMESPACE + '-' + this.app.toLowerCase().replace(/ /g, '')).toLowerCase();
+		this.namespace = (process.env.DATA_STACK_NAMESPACE + '-' + this.app.toLowerCase().replace(/ /g, '')).toLowerCase();
 	}
 	if (!this.port) {
 		this.port = getNextPort(txnId) || 31000;
