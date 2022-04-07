@@ -29,7 +29,7 @@ schema.index({ url: 1, app: 1 }, { unique: '__CUSTOM_API_DUPLICATE_ERROR__', spa
 
 schema.pre('validate', function (next) {
 	const req = this._req;
-	logger.debug(`[${req.headers['TxnId']}] faas - Validating if function name is empty`);
+	logger.debug(`[${req.get['TxnId']}] faas - Validating if function name is empty`);
 	this.name = this.name.trim();
 	this.url = this.url ? this.url.trim() : `/${_.camelCase(this.name)}`;
 	if (this.name && _.isEmpty(this.name)) {
@@ -40,7 +40,7 @@ schema.pre('validate', function (next) {
 
 draftSchema.pre('validate', function (next) {
 	const req = this._req;
-	logger.debug(`[${req.headers['TxnId']}] faas.draft - Validating if function name is empty`);
+	logger.debug(`[${req.get['TxnId']}] faas.draft - Validating if function name is empty`);
 	this.name = this.name.trim();
 	this.url = this.url ? this.url.trim() : `/${_.camelCase(this.name)}`;
 	if (this.name && _.isEmpty(this.name)) {
@@ -84,7 +84,7 @@ schema.pre('validate', async function (next) {
 		}
 		return next();
 	} catch (err) {
-		logger.error('faas - Error validating if function name is already in use');
+		logger.error(`[${req.get('TxnId')}] faas - Error validating if function name is already in use`);
 		next(err);
 	}
 });
@@ -201,6 +201,7 @@ schema.post('save', function (error, doc, next) {
 	if ((error.errors && error.errors.name) || error.name === 'ValidationError' ||
 		error.message.indexOf('E11000') > -1 || error.message.indexOf('__CUSTOM_NAME_DUPLICATE_ERROR__') > -1) {
 		logger.error('faas - Function name is already in use, not saving doc - ' + doc._id);
+		logger.trace(error);
 		next(new Error('Function name is already in use'));
 	} else {
 		next(error);
