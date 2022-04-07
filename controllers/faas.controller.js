@@ -89,7 +89,7 @@ router.post('/', async (req, res) => {
 		payload.deploymentName = (_.camelCase(payload.app) + '-' + _.camelCase(payload.name)).toLowerCase();
 		payload.namespace = (envConfig.DATA_STACK_NAMESPACE + '-' + payload.app.toLowerCase().replace(/ /g, '')).toLowerCase();
 
-		let port = await getNextPort(txnId) || 10001;
+		let port = await getNextPort(txnId) || 31000;
 		logger.debug(`[${txnId}] Next port number for function :: ${port}`);
 		payload.port = port;
 
