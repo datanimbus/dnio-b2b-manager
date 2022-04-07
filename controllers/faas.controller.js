@@ -87,9 +87,9 @@ router.post('/', async (req, res) => {
 		delete payload.namespace;
 		payload.version = 1;
 		payload.deploymentName = (_.camelCase(payload.app) + '-' + _.camelCase(payload.name)).toLowerCase();
-		payload.namespace = (envConfig.dataStackNS + '-' + payload.app.toLowerCase().replace(/ /g, '')).toLowerCase();
+		payload.namespace = (envConfig.DATA_STACK_NAMESPACE + '-' + payload.app.toLowerCase().replace(/ /g, '')).toLowerCase();
 
-		let port = await getNextPort(txnId);
+		let port = await getNextPort(txnId) || 31000;
 		logger.debug(`[${txnId}] Next port number for function :: ${port}`);
 		payload.port = port;
 
@@ -148,7 +148,7 @@ router.put('/:id', async (req, res) => {
 		}
 
 		doc.deploymentName = doc.deploymentName ? doc.deploymentName : (_.camelCase(doc.app) + '-' + _.camelCase(doc.name)).toLowerCase();
-		doc.namespace = doc.namespace ? doc.namespace : (envConfig.dataStackNS + '-' + doc.app.toLowerCase().replace(/ /g, '')).toLowerCase();
+		doc.namespace = doc.namespace ? doc.namespace : (envConfig.DATA_STACK_NAMESPACE + '-' + doc.app.toLowerCase().replace(/ /g, '')).toLowerCase();
 
 		logger.debug(`[${txnId}] Function found in b2b.faas collection for ID :: ${id}`);
 		logger.trace(`[${txnId}] Function data :: ${JSON.stringify(doc)}`);
