@@ -141,6 +141,12 @@ schema.pre('save', function (next) {
 	if (!this.deploymentName) {
 		this.deploymentName = 'faas-' + _.camelCase(this.name).toLowerCase();
 	}
+	if (!this.namespace) {
+		this.namespace = (envConfig.DATA_STACK_NAMESPACE + '-' + this.app.toLowerCase().replace(/ /g, '')).toLowerCase();
+	}
+	if (!this.port) {
+		this.port = await getNextPort(txnId) || 31000;
+	}
 	if (!this.status) {
 		this.status = 'STOPPED';
 	}
@@ -172,6 +178,12 @@ draftSchema.pre('save', function (next) {
 	this.url = '/api/a/faas/' + this.app + '/' + _.camelCase(this.name);
 	if (!this.deploymentName) {
 		this.deploymentName = 'faas-' + _.camelCase(this.name).toLowerCase();
+	}
+	if (!this.namespace) {
+		this.namespace = (envConfig.DATA_STACK_NAMESPACE + '-' + this.app.toLowerCase().replace(/ /g, '')).toLowerCase();
+	}
+	if (!this.port) {
+		this.port = await getNextPort(txnId) || 31000;
 	}
 	if (!this.status) {
 		this.status = 'STOPPED';
@@ -237,6 +249,31 @@ schema.post('remove', function (doc) {
 	dataStackUtils.eventsUtil.publishEvent('EVENT_FAAS_DELETE', 'faas', doc._req, doc);
 });
 
+function getNextPort(txnId) {
+	logger.debug(`[${txnId}] Fetching the next port number for the function`);
+
+	return mongoose.model('faas').find({}, 'port', {
+		sort: {
+			port: 1
+		}
+	})
+		.then((docs) => {
+			if (docs && docs.length > 0) {
+				return getNextVal(docs);
+			} else {
+				return startPort;
+			}
+		});
+}
+
+function getNextVal(_docs) {
+	let nextPort = _docs[0].port + 1;
+	for (var i = 1; i < _docs.length; i++) {
+		if (nextPort !== _docs[i].port) break;
+		else nextPort++;
+	}
+	return nextPort;
+}
 
 
 mongoose.model('faas', schema, 'b2b.faas');
