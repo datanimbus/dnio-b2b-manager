@@ -10,10 +10,10 @@ async function upsertService(data) {
 		let res = await k8sClient.service.getService(data.namespace, data.deploymentName);
 		logger.debug('Service found for the name:', data.deploymentName, res.statusCode);
 		if (res.statusCode == 200) {
-			res = await k8sClient.service.updateService(data.namespace, data.deploymentName, data.port);
+			res = await k8sClient.service.updateService(data.namespace, data.deploymentName, (data.port || 8080));
 			logger.debug('Service Update Status:', data.deploymentName, res.statusCode);
 		} else {
-			res = await k8sClient.service.createService(data.namespace, data.deploymentName, data.port, config.release);
+			res = await k8sClient.service.createService(data.namespace, data.deploymentName, (data.port || 8080), config.release);
 			logger.debug('Service Create Status:', data.deploymentName, res.statusCode);
 		}
 		return res;
