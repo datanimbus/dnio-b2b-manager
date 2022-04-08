@@ -83,16 +83,14 @@ router.post('/', async (req, res) => {
 	logger.info(`[${txnId}] Function create request received`);
 	logger.trace(`[${txnId}] Function details :: ${JSON.stringify(payload)}`);
 	try {
+		delete payload.version;
+		delete payload.draftVersion;
+		delete payload.status;
+		delete payload.port;
 		delete payload.deploymentName;
 		delete payload.namespace;
 		payload.version = 1;
-		payload.deploymentName = (_.camelCase(payload.app) + '-' + _.camelCase(payload.name)).toLowerCase();
-		payload.namespace = (envConfig.dataStackNS + '-' + payload.app.toLowerCase().replace(/ /g, '')).toLowerCase();
-
-		let port = await getNextPort(txnId);
-		logger.debug(`[${txnId}] Next port number for function :: ${port}`);
-		payload.port = port;
-
+		
 		logger.trace(`[${txnId}] Function create data :: ${JSON.stringify(payload)}`);
 
 		doc = new faasModel(payload);
@@ -136,7 +134,7 @@ router.put('/:id', async (req, res) => {
 		delete payload.namespace;
 		payload._id = id;
 
-		logger.trace(`[${txnId}] Function update data received + headers - ${JSON.stringify(payload)}`);
+		logger.trace(`[${txnId}] Function update data received :: ${JSON.stringify(payload)}`);
 
 		let doc = await faasModel.findOne({ _id: req.params.id, '_metadata.deleted': false });
 
@@ -146,9 +144,6 @@ router.put('/:id', async (req, res) => {
 				message: 'Function Not Found'
 			});
 		}
-
-		doc.deploymentName = doc.deploymentName ? doc.deploymentName : (_.camelCase(doc.app) + '-' + _.camelCase(doc.name)).toLowerCase();
-		doc.namespace = doc.namespace ? doc.namespace : (envConfig.dataStackNS + '-' + doc.app.toLowerCase().replace(/ /g, '')).toLowerCase();
 
 		logger.debug(`[${txnId}] Function found in b2b.faas collection for ID :: ${id}`);
 		logger.trace(`[${txnId}] Function data :: ${JSON.stringify(doc)}`);
@@ -281,31 +276,5 @@ router.delete('/:id', async (req, res) => {
 		});
 	}
 });
-
-function getNextVal(_docs) {
-	let nextPort = _docs[0].port + 1;
-	for (var i = 1; i < _docs.length; i++) {
-		if (nextPort !== _docs[i].port) break;
-		else nextPort++;
-	}
-	return nextPort;
-}
-
-function getNextPort(txnId) {
-	logger.debug(`[${txnId}] Fetching the next port number for the function`);
-
-	return mongoose.model('faas').find({}, 'port', {
-		sort: {
-			port: 1
-		}
-	})
-		.then((docs) => {
-			if (docs && docs.length > 0) {
-				return getNextVal(docs);
-			} else {
-				return startPort;
-			}
-		});
-}
 
 module.exports = router;

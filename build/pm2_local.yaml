@@ -1,0 +1,14 @@
+apps:
+- name: 05-bm
+  script: ./app.js
+  max_restarts: 5
+  env:
+    MONGO_AUTHOR_DBNAME: datastackConfig
+    MONGO_LOGS_DBNAME: datastackLogs
+    MONGO_RECONN_TRIES: 1000
+    MONGO_RECONN_TIME_MILLI: 21600
+    MODE: dev
+    LOG_LEVEL: debug
+    DATA_STACK_NAMESPACE: appveen
+    MAX_JSON_SIZE: 5mb
+    VERIFY_DEPLOYMENT_USER: false

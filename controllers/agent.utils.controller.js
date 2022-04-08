@@ -35,7 +35,7 @@ router.post('/:id/init', async (req, res) => {
 		logger.info(`[${txnId}] Processing Agent Init Action of -`, agentId);
 		logger.trace(`[${txnId}] Agent Init Action Body -`, JSON.stringify(req.body));
 
-		let doc = await agentModel.findById({ agentId: agentId }).lean();
+		let doc = await agentModel.findOne({ agentId: agentId }).lean();
 		if (!doc) {
 			logger.trace(`[${txnId}] Agent Not Found -`, agentId);
 			return res.status(404).json({
@@ -69,7 +69,7 @@ router.post('/:id/heartbeat', async (req, res) => {
 		logger.info(`[${txnId}] Processing Agent Init Action of -`, agentId);
 		logger.trace(`[${txnId}] Agent Init Action Body -`, JSON.stringify(req.body));
 
-		let doc = await agentModel.findById({ agentId: agentId }).lean();
+		let doc = await agentModel.findOne({ agentId: agentId }).lean();
 		if (!doc) {
 			logger.trace(`[${txnId}] Agent Not Found -`, agentId);
 			return res.status(404).json({
