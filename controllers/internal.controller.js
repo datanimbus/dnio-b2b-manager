@@ -6,77 +6,9 @@ const logger = log4js.getLogger(global.loggerName);
 
 const indexUtils = require('../utils/indexes.utils');
 
-
-router.post('/', async (req, res) => {
-	try {
-		const app = req.body.app;
-		if (!app) {
-			return res.status(400).json({ message: 'App is required' });
-		}
-		await indexUtils.createInteractoionUniqueIndexForApp(app);
-		res.status(200).json({ message: 'Create process acknowledged' });
-	} catch (err) {
-		logger.error(err);
-		if (typeof err === 'string') {
-			return res.status(500).json({
-				message: err
-			});
-		}
-		res.status(500).json({
-			message: err.message
-		});
-	}
-});
-
-router.put('/:id', async (req, res) => {
+router.delete('/', async (req, res) => {
 	try {
 		const app = req.params.app;
-		if (!app) {
-			return res.status(400).json({ message: 'App is required' });
-		}
-		logger.info(`[${req.get('TxnId')}] Processing App Update Request - ${app}`);
-
-		let agentTrustedIP = req.body.agentTrustedIP;
-		let metadata = {
-			'_id': app,
-			'agentTrustedIP': agentTrustedIP,
-		};
-		let obj = {
-			'appName': '',
-			'partnerName': '',
-			'flowName': '',
-			'action': 'APP_TRUSTED_IP_LIST_INFO_UPDATED',
-			'metaData': JSON.stringify(metadata),
-			'timestamp': new Date().toString(),
-			'entryType': 'IN',
-			'sentOrRead': false
-		};
-
-		res.status(200).json({ 'message': 'Update process acknowledged' });
-		const data = await mongoose.model('agentRegistry').findOne({ type: 'IEG' }).lean();
-		if (!data) {
-			return mongoose.model('agentRegistry').findOne({ type: 'IG' }).lean();
-		}
-		logger.debug(`[${req.get('TxnId')}] IG Agent Found`);
-		logger.trace(`[${req.get('TxnId')}] IG Agent - ${JSON.stringify(data)}`);
-		obj.agentId = data.agentId;
-		await mongoose.model('agent-action').create(obj);
-	} catch (err) {
-		logger.error(err);
-		if (typeof err === 'string') {
-			return res.status(500).json({
-				message: err
-			});
-		}
-		res.status(500).json({
-			message: err.message
-		});
-	}
-});
-
-router.delete('/:id', async (req, res) => {
-	try {
-		const app = req.params.id;
 		let promises;
 		if (!app) {
 			return res.status(400).json({ message: 'App is required' });
