@@ -145,7 +145,7 @@ schema.pre('save', function (next) {
 		this.namespace = (process.env.DATA_STACK_NAMESPACE + '-' + this.app.toLowerCase().replace(/ /g, '')).toLowerCase();
 	}
 	if (!this.port) {
-		this.port = getNextPort(txnId) || 31000;
+		this.port = getNextPort(req.get('TxnId')) || 31000;
 	}
 	if (!this.status) {
 		this.status = 'STOPPED';
@@ -183,7 +183,7 @@ draftSchema.pre('save', function (next) {
 		this.namespace = (process.env.DATA_STACK_NAMESPACE + '-' + this.app.toLowerCase().replace(/ /g, '')).toLowerCase();
 	}
 	if (!this.port) {
-		this.port = getNextPort(txnId) || 31000;
+		this.port = getNextPort(req.get('TxnId')) || 31000;
 	}
 	if (!this.status) {
 		this.status = 'STOPPED';
