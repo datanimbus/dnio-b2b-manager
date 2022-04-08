@@ -6,9 +6,9 @@ const logger = log4js.getLogger(global.loggerName);
 
 const indexUtils = require('../utils/indexes.utils');
 
-router.delete('/', async (req, res) => {
+router.delete('/:id', async (req, res) => {
 	try {
-		const app = req.params.app;
+		const app = req.params.id;
 		let promises;
 		if (!app) {
 			return res.status(400).json({ message: 'App is required' });
