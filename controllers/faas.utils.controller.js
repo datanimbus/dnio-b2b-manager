@@ -17,8 +17,9 @@ if (dockerRegistryType.length > 0) dockerRegistryType = dockerRegistryType.toUpp
 
 let dockerReg = process.env.DOCKER_REGISTRY_SERVER ? process.env.DOCKER_REGISTRY_SERVER : '';
 if (dockerReg.length > 0 && !dockerReg.endsWith('/') && dockerRegistryType != 'ECR') dockerReg += '/';
-let flowBaseImage = `${dockerReg}data.stack.faas.base:${config.imageTag}`;
-if (dockerRegistryType == 'ECR') flowBaseImage = `${dockerReg}:data.stack.faas.base:${config.imageTag}`;
+
+let faasBaseImage = `${dockerReg}data.stack.faas.base:${config.imageTag}`;
+if (dockerRegistryType == 'ECR') faasBaseImage = `${dockerReg}:data.stack.faas.base:${config.imageTag}`;
 
 router.get('/count', async (req, res) => {
 	try {
@@ -140,7 +141,7 @@ router.put('/:id/deploy', async (req, res) => {
 		});
 		// await codeGen.createProject(doc, txnId);
 		// const status = await deployUtils.deploy(doc, 'faas');
-		doc.image = flowBaseImage;
+		doc.image = faasBaseImage;
 		const status = await k8sUtils.upsertDeployment(doc);
 		if (status.statusCode !== 200 || status.statusCode !== 202) {
 			return res.status(status.statusCode).json({ message: 'Unable to deploy function' });
@@ -168,7 +169,7 @@ router.put('/:id/repair', async (req, res) => {
 		}
 		// await codeGen.createProject(doc, req.header('txnId'));
 		// const status = await deployUtils.repair(doc, 'faas');
-		doc.image = flowBaseImage;
+		doc.image = faasBaseImage;
 		let status = await k8sUtils.deleteDeployment(doc);
 		status = await k8sUtils.upsertDeployment(doc);
 		if (status.statusCode !== 200 || status.statusCode !== 202) {
