@@ -27,6 +27,14 @@ function initSocket(server) {
 	});
 }
 
+let permittedUrls = [
+	'/{app}/flow/utils/{id}/init',
+	'/{app}/faas/utils/{id}/init',
+	'/auth/login',
+	'/{app}/faas/utils/{id}/statusChange',
+	'/internal/app/{id}'
+];
+
 const app = express();
 
 app.use(express.json({ inflate: true, limit: config.MAX_JSON_SIZE }));
@@ -49,7 +57,7 @@ app.use((req, res, next) => {
 });
 
 app.use('/b2b', require('./router'));
-app.use('/bm', AuthCacheMW({ permittedUrls: ['/{app}/flow/utils/{id}/init', '/auth/login', '/{app}/faas/utils/{id}/statusChange', '/internal/app/{id}'], secret: config.secret, decodeOnly: true }), require('./controllers'));
+app.use('/bm', AuthCacheMW({ permittedUrls: permittedUrls, secret: config.secret, decodeOnly: true }), require('./controllers'));
 
 const server = app.listen(config.port, () => {
 	logger.info('HTTP Server is listening on:', config.port);
