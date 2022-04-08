@@ -129,4 +129,4 @@ schema.post('remove', function (doc) {
 	dataStackUtils.eventsUtil.publishEvent('EVENT_PARTNER_DELETE', 'partner', doc._req, doc);
 });
 
-mongoose.model('partner', schema, 'b2b.partners');
+mongoose.model('partners', schema, 'b2b.partners');
