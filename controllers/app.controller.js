@@ -74,9 +74,9 @@ router.put('/:id', async (req, res) => {
 	}
 });
 
-router.delete('/:id', async (req, res) => {
+router.delete('/internal/:id', async (req, res) => {
 	try {
-		const app = req.params.app;
+		const app = req.params.id;
 		let promises;
 		if (!app) {
 			return res.status(400).json({ message: 'App is required' });
@@ -109,7 +109,7 @@ router.delete('/:id', async (req, res) => {
 
 		// Deleting Agents
 		logger.debug(`[${req.get('TxnId')}] Deleting Agents`);
-		const agentDocs = await mongoose.model('agentRegistry').find({ app: app });
+		const agentDocs = await mongoose.model('agent').find({ app: app });
 		logger.trace(`[${req.get('TxnId')}] Agents to delete - ${JSON.stringify(agentDocs)}`);
 		promises = agentDocs.map(doc => {
 			doc._req = req;
