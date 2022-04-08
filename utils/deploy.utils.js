@@ -86,8 +86,8 @@ async function deploy(data, type) {
 		}
 		logger.info('Upload successful!  Server responded with:', httpResponse.body);
 		try {
-			// deleteProjectFolder(folderPath);
-			// removeFile(zipPath);
+			deleteProjectFolder(folderPath);
+			removeFile(zipPath);
 		} catch (err) {
 			logger.warn('Unable to delete folders');
 			logger.error(err);
