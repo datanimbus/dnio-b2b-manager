@@ -1,9 +1,8 @@
 const router = require('express').Router();
 const log4js = require('log4js');
 const mongoose = require('mongoose');
+const dataStackUtils = require('@appveen/data.stack-utils');
 
-// const codeGen = require('../code-gen/faas');
-// const deployUtils = require('../utils/deploy.utils');
 const queryUtils = require('../utils/query.utils');
 const k8sUtils = require('../utils/k8s.utils');
 const config = require('../config');
@@ -139,13 +138,15 @@ router.put('/:id/deploy', async (req, res) => {
 			app: doc.app,
 			message: 'Deployed'
 		});
-		// await codeGen.createProject(doc, txnId);
-		// const status = await deployUtils.deploy(doc, 'faas');
-		doc.image = faasBaseImage;
-		const status = await k8sUtils.upsertDeployment(doc);
-		if (status.statusCode !== 200 || status.statusCode !== 202) {
-			return res.status(status.statusCode).json({ message: 'Unable to deploy function' });
+
+		if (config.isK8sEnv()) {
+			doc.image = faasBaseImage;
+			const status = await k8sUtils.upsertDeployment(doc);
+			if (status.statusCode !== 200 || status.statusCode !== 202) {
+				return res.status(status.statusCode).json({ message: 'Unable to deploy function' });
+			}
 		}
+
 		res.status(200).json({ message: 'Function Deployed' });
 
 	} catch (err) {
@@ -167,8 +168,6 @@ router.put('/:id/repair', async (req, res) => {
 		if (!doc) {
 			return res.status(400).json({ message: 'Invalid Function' });
 		}
-		// await codeGen.createProject(doc, req.header('txnId'));
-		// const status = await deployUtils.repair(doc, 'faas');
 		doc.image = faasBaseImage;
 		let status = await k8sUtils.deleteDeployment(doc);
 		status = await k8sUtils.upsertDeployment(doc);
@@ -196,7 +195,7 @@ router.put('/:id/start', async (req, res) => {
 		let socket = req.app.get('socket');
 		logger.info(`[${txnId}] Function start request received :: ${id}`);
 
-		const doc = await faasModel.findById(req.params.id).lean();
+		const doc = await faasModel.findById(req.params.id);
 		if (!doc) {
 			return res.status(400).json({ message: 'Invalid Function' });
 		}
@@ -225,11 +224,12 @@ router.put('/:id/start', async (req, res) => {
 
 		logger.info(`[${txnId}] Scaling up deployment :: ${doc.deploymentName}`);
 
-		// const status = await deployUtils.start(doc);
-		const status = await k8sUtils.scaleDeployment(doc, 1);
+		if (config.isK8sEnv()) {
+			const status = await k8sUtils.scaleDeployment(doc, 1);
 
-		if (status.statusCode !== 200 || status.statusCode !== 202) {
-			return res.status(status.statusCode).json({ message: 'Unable to start function' });
+			if (status.statusCode !== 200 || status.statusCode !== 202) {
+				return res.status(status.statusCode).json({ message: 'Unable to start function' });
+			}
 		}
 
 		res.status(200).json({ message: 'Function Started' });
@@ -267,15 +267,16 @@ router.put('/:id/stop', async (req, res) => {
 		}
 
 		logger.info(`[${txnId}] Scaling down deployment :: ${JSON.stringify({ namespace: doc.namespace, deploymentName: doc.deploymentName })}`);
-	
-		// const status = await deployUtils.stop(doc);
-		const status = await k8sUtils.scaleDeployment(doc, 0);
 
-		if (status.statusCode !== 200 || status.statusCode !== 202) {
-			return res.status(status.statusCode).json({ message: 'Unable to stop Function' });
+		if (config.isK8sEnv()) {
+			const status = await k8sUtils.scaleDeployment(doc, 0);
+
+			if (status.statusCode !== 200 || status.statusCode !== 202) {
+				return res.status(status.statusCode).json({ message: 'Unable to stop Function' });
+			}
 		}
 
-		logger.debug(`[${txnId}] Deployment Scaled :: ${JSON.stringify(status)}`);
+		logger.debug(`[${txnId}] Deployment Scaled`);
 
 		let eventId = 'EVENT_FAAS_STOP';
 		logger.debug(`[${txnId}] Publishing Event - ${eventId}`);
@@ -287,7 +288,7 @@ router.put('/:id/stop', async (req, res) => {
 			message: 'Stopped'
 		});
 
-		doc.status = 'Stopped';
+		doc.status = 'Undeployed';
 		doc._req = req;
 		await doc.save();
 		res.status(200).json({ message: 'Function Stopped' });

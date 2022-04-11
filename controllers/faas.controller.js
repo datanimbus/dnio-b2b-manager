@@ -90,7 +90,7 @@ router.post('/', async (req, res) => {
 		delete payload.deploymentName;
 		delete payload.namespace;
 		payload.version = 1;
-		
+
 		logger.trace(`[${txnId}] Function create data :: ${JSON.stringify(payload)}`);
 
 		doc = new faasModel(payload);
@@ -243,13 +243,15 @@ router.delete('/:id', async (req, res) => {
 			await draftData.remove();
 		}
 
-		let status = await kubeutil.service.deleteService(doc.namespace, doc.deploymentName);
-		logger.debug(`[${txnId}] Service deleted :: ${status.statusCode}`);
-		logger.trace(`[${txnId}] Service deleted :: ${JSON.stringify(status)}`);
+		if (envConfig.isK8sEnv()) {
+			let status = await kubeutil.service.deleteService(doc.namespace, doc.deploymentName);
+			logger.debug(`[${txnId}] Service deleted :: ${status.statusCode}`);
+			logger.trace(`[${txnId}] Service deleted :: ${JSON.stringify(status)}`);
 
-		status = await kubeutil.deployment.deleteDeployment(doc.namespace, doc.deploymentName);
-		logger.debug(`[${txnId}] Deployment deleted :: ${status.statusCode}`);
-		logger.debug(`[${txnId}] Deployment deleted :: ${JSON.stringify(status)}`);
+			status = await kubeutil.deployment.deleteDeployment(doc.namespace, doc.deploymentName);
+			logger.debug(`[${txnId}] Deployment deleted :: ${status.statusCode}`);
+			logger.debug(`[${txnId}] Deployment deleted :: ${JSON.stringify(status)}`);
+		}
 
 		let eventId = 'EVENT_FAAS_DELETE';
 		logger.debug(`[${txnId}] Publishing Event :: ${eventId}`);
