@@ -7,7 +7,7 @@ const definition = require('../schemas/faas.schema').definition;
 const mongooseUtils = require('../utils/mongoose.utils');
 const queue = require('../queue');
 
-
+const startPort = 30010;
 const logger = log4js.getLogger(global.loggerName);
 const client = queue.getClient();
 dataStackUtils.eventsUtil.setNatsClient(client);
@@ -131,7 +131,7 @@ draftSchema.pre('validate', function (next) {
 });
 
 
-schema.pre('save', function (next) {
+schema.pre('save', async function (next) {
 	const req = this._req;
 	this._isNew = this.isNew;
 	logger.debug(`[${req.headers['TxnId']}] faas - Adding API Endpoint and default code`);
@@ -145,7 +145,7 @@ schema.pre('save', function (next) {
 		this.namespace = (process.env.DATA_STACK_NAMESPACE + '-' + this.app.toLowerCase().replace(/ /g, '')).toLowerCase();
 	}
 	if (!this.port) {
-		this.port = getNextPort(req.headers['TxnId']) || 31000;
+		this.port = await getNextPort(req.headers['TxnId']) || 31000;
 	}
 	if (!this.status) {
 		this.status = 'STOPPED';
@@ -249,21 +249,14 @@ schema.post('remove', function (doc) {
 	dataStackUtils.eventsUtil.publishEvent('EVENT_FAAS_DELETE', 'faas', doc._req, doc);
 });
 
-function getNextPort(txnId) {
+async function getNextPort(txnId) {
 	logger.debug(`[${txnId}] Fetching the next port number for the function`);
 
-	return mongoose.model('faas').find({}, 'port', {
-		sort: {
-			port: 1
-		}
-	})
-		.then((docs) => {
-			if (docs && docs.length > 0) {
-				return getNextVal(docs);
-			} else {
-				return startPort;
-			}
-		});
+	let docs = await mongoose.model('faas').find({}).select('port').sort({'port': 1}).lean();
+	if (docs && docs.length > 0 && docs[0].port) 
+		return getNextVal(docs);
+	else
+		return startPort;
 }
 
 function getNextVal(_docs) {
