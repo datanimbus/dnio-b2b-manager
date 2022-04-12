@@ -141,7 +141,7 @@ router.put('/:id/deploy', async (req, res) => {
 
 		if (config.isK8sEnv()) {
 			doc.image = faasBaseImage;
-			const status = await k8sUtils.upsertDeployment(doc);
+			const status = await k8sUtils.upsertFaasDeployment(doc);
 			if (status.statusCode !== 200 || status.statusCode !== 202) {
 				return res.status(status.statusCode).json({ message: 'Unable to deploy function' });
 			}
@@ -227,6 +227,8 @@ router.put('/:id/start', async (req, res) => {
 		if (config.isK8sEnv()) {
 			const status = await k8sUtils.scaleDeployment(doc, 1);
 
+			logger.trace(`[${txnId}] Deployment Scaled status :: ${JSON.stringify(status)}`);
+
 			if (status.statusCode !== 200 || status.statusCode !== 202) {
 				return res.status(status.statusCode).json({ message: 'Unable to start function' });
 			}
@@ -270,6 +272,8 @@ router.put('/:id/stop', async (req, res) => {
 
 		if (config.isK8sEnv()) {
 			const status = await k8sUtils.scaleDeployment(doc, 0);
+
+			logger.trace(`[${txnId}] Deployment Scaled status :: ${JSON.stringify(status)}`);
 
 			if (status.statusCode !== 200 || status.statusCode !== 202) {
 				return res.status(status.statusCode).json({ message: 'Unable to stop Function' });
