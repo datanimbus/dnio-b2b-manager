@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 
 const logger = log4js.getLogger(global.loggerName);
 
-const indexUtils = require('../utils/indexes.utils');
+// const indexUtils = require('../utils/indexes.utils');
 
 router.delete('/:id', async (req, res) => {
 	try {

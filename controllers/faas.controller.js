@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const log4js = require('log4js');
 const mongoose = require('mongoose');
-const _ = require('lodash');
+// const _ = require('lodash');
 
 const dataStackUtils = require('@appveen/data.stack-utils');
 
@@ -93,7 +93,7 @@ router.post('/', async (req, res) => {
 
 		logger.trace(`[${txnId}] Function create data :: ${JSON.stringify(payload)}`);
 
-		doc = new faasModel(payload);
+		let doc = new faasModel(payload);
 		doc._req = req;
 		const status = await doc.save();
 
