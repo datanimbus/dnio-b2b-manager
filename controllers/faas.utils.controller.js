@@ -327,9 +327,9 @@ router.put('/:id/draftDelete', async (req, res) => {
 		}
 
 		logger.debug(`[${txnId}] Function draft data found for id :: ${id}`);
-		logger.trace(`[${txnId}] Function draft data :: ${JSON.stringify(draftData)}`);
+		logger.trace(`[${txnId}] Function draft data :: ${JSON.stringify(draftDoc)}`);
 		draftDoc._req = req;
-		await draftData.remove();
+		await draftDoc.remove();
 
 		logger.debug(`[${txnId}] Function data found for id :: ${id}`);
 		logger.trace(`[${txnId}] Function data :: ${JSON.stringify(doc)}`);
