@@ -5,7 +5,7 @@
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
-    "lint": "./node_modules/.bin/eslint app.js controllers/ models/ utils/ --fix",
+    "lint": "./node_modules/.bin/eslint app.js controllers/ models/ utils/ db-factory.js app.js queue.js init.js --fix",
     "copy-flow": "node code-gen/copy-flow.js",
     "copy-faas": "node code-gen/copy-faas.js"
   },

@@ -10,13 +10,13 @@ log4js.configure({
 const logger = log4js.getLogger(global.loggerName);
 const clusterName = process.env.STREAMING_CHANNEL || 'datastack-cluster';
 const clientId = `${process.env.HOSTNAME || 'B2B-MANAGER'}` + Math.floor(Math.random() * 10000);
-const streamingConfig = config.streamingConfig
+const streamingConfig = config.streamingConfig;
 
 let client;
 
 function init() {
 	if (!client) {
-		logger.debug(`clusterName: ${clusterName}, clientId: ${clientId}, streamingConfig: ${JSON.stringify(streamingConfig)}`)
+		logger.debug(`clusterName: ${clusterName}, clientId: ${clientId}, streamingConfig: ${JSON.stringify(streamingConfig)}`);
 		client = NATS.connect(clusterName, clientId, streamingConfig);
 		client.on('error', function (err) {
 			logger.error(err);
