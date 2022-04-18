@@ -54,6 +54,10 @@ async function upsertDeployment(data) {
 		if (res.statusCode == 200) {
 			res = await k8sClient.deployment.updateDeployment(data.namespace, data.deploymentName, data.image, (data.port || 8080), envVars, options, null);
 			logger.debug('Deployment Update Status:', data.deploymentName, res.statusCode, data.image);
+			res = await k8sClient.deployment.scaleDeployment(data.namespace, data.deploymentName, 0);
+			logger.debug('Deployment Scaled to 0:', data.deploymentName, res.statusCode, data.image);
+			res = await k8sClient.deployment.scaleDeployment(data.namespace, data.deploymentName, 1);
+			logger.debug('Deployment Scaled to 1:', data.deploymentName, res.statusCode, data.image);
 		} else {
 			res = await k8sClient.deployment.createDeployment(data.namespace, data.deploymentName, data.image, (data.port || 8080), envVars, options, config.release);
 			logger.debug('Deployment Create Status:', data.deploymentName, res.statusCode, data.image);
@@ -96,6 +100,10 @@ async function upsertFaasDeployment(data) {
 		if (res.statusCode == 200) {
 			res = await k8sClient.deployment.updateDeployment(data.namespace, data.deploymentName, data.image, (data.port || 8080), envVars, options, null);
 			logger.debug('Deployment Update Status:', data.deploymentName, res.statusCode, data.image);
+			res = await k8sClient.deployment.scaleDeployment(data.namespace, data.deploymentName, 0);
+			logger.debug('Deployment Scaled to 0:', data.deploymentName, res.statusCode, data.image);
+			res = await k8sClient.deployment.scaleDeployment(data.namespace, data.deploymentName, 1);
+			logger.debug('Deployment Scaled to 1:', data.deploymentName, res.statusCode, data.image);
 		} else {
 			res = await k8sClient.deployment.createDeployment(data.namespace, data.deploymentName, data.image, (data.port || 8080), envVars, options, config.release);
 			logger.debug('Deployment Create Status:', data.deploymentName, res.statusCode, data.image);
