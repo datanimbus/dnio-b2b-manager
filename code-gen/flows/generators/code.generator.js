@@ -318,7 +318,7 @@ function generateStages(stage) {
 				stage.validation[field] = {
 					code: stage.validation[field],
 					formulaID
-				}
+				};
 				const formulaCode = [];
 				formulaCode.push(`function ${formulaID}(data) {`);
 				formulaCode.push(`${tab(1)}try {`);
@@ -488,9 +488,9 @@ function parseDataStructures(dataJson) {
 	code.push('const fs = require(\'fs\');');
 	code.push('const path = require(\'path\');');
 	code.push('const log4js = require(\'log4js\');');
-	code.push(`const Ajv = require(\'ajv\');`);
+	code.push('const Ajv = require(\'ajv\');');
 	code.push('const _ = require(\'lodash\');');
-	code.push(`const ajv = new Ajv();`);
+	code.push('const ajv = new Ajv();');
 	code.push('');
 	code.push('const logger = log4js.getLogger(global.loggerName);');
 	code.push('');
