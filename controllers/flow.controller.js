@@ -129,7 +129,7 @@ router.delete('/:id', async (req, res) => {
 			});
 		}
 		doc._req = req;
-		if (config.isK8sEnv()) {
+		if (config.isK8sEnv() && doc.status == 'Active') {
 			const status = await deployUtils.undeploy(doc);
 			if (status.statusCode !== 200 && status.statusCode !== 202) {
 				return res.status(status.statusCode).json({ message: 'Unable to stop Flow' });
