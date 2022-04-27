@@ -31,6 +31,7 @@ let permittedUrls = [
 	'/{app}/flow/utils/{id}/init',
 	'/{app}/faas/utils/{id}/init',
 	'/auth/login',
+	'/faas/fetchAll',
 	'/{app}/faas/utils/{id}/statusChange',
 	'/internal/app/{id}'
 ];
