@@ -16,6 +16,7 @@ router.get('/faas/fetchAll', async (req, res) => {
 		}
 		const data = queryUtils.getPaginationData(req);
 		const docs = await faasModel.find(filter).select(data.select).sort(data.sort).skip(data.skip).limit(data.count).lean();
+		logger.trace('Fetch All Functions :: ', JSON.stringify(docs));
 		res.status(200).json(docs);
 	} catch (err) {
 		logger.error(err);
