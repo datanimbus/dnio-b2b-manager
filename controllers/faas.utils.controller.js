@@ -277,7 +277,7 @@ router.put('/:id/stop', async (req, res) => {
 
 				logger.trace(`[${txnId}] Deployment Scaled status :: ${JSON.stringify(status)}`);
 	
-				if (status.statusCode !== 200 || status.statusCode !== 202) {
+				if (status.statusCode != 200 || status.statusCode != 202) {
 					return res.status(status.statusCode).json({ message: 'Unable to stop Function' });
 				}
 				logger.debug(`[${txnId}] Deployment Scaled`);
