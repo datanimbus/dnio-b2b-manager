@@ -271,16 +271,20 @@ router.put('/:id/stop', async (req, res) => {
 		logger.info(`[${txnId}] Scaling down deployment :: ${JSON.stringify({ namespace: doc.namespace, deploymentName: doc.deploymentName })}`);
 
 		if (config.isK8sEnv()) {
-			const status = await k8sUtils.scaleDeployment(doc, 0);
+			const deployment = await k8sUtils.getDeployment(doc);
+			if (deployment.statusCode == 200) {
+				const status = await k8sUtils.scaleDeployment(doc, 0);
 
-			logger.trace(`[${txnId}] Deployment Scaled status :: ${JSON.stringify(status)}`);
-
-			if (status.statusCode !== 200 || status.statusCode !== 202) {
-				return res.status(status.statusCode).json({ message: 'Unable to stop Function' });
+				logger.trace(`[${txnId}] Deployment Scaled status :: ${JSON.stringify(status)}`);
+	
+				if (status.statusCode !== 200 || status.statusCode !== 202) {
+					return res.status(status.statusCode).json({ message: 'Unable to stop Function' });
+				}
+				logger.debug(`[${txnId}] Deployment Scaled`);
+			} else {
+				logger.debug(`[${txnId}] Deployment does not exist`);
 			}
 		}
-
-		logger.debug(`[${txnId}] Deployment Scaled`);
 
 		let eventId = 'EVENT_FAAS_STOP';
 		logger.debug(`[${txnId}] Publishing Event - ${eventId}`);
