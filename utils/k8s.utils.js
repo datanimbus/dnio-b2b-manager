@@ -5,6 +5,10 @@ const config = require('../config');
 
 const logger = log4js.getLogger(global.loggerName);
 
+async function getDeployment(data) {
+	return await k8sClient.deployment.getDeployment(data.namespace, data.deploymentName)
+}
+
 async function upsertService(data) {
 	try {
 		let res = await k8sClient.service.getService(data.namespace, data.deploymentName);
@@ -153,6 +157,7 @@ async function deleteService(data) {
 	}
 }
 
+module.exports.getDeployment = getDeployment;
 module.exports.upsertService = upsertService;
 module.exports.upsertDeployment = upsertDeployment;
 module.exports.scaleDeployment = scaleDeployment;
