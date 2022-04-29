@@ -45,7 +45,7 @@ function get(_service) {
         if (_service == 'user') return `http://user.${DATA_STACK_NAMESPACE}`;
         if (_service == 'gw') return `http://gw.${DATA_STACK_NAMESPACE}`;
         if (_service == 'sec') return `http://sec.${DATA_STACK_NAMESPACE}`;
-        if (_service == 'pm') return `http://pm.${DATA_STACK_NAMESPACE}`;
+        if (_service == 'bm') return `http://bm.${DATA_STACK_NAMESPACE}`;
     } else {
         if (_service == 'ne') return 'http://localhost:10010';
         if (_service == 'sm') return 'http://localhost:10003';
@@ -53,7 +53,7 @@ function get(_service) {
         if (_service == 'user') return 'http://localhost:10004';
         if (_service == 'gw') return 'http://localhost:9080';
         if (_service == 'sec') return 'http://localhost:10007';
-        if (_service == 'pm') return 'http://localhost:10011';
+        if (_service == 'bm') return 'http://localhost:10011';
     }
 }
 
@@ -69,7 +69,7 @@ module.exports = {
     baseUrlSM: get('sm') + '/sm',
     baseUrlNE: get('ne') + '/ne',
     baseUrlUSR: get('user') + '/rbac',
-    baseUrlPM: get('pm') + '/pm',
+    baseUrlPM: get('bm') + '/bm',
     baseUrlSEC: get('sec') + '/sec',
     baseUrlDM: get('dm') + '/dm',
     maxHeapSize: process.env.NODE_MAX_HEAP_SIZE || '4096',
