@@ -99,6 +99,10 @@ router.post('/', async (req, res) => {
 
 		socket.emit('faasCreated', {
 			app: payload.app,
+			url: payload.url,
+			port: payload.port,
+			deploymentName: payload.deploymentName,
+			namespace: payload.namespace,
 			message: payload.status
 		});
 
@@ -202,6 +206,10 @@ router.put('/:id', async (req, res) => {
 		socket.emit('faasStatus', {
 			_id: id,
 			app: faasData.app,
+			url: faasData.url,
+			port: faasData.port,
+			deploymentName: faasData.deploymentName,
+			namespace: faasData.namespace,
 			message: 'Updated'
 		});
 	} catch (err) {
@@ -260,6 +268,10 @@ router.delete('/:id', async (req, res) => {
 		socket.emit('faasDeleted', {
 			_id: id,
 			app: doc.app,
+			url: doc.url,
+			port: doc.port,
+			deploymentName: doc.deploymentName,
+			namespace: doc.namespace,
 			message: 'Deleted'
 		});
 

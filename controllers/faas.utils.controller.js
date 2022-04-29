@@ -136,6 +136,10 @@ router.put('/:id/deploy', async (req, res) => {
 		socket.emit('faasStatus', {
 			_id: id,
 			app: doc.app,
+			url: doc.url,
+			port: doc.port,
+			deploymentName: doc.deploymentName,
+			namespace: doc.namespace,
 			message: 'Deployed'
 		});
 
@@ -219,6 +223,10 @@ router.put('/:id/start', async (req, res) => {
 		socket.emit('faasStatus', {
 			_id: id,
 			app: doc.app,
+			url: doc.url,
+			port: doc.port,
+			deploymentName: doc.deploymentName,
+			namespace: doc.namespace,
 			message: 'Started'
 		});
 
@@ -277,7 +285,7 @@ router.put('/:id/stop', async (req, res) => {
 
 				logger.trace(`[${txnId}] Deployment Scaled status :: ${JSON.stringify(status)}`);
 	
-				if (status.statusCode != 200 || status.statusCode != 202) {
+				if (status.statusCode != 200 && status.statusCode != 202) {
 					return res.status(status.statusCode).json({ message: 'Unable to stop Function' });
 				}
 				logger.debug(`[${txnId}] Deployment Scaled`);
@@ -293,6 +301,10 @@ router.put('/:id/stop', async (req, res) => {
 		socket.emit('faasStatus', {
 			_id: id,
 			app: doc.app,
+			url: doc.url,
+			port: doc.port,
+			deploymentName: doc.deploymentName,
+			namespace: doc.namespace,
 			message: 'Stopped'
 		});
 
@@ -377,6 +389,10 @@ router.put('/:id/statusChange', async (req, res) => {
 		socket.emit('faasStatus', {
 			_id: id,
 			app: doc.app,
+			url: doc.url,
+			port: doc.port,
+			deploymentName: doc.deploymentName,
+			namespace: doc.namespace,
 			message: status
 		});
 
