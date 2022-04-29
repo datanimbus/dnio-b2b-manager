@@ -146,7 +146,7 @@ router.put('/:id/deploy', async (req, res) => {
 		if (config.isK8sEnv()) {
 			doc.image = faasBaseImage;
 			const status = await k8sUtils.upsertFaasDeployment(doc);
-			if (status.statusCode !== 200 || status.statusCode !== 202) {
+			if (status.statusCode !== 200 && status.statusCode !== 202) {
 				return res.status(status.statusCode).json({ message: 'Unable to deploy function' });
 			}
 		}
@@ -175,7 +175,7 @@ router.put('/:id/repair', async (req, res) => {
 		doc.image = faasBaseImage;
 		let status = await k8sUtils.deleteDeployment(doc);
 		status = await k8sUtils.upsertDeployment(doc);
-		if (status.statusCode !== 200 || status.statusCode !== 202) {
+		if (status.statusCode !== 200 && status.statusCode !== 202) {
 			return res.status(status.statusCode).json({ message: 'Unable to repair function' });
 		}
 		res.status(200).json({ message: 'Function Repaired' });
@@ -237,7 +237,7 @@ router.put('/:id/start', async (req, res) => {
 
 			logger.trace(`[${txnId}] Deployment Scaled status :: ${JSON.stringify(status)}`);
 
-			if (status.statusCode !== 200 || status.statusCode !== 202) {
+			if (status.statusCode !== 200 && status.statusCode !== 202) {
 				return res.status(status.statusCode).json({ message: 'Unable to start function' });
 			}
 		}
