@@ -145,8 +145,9 @@ router.put('/:id/deploy', async (req, res) => {
 
 		if (config.isK8sEnv()) {
 			doc.image = faasBaseImage;
+			const service =  await k8sUtils.upsertService(doc);
 			const status = await k8sUtils.upsertFaasDeployment(doc);
-			if (status.statusCode !== 200 && status.statusCode !== 202) {
+			if ((status.statusCode !== 200 && status.statusCode !== 202) || (service.statusCode !== 200 && service.statusCode !== 202)) {
 				return res.status(status.statusCode).json({ message: 'Unable to deploy function' });
 			}
 		}
@@ -173,9 +174,12 @@ router.put('/:id/repair', async (req, res) => {
 			return res.status(400).json({ message: 'Invalid Function' });
 		}
 		doc.image = faasBaseImage;
+		let service = await k8sUtils.deleteService(doc);
+		service = await k8sUtils.upsertService(doc);
+
 		let status = await k8sUtils.deleteDeployment(doc);
 		status = await k8sUtils.upsertDeployment(doc);
-		if (status.statusCode !== 200 && status.statusCode !== 202) {
+		if ((status.statusCode !== 200 && status.statusCode !== 202) || (service.statusCode !== 200 && service.statusCode !== 202)) {
 			return res.status(status.statusCode).json({ message: 'Unable to repair function' });
 		}
 		res.status(200).json({ message: 'Function Repaired' });
