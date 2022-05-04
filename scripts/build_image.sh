@@ -28,16 +28,16 @@ fi
 if [ $1 ]; then
     REL=$1
 fi
-if [ -f $WORKSPACE/../LATEST_B2BGW ]; then
-    LATEST_B2BGW=`cat $WORKSPACE/../LATEST_B2BGW`
-fi
-if [ ! $LATEST_B2BGW ]; then
-    echo "****************************************************"
-    echo "data.stack.bm :: Please Build B2BGW 1st."
-    echo "data.stack.bm :: BUILD FAILED"
-    echo "****************************************************"
-    exit 0
-fi
+# if [ -f $WORKSPACE/../LATEST_B2BGW ]; then
+#     LATEST_B2BGW=`cat $WORKSPACE/../LATEST_B2BGW`
+# fi
+# if [ ! $LATEST_B2BGW ]; then
+#     echo "****************************************************"
+#     echo "data.stack.bm :: Please Build B2BGW 1st."
+#     echo "data.stack.bm :: BUILD FAILED"
+#     echo "****************************************************"
+#     exit 0
+# fi
 if [ ! $REL ]; then
     echo "****************************************************"
     echo "data.stack.bm :: Please Create file DATA_STACK_RELEASE with the releaese at $WORKSPACE or provide it as 1st argument of this script."
