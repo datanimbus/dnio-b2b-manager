@@ -59,6 +59,7 @@ router.post('/login', async (req, res) => {
 		doc._req = req;
 		result = await doc.save();
 		logger.debug('Agent Logged In :', doc.lastLoggedIn);
+		temp.encryptionKey = config.encryptionKey;
 		res.status(200).json(temp);
 	} catch (err) {
 		logger.error(err);

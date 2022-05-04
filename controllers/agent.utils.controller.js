@@ -7,9 +7,10 @@ const config = require('../config');
 const queryUtils = require('../utils/query.utils');
 const securityUtils = require('../utils/security.utils');
 const cacheUtils = require('../utils/cache.utils');
+const dbUtils = require('../utils/db.utils');
+const helpers = require('../utils/helper');
 
 const logger = log4js.getLogger('agent.controller');
-
 const agentModel = mongoose.model('agent');
 const agentActionModel = mongoose.model('agent-action');
 const flowModel = mongoose.model('flow');
@@ -32,7 +33,7 @@ router.post('/:id/init', async (req, res) => {
 	try {
 		const txnId = req.header('txnId');
 		const agentId = req.params.id;
-		logger.info(`[${txnId}] Processing Agent Init Action of -`, agentId);
+		logger.info(`[${txnId}] Processing Agent Init Action of -`, agentId, req.locals.app);
 		logger.trace(`[${txnId}] Agent Init Action Body -`, JSON.stringify(req.body));
 
 		let doc = await agentModel.findOne({ agentId: agentId }).lean();
@@ -42,18 +43,30 @@ router.post('/:id/init', async (req, res) => {
 				message: 'Agent Not Found'
 			});
 		}
-		const flows = await flowModel.find({ app: req.locals.app, $or: [{ 'inputStage.options.agentId': agentId }, { 'stages.options.agentId': agentId }] }).select('_id inputStage stages').lean();
+		// const flows = await flowModel.find({ app: req.locals.app, $or: [{ 'inputStage.options.agentId': agentId }, { 'stages.options.agentId': agentId }] }).select('_id inputStage stages').lean();
+		const flows = await flowModel.find({ app: req.locals.app, $or: [{ 'inputStage.options.agentId': agentId }, { 'stages.options.agentId': agentId }] }).lean();
+		logger.trace(`[${txnId}] Flows found - ${flows.map(_d => _d._id)}`);
 		const allFlows = [];
-		flows.map(flow => {
-			let agentStages = flow.stages.filter((ele) => ele.options.agentId = agentId);
-			agentStages.forEach(stage => {
-				allFlows.push({ flowId: flow._id, options: stage.options });
-			});
+		let newRes = [];
+		let promises = flows.map(flow => {
+			logger.trace(`Floe Json - ${JSON.stringify({ flow })}`);
+			let action = flow.status === 'Active' ? 'start' : 'create';
+			// let agentStages = flow.stages.filter((ele) => ele.options.agentId = agentId);
+			// agentStages.forEach(stage => {
+			// 	allFlows.push({ flowId: flow._id, options: stage.options });
+			// });
 			if (flow.inputStage && flow.inputStage.options && flow.inputStage.options.agentId == agentId) {
 				allFlows.push({ flowId: flow._id, options: flow.inputStage.options });
 			}
+			return helpers.constructEvent(doc, flow, action);
 		});
-		res.status(200).json({ result: allFlows });
+		await Promise.all(promises).then((_d) => {
+			newRes = [].concat.apply([], _d);
+			logger.debug(`[${txnId}]`, JSON.stringify({ newRes }));
+			newRes = newRes.filter(_k => _k && _k.agentID == agentId);
+			logger.trace(`[${txnId}] Transfer Ledger Enteries - ${JSON.stringify({ transferLedgerEntries: newRes })}`);
+			res.status(200).json({ transferLedgerEntries: newRes, mode: process.env.MODE ? process.env.MODE.toUpperCase() : 'PROD' });
+		});
 	} catch (err) {
 		logger.error(err);
 		res.status(500).json({
@@ -257,6 +270,66 @@ router.put('/:id/update', async (req, res) => {
 		status = await cacheUtils.endSession(req.params.id);
 		logger.debug('Agent Update Triggered ', status);
 		return res.status(200).json({ message: 'Agent Update Triggered' });
+	} catch (err) {
+		logger.error(err);
+		res.status(500).json({
+			message: err.message
+		});
+	}
+});
+
+router.post('/:id/upload', async (req, res) => {
+	try {
+		const txnId = req.header('DATA-STACK-Txn-Id');
+		const agentId = req.header('AgentID');
+		logger.info(`[${txnId}] Processing Agent Upload Action of -`, agentId);
+
+		let uploadHeaders = {
+			'mirrorPath': req.header('DATA-STACK-Mirror-Directory'),
+			'os': req.header('DATA-STACK-Operating-System'),
+			'agentId': req.header('AgentID'),
+			'appName': req.header('DATA-STACK-App-Name'),
+			'flowName': req.header('DATA-STACK-Flow-Name'),
+			'flowId': req.header('DATA-STACK-Flow-Id'),
+			'checksum': req.header('DATA-STACK-File-Checksum'),
+			'originalFileName': req.header('DATA-STACK-Original-File-Name'),
+			'newLocation': req.header('DATA-STACK-New-File-Location'),
+			'newFileName': req.header('DATA-STACK-New-File-Name'),
+			'remoteTxnId': req.header('DATA-STACK-Remote-Txn-Id'),
+			'datastackTxnId': req.header('DATA-STACK-Txn-Id'),
+			'deploymentName': req.header('DATA-STACK-Deployment-Name'),
+			'symmetricKey': req.header('DATA-STACK-Symmetric-Key'),
+			'totalChunks': req.header('DATA-STACK-Total-Chunks'),
+			'currentChunk': req.header('DATA-STACK-Current-Chunk'),
+			'uniqueId': req.header('DATA-STACK-Unique-ID'),
+			'bufferedEncryption': req.header('DATA-STACK-BufferEncryption'),
+			'agentRelease': req.header('DATA-STACK-Agent-Release'),
+			'chunkChecksum': req.header('DATA-STACK-Chunk-Checksum'),
+			'fileSize': req.header('DATA-STACK-File-Size'),
+			'delete': true,
+			'compression': req.header('DATA-STACK-Compression'),
+			'datastackFileToken': req.header('DATA-STACK-File-Token')
+		};
+		logger.trace('upload headers - ', JSON.stringify(uploadHeaders));
+
+		uploadHeaders.newLocation = uploadHeaders.newLocation.replace('\\', '\\\\');
+
+		const encryptedData = req.body;
+		logger.trace('encrypted data - ', encryptedData);
+
+		if (uploadHeaders.totalChunks === uploadHeaders.currentChunk) {
+			logger.info(`[${txnId}] All Chunks of file ${uploadHeaders.originalFileName} of flow ${uploadHeaders.flowName} received, uploading file to flow`);
+			const doc = await flowModel.findById(uploadHeaders.flowId);
+			if (!doc) {
+				return res.status(400).json({ message: 'Invalid Flow' });
+			}
+			if (doc.isBinary()) {
+				dbUtils.uploadFiletoDB(uploadHeaders, encryptedData);
+			}
+		} else {
+			return res.status(200).json({ message: 'Chunk Successfully Uploaded' });
+		}
+
 	} catch (err) {
 		logger.error(err);
 		res.status(500).json({

@@ -42,7 +42,11 @@ const definition = {
 	'stages': { 'type': 'Object' },
 	'dataStructures': { 'type': 'Object' },
 	'port': { 'type': 'String' },
-	'description': { 'type': 'String' }
+	'description': { 'type': 'String' },
+	'isBinary': {
+		'type': 'Boolean',
+        'default': false
+	}
 };
 
 module.exports.definition = definition;
