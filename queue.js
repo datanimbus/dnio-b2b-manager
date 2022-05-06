@@ -60,7 +60,7 @@ function faasInvokeLogger() {
 		logger.trace(`Message from queue :: ${config.faasLastInvokedQueue} :: ${JSON.stringify(bodyObj)}`);
 		const payload = bodyObj.data;
 		try {
-			await faasModel.findOneAndUpdate({ "_id": payload._id }, { $set: { "lastInvokedAt": payload.startTime }});
+			await faasModel.findOneAndUpdate({ "_id": payload._id }, { $set: { "lastInvokedAt": new Date(payload.startTime) }});
 		} catch (err) {
 			logger.error('Error updating function lastInvokedTime :: ', err);
 		}
