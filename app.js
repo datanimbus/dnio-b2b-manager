@@ -33,7 +33,9 @@ let permittedUrls = [
 	'/auth/login',
 	'/faas/fetchAll',
 	'/{app}/faas/utils/{id}/statusChange',
-	'/internal/app/{id}'
+	'/internal/app/{id}',
+	'/internal/health/live',
+	'/internal/health/ready'
 ];
 
 const app = express();
