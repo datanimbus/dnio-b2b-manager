@@ -28,7 +28,8 @@ schema.index({ url: 1, app: 1 }, { unique: '__CUSTOM_API_DUPLICATE_ERROR__', spa
 
 schema.pre('validate', function (next) {
 	const req = this._req;
-	logger.debug(`[${req.headers['TxnId']}] faas - Validating if function name is empty`);
+	let txnId = req && req.headers['TxnId'];
+	logger.debug(`[${txnId}] faas - Validating if function name is empty`);
 	this.name = this.name.trim();
 	this.url = this.url ? this.url.trim() : `/${_.camelCase(this.name)}`;
 	if (this.name && _.isEmpty(this.name)) {
@@ -39,7 +40,8 @@ schema.pre('validate', function (next) {
 
 draftSchema.pre('validate', function (next) {
 	const req = this._req;
-	logger.debug(`[${req.headers['TxnId']}] faas.draft - Validating if function name is empty`);
+	let txnId = req && req.headers['TxnId'];
+	logger.debug(`[${txnId}] faas.draft - Validating if function name is empty`);
 	this.name = this.name.trim();
 	this.url = this.url ? this.url.trim() : `/${_.camelCase(this.name)}`;
 	if (this.name && _.isEmpty(this.name)) {
@@ -51,8 +53,9 @@ draftSchema.pre('validate', function (next) {
 
 schema.pre('validate', async function (next) {
 	const req = this._req;
+	let txnId = req && req.headers['TxnId'];
 	try {
-		logger.debug(`[${req.headers['TxnId']}] faas - Validating if API endpoint is already in use - ${JSON.stringify({ app: this.app, url: this.url, faasId: this._id })}`);
+		logger.debug(`[${txnId}] faas - Validating if API endpoint is already in use - ${JSON.stringify({ app: this.app, url: this.url, faasId: this._id })}`);
 		const faas = await mongoose.model('faas').findOne({ app: this.app, url: this.url, _id: { $ne: this._id } }, { _id: 1 });
 		if (faas) {
 			return next(new Error('API endpoint is already in use'));
@@ -62,15 +65,16 @@ schema.pre('validate', async function (next) {
 		}
 		return next();
 	} catch (err) {
-		logger.error(`[${req.headers['TxnId']}] faas - Error validating if API endpoint is in use - ${err}`);
+		logger.error(`[${txnId}] faas - Error validating if API endpoint is in use - ${err}`);
 		next(err);
 	}
 });
 
 schema.pre('validate', async function (next) {
 	const req = this._req;
+	let txnId = req && req.headers['TxnId'];
 	try {
-		logger.debug(`[${req.headers['TxnId']}] faas - Validating if function name is already in use ${JSON.stringify({ app: this.app, name: this.name, faasId: this._id })}`);
+		logger.debug(`[${txnId}] faas - Validating if function name is already in use ${JSON.stringify({ app: this.app, name: this.name, faasId: this._id })}`);
 
 		const faas = await mongoose.model('faas').findOne({ app: this.app, name: this.name, _id: { $ne: this._id } }, { _id: 1 });
 		if (faas) {
@@ -83,7 +87,7 @@ schema.pre('validate', async function (next) {
 		}
 		return next();
 	} catch (err) {
-		logger.error(`[${req.headers['TxnId']}] faas - Error validating if function name is already in use`);
+		logger.error(`[${txnId}] faas - Error validating if function name is already in use`);
 		next(err);
 	}
 });
@@ -91,7 +95,8 @@ schema.pre('validate', async function (next) {
 
 schema.pre('validate', function (next) {
 	const req = this._req;
-	logger.debug(`[${req.headers['TxnId']}] faas - Validating if function name is longer than 40 characters - ${this.name}`);
+	let txnId = req && req.headers['TxnId'];
+	logger.debug(`[${txnId}] faas - Validating if function name is longer than 40 characters - ${this.name}`);
 	if (this.name.length > 40) {
 		next(new Error('Function name must be less than 40 characters.'));
 	} else {
@@ -101,7 +106,8 @@ schema.pre('validate', function (next) {
 
 draftSchema.pre('validate', function (next) {
 	const req = this._req;
-	logger.debug(`[${req.headers['TxnId']}] faas.draft - Validating if function name is longer than 40 characters ${this.name}`);
+	let txnId = req && req.headers['TxnId'];
+	logger.debug(`[${txnId}] faas.draft - Validating if function name is longer than 40 characters ${this.name}`);
 	if (this.name.length > 40) {
 		next(new Error('Function name must be less than 40 characters.'));
 	} else {
@@ -112,7 +118,8 @@ draftSchema.pre('validate', function (next) {
 
 schema.pre('validate', function (next) {
 	const req = this._req;
-	logger.debug(`[${req.headers['TxnId']}] faas - Validating if function description is more than 250 characters`);
+	let txnId = req && req.headers['TxnId'];
+	logger.debug(`[${txnId}] faas - Validating if function description is more than 250 characters`);
 	if (this.description && this.description.length > 250) {
 		next(new Error('Function description should not be more than 250 character.'));
 	} else {
@@ -122,7 +129,8 @@ schema.pre('validate', function (next) {
 
 draftSchema.pre('validate', function (next) {
 	const req = this._req;
-	logger.debug(`[${req.headers['TxnId']}] faas.draft - Validating if function description is longer than 250 characters`);
+	let txnId = req && req.headers['TxnId'];
+	logger.debug(`[${txnId}] faas.draft - Validating if function description is longer than 250 characters`);
 	if (this.description && this.description.length > 250) {
 		next(new Error('Function description should not be more than 250 character.'));
 	} else {
@@ -133,9 +141,10 @@ draftSchema.pre('validate', function (next) {
 
 schema.pre('save', async function (next) {
 	const req = this._req;
+	let txnId = req && req.headers['TxnId'];
 	this._isNew = this.isNew;
-	logger.debug(`[${req.headers['TxnId']}] faas - Adding API Endpoint and default code`);
-	let user = req.headers ? req.headers.user : 'AUTO';
+	logger.debug(`[${txnId}] faas - Adding API Endpoint and default code`);
+	let user = req && req.headers ? req.headers.user : 'AUTO';
 	this._metadata.lastUpdatedBy = user;
 	this.url = '/api/a/faas/' + this.app + '/' + _.camelCase(this.name);
 	if (!this.deploymentName) {
@@ -165,15 +174,16 @@ schema.pre('save', async function (next) {
 
             });`;
 	}
-	logger.debug(`[${req.headers['TxnId']}] faas - ${JSON.stringify({ url: this.url, code: this.code, status: this.status })}`);
+	logger.debug(`[${txnId}] faas - ${JSON.stringify({ url: this.url, code: this.code, status: this.status })}`);
 	next();
 });
 
 draftSchema.pre('save', function (next) {
 	const req = this._req;
+	let txnId = req && req.headers['TxnId'];
 	this._isNew = this.isNew;
-	logger.debug(`[${req.headers['TxnId']}] faas.draft - Adding url and default code`);
-	let user = req.headers ? req.headers.user : 'AUTO';
+	logger.debug(`[${txnId}] faas.draft - Adding url and default code`);
+	let user = req && req.headers ? req.headers.user : 'AUTO';
 	this._metadata.lastUpdatedBy = user;
 	this.url = '/api/a/faas/' + this.app + '/' + _.camelCase(this.name);
 	if (!this.deploymentName) {
@@ -203,7 +213,7 @@ draftSchema.pre('save', function (next) {
 
             });`;
 	}
-	logger.debug(`[${req.headers['TxnId']}] faas.draft - ${JSON.stringify({ url: this.url, code: this.code, status: this.status })}`);
+	logger.debug(`[${txnId}] faas.draft - ${JSON.stringify({ url: this.url, code: this.code, status: this.status })}`);
 	next();
 });
 
