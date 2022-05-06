@@ -57,7 +57,7 @@ function faasInvokeLogger() {
 	var subscription = client.subscribe(config.faasLastInvokedQueue, 'faas', opts);
 	subscription.on('message', function (_body) {
 		let bodyObj = JSON.parse(_body.getData());
-		logger.debug(`Message from queue :: ${config.faasLastInvokedQueue} :: ${JSON.stringify(bodyObj)}`);
+		logger.trace(`Message from queue :: ${config.faasLastInvokedQueue} :: ${JSON.stringify(bodyObj)}`);
 		const payload = bodyObj.data;
 		try {
 			await faasModel.findOneAndUpdate({ "_id": payload._id }, { $set: { "lastInvokedAt": payload.startTime }});
