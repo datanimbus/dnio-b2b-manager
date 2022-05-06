@@ -1,6 +1,8 @@
 const NATS = require('node-nats-streaming');
 const log4js = require('log4js');
 const config = require('./config');
+const mongoose = require('mongoose');
+const faasModel = mongoose.model('faas');
 
 log4js.configure({
 	appenders: { out: { type: 'stdout' } },
@@ -24,6 +26,7 @@ function init() {
 
 		client.on('connect', function () {
 			logger.info('Connected to streaming server');
+			faasInvokeLogger();
 		});
 
 		client.on('disconnect', function () {
@@ -32,6 +35,7 @@ function init() {
 
 		client.on('reconnecting', function () {
 			logger.info('Reconnecting to streaming server');
+			faasInvokeLogger();
 		});
 
 		client.on('reconnect', function () {
@@ -43,6 +47,51 @@ function init() {
 		});
 	}
 	return client;
+}
+
+
+function faasInvokeLogger() {
+	var opts = client.subscriptionOptions();
+	opts.setStartWithLastReceived();
+	opts.setDurableName('faas-durable');
+	var subscription = client.subscribe(config.faasLastInvokedQueue, 'faas', opts);
+	subscription.on('message', function (_body) {
+		let bodyObj = JSON.parse(_body.getData());
+		logger.debug(`Message from queue :: ${config.faasLastInvokedQueue} :: ${JSON.stringify(bodyObj)}`);
+		const payload = bodyObj.data;
+		try {
+			await faasModel.findOneAndUpdate({ "_id": payload._id }, { $set: { "lastInvokedAt": payload.startTime }});
+		} catch (err) {
+			logger.error('Error updating function lastInvokedTime :: ', err);
+		}
+		
+		
+		
+		// let colName = bodyObj.collectionName;
+		// let colName = 'b2b.faas.logs';
+		
+		// let mongoDBColl = mongoose.connection.db.collection(colName);
+		// if (colName && payload) {
+		// 	payload.colName = bodyObj.collectionName;
+		// 	fixAPILogPayload(payload);
+		// 	fixMetaData(payload);
+		// 	let promise = Promise.resolve();
+		// 	if (!payload.serviceId) {
+		// 		promise = serviceUtils.getServiceId(bodyObj.collectionName);
+		// 	}
+		// 	promise.then(data => {
+		// 		if (data && data._id) {
+		// 			payload.serviceId = data._id;
+		// 		}
+		// 		return mongoDBColl.insert(payload)
+		// 			.catch(err => {
+		// 				logger.error(err);
+		// 			});
+		// 	}).catch(err => {
+		// 		logger.error(err);
+		// 	});
+		// }
+	});
 }
 
 
