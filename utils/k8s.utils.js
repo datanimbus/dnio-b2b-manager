@@ -6,7 +6,7 @@ const config = require('../config');
 const logger = log4js.getLogger(global.loggerName);
 
 async function getDeployment(data) {
-	return await k8sClient.deployment.getDeployment(data.namespace, data.deploymentName)
+	return await k8sClient.deployment.getDeployment(data.namespace, data.deploymentName);
 }
 
 async function upsertService(data) {
