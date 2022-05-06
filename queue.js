@@ -2,7 +2,6 @@ const NATS = require('node-nats-streaming');
 const log4js = require('log4js');
 const config = require('./config');
 const mongoose = require('mongoose');
-const faasModel = mongoose.model('faas');
 
 log4js.configure({
 	appenders: { out: { type: 'stdout' } },
@@ -56,6 +55,7 @@ function faasInvokeLogger() {
 	opts.setDurableName('faas-durable');
 	var subscription = client.subscribe(config.faasLastInvokedQueue, 'faas', opts);
 	subscription.on('message', async function (_body) {
+		const faasModel = mongoose.model('faas');
 		let bodyObj = JSON.parse(_body.getData());
 		logger.trace(`Message from queue :: ${config.faasLastInvokedQueue} :: ${JSON.stringify(bodyObj)}`);
 		const payload = bodyObj.data;
