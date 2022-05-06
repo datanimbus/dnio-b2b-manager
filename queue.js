@@ -55,7 +55,7 @@ function faasInvokeLogger() {
 	opts.setStartWithLastReceived();
 	opts.setDurableName('faas-durable');
 	var subscription = client.subscribe(config.faasLastInvokedQueue, 'faas', opts);
-	subscription.on('message', function (_body) {
+	subscription.on('message', async function (_body) {
 		let bodyObj = JSON.parse(_body.getData());
 		logger.trace(`Message from queue :: ${config.faasLastInvokedQueue} :: ${JSON.stringify(bodyObj)}`);
 		const payload = bodyObj.data;
