@@ -60,37 +60,11 @@ function faasInvokeLogger() {
 		logger.trace(`Message from queue :: ${config.faasLastInvokedQueue} :: ${JSON.stringify(bodyObj)}`);
 		const payload = bodyObj.data;
 		try {
-			await faasModel.findOneAndUpdate({ "_id": payload._id }, { $set: { "lastInvokedAt": new Date(payload.startTime) }});
+			const timestamp = new Date(payload.startTime);
+			await faasModel.findOneAndUpdate({ _id: payload._id, lastInvokedAt: { $lt: timestamp } }, { $set: { lastInvokedAt: timestamp } });
 		} catch (err) {
 			logger.error('Error updating function lastInvokedTime :: ', err);
 		}
-		
-		
-		
-		// let colName = bodyObj.collectionName;
-		// let colName = 'b2b.faas.logs';
-		
-		// let mongoDBColl = mongoose.connection.db.collection(colName);
-		// if (colName && payload) {
-		// 	payload.colName = bodyObj.collectionName;
-		// 	fixAPILogPayload(payload);
-		// 	fixMetaData(payload);
-		// 	let promise = Promise.resolve();
-		// 	if (!payload.serviceId) {
-		// 		promise = serviceUtils.getServiceId(bodyObj.collectionName);
-		// 	}
-		// 	promise.then(data => {
-		// 		if (data && data._id) {
-		// 			payload.serviceId = data._id;
-		// 		}
-		// 		return mongoDBColl.insert(payload)
-		// 			.catch(err => {
-		// 				logger.error(err);
-		// 			});
-		// 	}).catch(err => {
-		// 		logger.error(err);
-		// 	});
-		// }
 	});
 }
 
