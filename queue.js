@@ -1,6 +1,7 @@
 const NATS = require('node-nats-streaming');
 const log4js = require('log4js');
 const config = require('./config');
+const mongoose = require('mongoose');
 
 log4js.configure({
 	appenders: { out: { type: 'stdout' } },
@@ -24,6 +25,7 @@ function init() {
 
 		client.on('connect', function () {
 			logger.info('Connected to streaming server');
+			faasInvokeLogger();
 		});
 
 		client.on('disconnect', function () {
@@ -32,6 +34,7 @@ function init() {
 
 		client.on('reconnecting', function () {
 			logger.info('Reconnecting to streaming server');
+			faasInvokeLogger();
 		});
 
 		client.on('reconnect', function () {
@@ -43,6 +46,25 @@ function init() {
 		});
 	}
 	return client;
+}
+
+
+function faasInvokeLogger() {
+	var opts = client.subscriptionOptions();
+	opts.setStartWithLastReceived();
+	opts.setDurableName('faas-durable');
+	var subscription = client.subscribe(config.faasLastInvokedQueue, 'faas', opts);
+	subscription.on('message', async function (_body) {
+		const faasModel = mongoose.model('faas');
+		let bodyObj = JSON.parse(_body.getData());
+		logger.trace(`Message from queue :: ${config.faasLastInvokedQueue} :: ${JSON.stringify(bodyObj)}`);
+		try {
+			const timestamp = new Date(bodyObj.startTime);
+			await faasModel.findOneAndUpdate({ _id: bodyObj._id, lastInvoked: { $lt: timestamp } }, { $set: { lastInvoked: timestamp } });
+		} catch (err) {
+			logger.error('Error updating function lastInvokedTime :: ', err);
+		}
+	});
 }
 
 
