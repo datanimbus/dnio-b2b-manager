@@ -87,6 +87,7 @@ module.exports = {
     interactionLogQueueName: 'interactionLogs',
     interactionQueueName: 'interaction',
     eventsQueueName: 'events',
+    faasLastInvokedQueue:'faasLastInvoked',
     streamingConfig: {
         url: process.env.STREAMING_HOST || 'nats://127.0.0.1:4222',
         user: process.env.STREAMING_USER || '',
