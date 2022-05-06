@@ -58,10 +58,9 @@ function faasInvokeLogger() {
 		const faasModel = mongoose.model('faas');
 		let bodyObj = JSON.parse(_body.getData());
 		logger.trace(`Message from queue :: ${config.faasLastInvokedQueue} :: ${JSON.stringify(bodyObj)}`);
-		const payload = bodyObj.data;
 		try {
-			const timestamp = new Date(payload.startTime);
-			await faasModel.findOneAndUpdate({ _id: payload._id, lastInvokedAt: { $lt: timestamp } }, { $set: { lastInvokedAt: timestamp } });
+			const timestamp = new Date(bodyObj.startTime);
+			await faasModel.findOneAndUpdate({ _id: bodyObj._id, lastInvokedAt: { $lt: timestamp } }, { $set: { lastInvokedAt: timestamp } });
 		} catch (err) {
 			logger.error('Error updating function lastInvokedTime :: ', err);
 		}
