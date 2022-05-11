@@ -15,6 +15,7 @@ WORKDIR /app
 COPY package.json package.json
 
 RUN npm install --production
+RUN npm audit fix
 
 COPY . .
 
