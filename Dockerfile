@@ -3,7 +3,10 @@ ARG RELEASE=dev
 # FROM data.stack:govault.${RELEASE} AS vault
 # FROM data.stack:b2b-agent-watcher.${RELEASE} AS watcher
 # FROM data.stack:b2bgw.${LATEST_B2BGW} AS agent
-FROM node:16-alpine
+FROM node:16.14.0-alpine3.15
+
+RUN apk update
+RUN apk upgrade
 
 RUN set -ex; apk add --no-cache --virtual .fetch-deps curl tar git ;
 
