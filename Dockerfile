@@ -2,8 +2,11 @@ ARG LATEST_B2BGW=dev
 ARG RELEASE=dev
 # FROM data.stack:govault.${RELEASE} AS vault
 # FROM data.stack:b2b-agent-watcher.${RELEASE} AS watcher
-# FROM data.stack:agent.${RELEASE} AS agent
-FROM node:16-alpine
+# FROM data.stack:b2bgw.${LATEST_B2BGW} AS agent
+FROM node:16.15-alpine3.15
+
+RUN apk update
+RUN apk upgrade
 
 RUN set -ex; apk add --no-cache --virtual .fetch-deps curl tar git ;
 
@@ -11,7 +14,10 @@ WORKDIR /app
 
 COPY package.json package.json
 
+RUN npm install -g npm
 RUN npm install --production
+RUN npm audit fix
+RUN rm -rf /usr/local/lib/node_modules/npm/node_modules/node-gyp/test
 
 COPY . .
 

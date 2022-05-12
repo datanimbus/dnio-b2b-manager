@@ -2,7 +2,7 @@ const fs = require('fs');
 const fse = require('fs-extra');
 const path = require('path');
 const log4js = require('log4js');
-const zipFolder = require('zip-folder');
+const { zip } = require('zip-a-folder');
 const FormData = require('form-data');
 
 const dataStackUtils = require('@appveen/data.stack-utils');
@@ -145,15 +145,7 @@ async function undeploy(data) {
 
 
 function zipAFolder(src, dest) {
-	return new Promise((resolve, reject) => {
-		zipFolder(src, dest, function (err) {
-			if (err) {
-				return reject(err);
-			} else {
-				return resolve();
-			}
-		});
-	});
+	return zip(src, dest);
 }
 
 function deleteProjectFolder(path) {
