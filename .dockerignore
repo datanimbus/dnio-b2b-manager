@@ -15,3 +15,9 @@ test
 generatedFlows
 generatedFaas
 generatedFaasTest
+ds-faas
+ds-b2b-base
+LAST_PULL
+LAST_PULL_BM
+CURRENT_BM
+LATEST_BM

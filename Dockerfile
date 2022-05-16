@@ -22,9 +22,10 @@ RUN rm -rf /usr/local/lib/node_modules/npm/node_modules/node-gyp/test
 COPY . .
 
 # COPY --from=vault /app/exec ./generatedAgent/vault
-# COPY --from=vault /app/LICENSE ./generatedAgent/
 # COPY --from=watcher /app/exec ./generatedAgent/sentinels
-# COPY --from=watcher /app/scriptFiles ./generatedAgent/scriptFiles
+# COPY --from=agent /app/scriptFiles/LICENSE ./generatedAgent/
+# COPY --from=agent /app/scriptFiles/README.md ./generatedAgent/
+# COPY --from=agent /app/scriptFiles ./generatedAgent/scriptFiles
 # COPY --from=agent /app/exec ./generatedAgent/exes
 
 ENV IMAGE_TAG=__image_tag__
