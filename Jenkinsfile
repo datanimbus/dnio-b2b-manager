@@ -14,6 +14,20 @@ pipeline {
                 sh "./scripts/create_tag.sh"
             }
         }
+        stage('SCM B2B Base Image') {
+            steps {
+                dir('ds-b2b-base') {
+                  git branch: "$BRANCH_NAME", url: 'https://github.com/appveen/ds-b2b-base.git'
+                }
+            }
+        }
+        stage('SCM FaaS Base Image') {
+            steps {
+                dir('ds-faas') {
+                  git branch: "$BRANCH_NAME", url: 'https://github.com/appveen/ds-faas.git'
+                }
+            }
+        }
         stage('Build') {
             steps {
                 sh "chmod 777 ./scripts/build.sh"
