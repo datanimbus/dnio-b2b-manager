@@ -109,4 +109,3 @@ code-gen/flows/stage.utils.js
 code-gen/flows/route.js
 
 send.sh
-build.sh
