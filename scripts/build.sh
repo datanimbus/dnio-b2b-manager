@@ -8,8 +8,11 @@ echo "****************************************************"
 echo "data.stack:bm :: Building BM using TAG :: $TAG"
 echo "****************************************************"
 
-
-docker build -t data.stack.bm:$TAG .
+if [ $cleanBuild ]; then
+    docker build --no-cache -t data.stack.bm:$TAG .
+else 
+    docker build -t data.stack.bm:$TAG .
+fi
 
 
 echo "****************************************************"
@@ -23,7 +26,11 @@ echo "****************************************************"
 
 cd $WORKSPACE/ds-b2b-base
 
-docker build -t data.stack.b2b.base:$TAG .
+if [ $cleanBuild ]; then
+    docker build --no-cache -t data.stack.b2b.base:$TAG .
+else 
+    docker build -t data.stack.b2b.base:$TAG .
+fi
 
 
 echo "****************************************************"
@@ -36,7 +43,11 @@ echo "****************************************************"
 
 cd $WORKSPACE/ds-faas
 
-docker build -t data.stack.faas.base:$TAG .
+if [ $cleanBuild ]; then
+    docker build --no-cache -t data.stack.faas.base:$TAG .
+else 
+    docker build -t data.stack.faas.base:$TAG .
+fi
 
 
 echo "****************************************************"
