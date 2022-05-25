@@ -16,6 +16,11 @@ pipeline {
                 sh "./scripts/create_tag.sh"
             }
         }
+        stage('SCM') {
+            steps {
+                git branch: "$BRANCH_NAME", url: 'https://github.com/appveen/ds-b2b-manager.git'
+            }
+        }
         stage('SCM B2B Base Image') {
             steps {
                 dir('ds-b2b-base') {
