@@ -59,6 +59,8 @@ app.use((req, res, next) => {
 	next();
 });
 
+//testing comment
+
 app.use('/b2b', require('./router'));
 app.use('/bm', AuthCacheMW({ permittedUrls: permittedUrls, secret: config.secret, decodeOnly: true }), require('./controllers'));
 
