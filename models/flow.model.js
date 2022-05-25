@@ -41,7 +41,7 @@ schema.pre('save', function (next) {
 		if (!this.inputStage.options.path || !this.inputStage.options.path.trim()) {
 			this.inputStage.options.path = '/' + _.camelCase(this.name);
 		}
-		if (this.stages.length == 1 && this.inputStage.options.contentType == 'BINARY' && this.stages[0].options.contentType == 'BINARY') {
+		if (this.stages && this.stages.length == 1 && this.inputStage.options.contentType == 'BINARY' && this.stages[0].options.contentType == 'BINARY') {
 			this.isBinary = true;
 		}
 		if (!this.deploymentName) {
