@@ -45,7 +45,7 @@ const definition = {
 	'description': { 'type': 'String' },
 	'isBinary': {
 		'type': 'Boolean',
-        'default': false
+		'default': false
 	}
 };
 
