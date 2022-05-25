@@ -323,7 +323,7 @@ router.post('/:id/upload', async (req, res) => {
 			if (!doc) {
 				return res.status(400).json({ message: 'Invalid Flow' });
 			}
-			if (doc.isBinary()) {
+			if (doc.isBinary) {
 				dbUtils.uploadFiletoDB(uploadHeaders, encryptedData);
 			}
 		} else {

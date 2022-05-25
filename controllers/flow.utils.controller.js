@@ -74,7 +74,7 @@ router.put('/:id/deploy', async (req, res) => {
 			return res.status(400).json({ message: 'Invalid Flow' });
 		}
 		// await codeGen.createProject(doc);
-		if (config.isK8sEnv() && !doc.isBinary()) {
+		if (config.isK8sEnv() && !doc.isBinary) {
 			// const status = await deployUtils.deploy(doc, 'flow');
 			doc.image = flowBaseImage;
 			let status = await k8sUtils.upsertService(doc);
@@ -144,7 +144,7 @@ router.put('/:id/start', async (req, res) => {
 		if (!doc) {
 			return res.status(400).json({ message: 'Invalid Flow' });
 		}
-		if (config.isK8sEnv() && !doc.isBinary()) {
+		if (config.isK8sEnv() && !doc.isBinary) {
 			// const status = await deployUtils.start(doc);
 			const status = await k8sUtils.scaleDeployment(doc, 1);
 			logger.info('Start API called');
@@ -177,7 +177,7 @@ router.put('/:id/stop', async (req, res) => {
 		if (!doc) {
 			return res.status(400).json({ message: 'Invalid Flow' });
 		}
-		if (config.isK8sEnv() && !doc.isBinary()) {
+		if (config.isK8sEnv() && !doc.isBinary) {
 			// const status = await deployUtils.stop(doc);
 			const status = await k8sUtils.scaleDeployment(doc, 0);
 			logger.info('Stop API called');
