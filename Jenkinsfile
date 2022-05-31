@@ -3,9 +3,10 @@ pipeline {
 
 
     parameters{
-        string(name: 'tag', defaultValue: 'vNext', description: 'Image Tag')
+        string(name: 'tag', defaultValue: 'dev', description: 'Image Tag')
         booleanParam(name: 'cleanBuild', defaultValue: false, description: 'Clean Build')
-        booleanParam(name: 'deploy', defaultValue: false, description: 'Deploy in machine')
+        booleanParam(name: 'pushToS3', defaultValue: false, description: 'Push to S3')
+        booleanParam(name: 'deploy', defaultValue: true, description: 'Deploy in machine')
         booleanParam(name: 'dockerHub', defaultValue: false, description: 'Push to Docker Hub')
     }
     stages {
@@ -13,6 +14,11 @@ pipeline {
             steps {
                 sh "chmod 777 ./scripts/create_tag.sh"
                 sh "./scripts/create_tag.sh"
+            }
+        }
+        stage('SCM') {
+            steps {
+                git branch: "$BRANCH_NAME", url: 'https://github.com/appveen/ds-b2b-manager.git'
             }
         }
         stage('SCM B2B Base Image') {
@@ -50,7 +56,7 @@ pipeline {
         stage('Save to S3') {
             when {
                 expression {
-                    params.dockerHub  == true
+                    params.pushToS3  == true || params.dockerHub  == true
                 }
             }
             steps {
