@@ -8,7 +8,7 @@ FROM node:16.15-alpine3.15
 RUN apk update
 RUN apk upgrade
 
-RUN set -ex; apk add --no-cache --virtual .fetch-deps curl tar git ;
+RUN set -ex; apk add --no-cache --virtual .fetch-deps curl tar ;
 
 WORKDIR /app
 
