@@ -3,7 +3,7 @@ pipeline {
 
 
     parameters{
-        string(name: 'tag', defaultValue: 'dev', description: 'Image Tag')
+        string(name: 'tag', defaultValue: 'vNext', description: 'Image Tag')
         booleanParam(name: 'cleanBuild', defaultValue: false, description: 'Clean Build')
         booleanParam(name: 'pushToS3', defaultValue: false, description: 'Push to S3')
         booleanParam(name: 'deploy', defaultValue: true, description: 'Deploy in machine')
@@ -84,6 +84,12 @@ pipeline {
             steps {
                 sh "chmod 777 ./scripts/push_hub.sh"
                 sh "./scripts/push_hub.sh"
+            }
+        }
+        stage('Clean Up') {
+            steps {
+                sh "chmod 777 ./scripts/cleanup.sh"
+                sh "./scripts/cleanup.sh"
             }
         }
     }
