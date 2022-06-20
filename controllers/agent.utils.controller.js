@@ -177,7 +177,7 @@ router.put('/:id/re-issue', async (req, res) => {
 		delete temp.secret;
 		delete temp.status;
 
-		const token = JWT.sign(temp, config.secret, { expiresIn: '2h' });
+		const token = JWT.sign(temp, config.RBAC_JWT_KEY, { expiresIn: '2h' });
 		await cacheUtils.endSession(agentId);
 		await cacheUtils.whitelistToken(agentId, token);
 

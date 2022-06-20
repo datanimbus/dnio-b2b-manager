@@ -62,7 +62,7 @@ app.use((req, res, next) => {
 //testing comment
 
 app.use('/b2b', require('./router'));
-app.use('/bm', AuthCacheMW({ permittedUrls: permittedUrls, secret: config.secret, decodeOnly: true }), require('./controllers'));
+app.use('/bm', AuthCacheMW({ permittedUrls: permittedUrls, secret: config.RBAC_JWT_KEY, decodeOnly: true }), require('./controllers'));
 
 const server = app.listen(config.port, () => {
 	logger.info('HTTP Server is listening on:', config.port);

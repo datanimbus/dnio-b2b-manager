@@ -48,7 +48,7 @@ router.post('/login', async (req, res) => {
 		delete temp.secret;
 		delete temp.status;
 
-		const token = JWT.sign(temp, config.secret, { expiresIn: '2h' });
+		const token = JWT.sign(temp, config.RBAC_JWT_KEY, { expiresIn: '2h' });
 
 		await cacheUtils.whitelistToken(agentId, token);
 
