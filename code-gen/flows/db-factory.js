@@ -7,7 +7,7 @@ const httpClient = require('./http-client');
 
 const LOGGER_NAME = config.isK8sEnv() ? `[${config.hostname}] [INTEGRATION-FLOW v${config.imageTag}]` : `[INTEGRATION-FLOW v${config.imageTag}]`;
 const logger = log4js.getLogger(LOGGER_NAME);
-const token = JWT.sign({ name: 'B2B-MANAGER', _id: 'admin', isSuperAdmin: true }, config.TOKEN_SECRET, {});
+const token = JWT.sign({ name: 'B2B-MANAGER', _id: 'admin', isSuperAdmin: true }, config.RBAC_JWT_KEY, {});
 
 // For threads to pick txnId and user headers
 global.userHeader = 'user';

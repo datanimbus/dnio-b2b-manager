@@ -75,6 +75,7 @@ const e = {
 	flowId: process.env.DATA_STACK_FLOW_ID,
 	DATA_STACK_NAMESPACE,
 	TOKEN_SECRET: process.env.TOKEN_SECRET || 'u?5k167v13w5fhjhuiweuyqi67621gqwdjavnbcvadjhgqyuqagsduyqtw87e187etqiasjdbabnvczmxcnkzn',
+	RBAC_JWT_KEY: process.env.RBAC_JWT_KEY || 'u?5k167v13w5fhjhuiweuyqi67621gqwdjavnbcvadjhgqyuqagsduyqtw87e187etqiasjdbabnvczmxcnkzn',
 	mongoUrl: process.env.MONGO_APPCENTER_URL || 'mongodb://localhost',
 	authorDB: process.env.MONGO_AUTHOR_DBNAME || 'datastackConfig',
 	mongoAuthorUrl: process.env.MONGO_AUTHOR_URL || 'mongodb://localhost',

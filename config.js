@@ -3,7 +3,7 @@ const dataStackUtils = require('@appveen/data.stack-utils');
 
 const LOGGER_NAME = isK8sEnv() ? `[${process.env.HOSTNAME}] [B2B-MANAGER v${process.env.IMAGE_TAG}]` : `[B2B-MANAGER v${process.env.IMAGE_TAG}]`;
 const logger = log4js.getLogger(LOGGER_NAME);
-const DATA_STACK_NAMESPACE = process.env.DATA_STACK_NAMESPACE;
+const DATA_STACK_NAMESPACE = process.env.DATA_STACK_NAMESPACE || 'appveen';
 
 logger.debug(`DATA_STACK_NAMESPACE : ${process.env.DATA_STACK_NAMESPACE}`);
 
@@ -87,7 +87,7 @@ module.exports = {
     interactionLogQueueName: 'interactionLogs',
     interactionQueueName: 'interaction',
     eventsQueueName: 'events',
-    faasLastInvokedQueue:'faasLastInvoked',
+    faasLastInvokedQueue: 'faasLastInvoked',
     streamingConfig: {
         url: process.env.STREAMING_HOST || 'nats://127.0.0.1:4222',
         user: process.env.STREAMING_USER || '',
@@ -114,12 +114,14 @@ module.exports = {
     },
     verifyDeploymentUser: parseBoolean(process.env.VERIFY_DEPLOYMENT_USER) || false,
     TZ_DEFAULT: process.env.TZ_DEFAULT || 'Zulu',
-    B2B_AGENT_MAX_FILE_SIZE: process.env.B2B_AGENT_MAX_FILE_SIZE || '100m',
+    B2B_AGENT_MAX_FILE_SIZE: process.env.B2B_AGENT_MAX_FILE_SIZE || 100 * 1024 * 1024,
     B2B_FLOW_REJECT_ZONE_ACTION: process.env.B2B_FLOW_REJECT_ZONE_ACTION || 'queue',
     B2B_FLOW_MAX_CONCURRENT_FILES: parseInt(process.env.B2B_FLOW_MAX_CONCURRENT_FILES || '0'),
     B2B_ENABLE_TIMEBOUND: parseBoolean(process.env.B2B_ENABLE_TIMEBOUND),
     B2B_ENABLE_TRUSTED_IP: parseBoolean(process.env.B2B_ENABLE_TRUSTED_IP),
     VERIFY_DEPLOYMENT_USER: parseBoolean(process.env.VERIFY_DEPLOYMENT_USER),
     secret: process.env.TOKEN_SECRET || 'u?5k167v13w5fhjhuiweuyqi67621gqwdjavnbcvadjhgqyuqagsduyqtw87e187etqiasjdbabnvczmxcnkzn',
-    MAX_JSON_SIZE: process.env.MAX_JSON_SIZE || '5mb'
+    RBAC_JWT_KEY: process.env.RBAC_JWT_KEY || 'u?5k167v13w5fhjhuiweuyqi67621gqwdjavnbcvadjhgqyuqagsduyqtw87e187etqiasjdbabnvczmxcnkzn',
+    MAX_JSON_SIZE: process.env.MAX_JSON_SIZE || '5mb',
+    encryptionKey: process.env.ENCRYPTION_KEY || '34857057658800771270426551038148'
 };
