@@ -3,7 +3,7 @@ ARG RELEASE=dev
 # FROM data.stack:govault.${RELEASE} AS vault
 # FROM data.stack:b2b-agent-watcher.${RELEASE} AS watcher
 # FROM data.stack:b2bgw.${LATEST_B2BGW} AS agent
-FROM node:16.15-alpine3.15
+FROM node:16.16.0-alpine3.15
 
 RUN apk update
 RUN apk upgrade
