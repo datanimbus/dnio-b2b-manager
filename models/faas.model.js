@@ -15,8 +15,8 @@ dataStackUtils.eventsUtil.setNatsClient(client);
 
 const draftDefinition = JSON.parse(JSON.stringify(definition));
 
-const schema = new mongoose.Schema(definition);
-const draftSchema = new mongoose.Schema(draftDefinition);
+const schema = mongooseUtils.MakeSchema(definition);
+const draftSchema = mongooseUtils.MakeSchema(draftDefinition);
 
 schema.plugin(mongooseUtils.metadataPlugin());
 draftSchema.plugin(mongooseUtils.metadataPlugin());

@@ -15,9 +15,7 @@ const client = queue.getClient();
 dataStackUtils.eventsUtil.setNatsClient(client);
 
 
-const schema = new mongoose.Schema(definition, {
-	usePushEach: true
-});
+const schema = mongooseUtils.MakeSchema(definition);
 
 schema.plugin(mongooseUtils.metadataPlugin());
 

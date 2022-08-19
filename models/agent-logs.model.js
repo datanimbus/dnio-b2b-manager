@@ -9,9 +9,7 @@ const mongooseUtils = require('../utils/mongoose.utils');
 // const logger = log4js.getLogger(global.loggerName);
 
 
-const schema = new mongoose.Schema(definition, {
-	usePushEach: true
-});
+const schema = mongooseUtils.MakeSchema(definition);
 
 schema.plugin(mongooseUtils.metadataPlugin());
 
