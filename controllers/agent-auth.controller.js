@@ -60,6 +60,11 @@ router.post('/login', async (req, res) => {
 		result = await doc.save();
 		logger.debug('Agent Logged In :', doc.lastLoggedIn);
 		temp.encryptionKey = config.encryptionKey;
+		temp.uploadRetryCounter = config.uploadRetryCounter;
+		temp.downloadRetryCounter = config.downloadRetryCounter;
+		temp.maxConcurrentUploads = config.maxConcurrentUploads;
+		temp.maxConcurrentDownloads = config.maxConcurrentDownloads;
+		logger.debug('Agent auth response :', temp);
 		res.status(200).json(temp);
 	} catch (err) {
 		logger.error(err);
