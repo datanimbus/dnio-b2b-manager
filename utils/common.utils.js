@@ -55,7 +55,10 @@ function validateDefinition(fields) {
 			} else if (!def.properties.name) {
 				errors[i] = 'Label not set';
 			} else if (def.type === 'Object' || def.type == 'Array') {
-				errors[i] = validateDefinition(def.definition);
+				let tempErrors = validateDefinition(def.definition);
+				if (!_.isEmpty(tempErrors)) {
+					errors[i] = tempErrors;
+				}
 			}
 		});
 	}
