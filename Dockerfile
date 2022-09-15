@@ -2,7 +2,7 @@ ARG LATEST_B2BGW=dev
 ARG RELEASE=dev
 # FROM data.stack:govault.${RELEASE} AS vault
 # FROM data.stack:b2b-agent-watcher.${RELEASE} AS watcher
-FROM data.stack:b2bgw.${LATEST_B2BGW} AS agent
+# FROM data.stack:b2bgw.${LATEST_B2BGW} AS agent
 FROM node:18.7.0-alpine3.16
 
 RUN apk update
@@ -23,10 +23,11 @@ COPY . .
 
 # COPY --from=vault /app/exec ./generatedAgent/vault
 # COPY --from=watcher /app/exec ./generatedAgent/sentinels
-COPY --from=agent /app/scriptFiles/LICENSE ./generatedAgent/
-COPY --from=agent /app/scriptFiles/README.md ./generatedAgent/
-COPY --from=agent /app/scriptFiles ./generatedAgent/scriptFiles
-COPY --from=agent /app/exec ./generatedAgent/exes
+
+# COPY --from=agent /app/scriptFiles/LICENSE ./generatedAgent/
+# COPY --from=agent /app/scriptFiles/README.md ./generatedAgent/
+# COPY --from=agent /app/scriptFiles ./generatedAgent/scriptFiles
+# COPY --from=agent /app/exec ./generatedAgent/exes
 
 ENV IMAGE_TAG=__image_tag__
 ENV NODE_ENV='production'
