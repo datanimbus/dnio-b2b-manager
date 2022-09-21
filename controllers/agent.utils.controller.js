@@ -8,14 +8,20 @@ const config = require('../config');
 const queryUtils = require('../utils/query.utils');
 const securityUtils = require('../utils/security.utils');
 const cacheUtils = require('../utils/cache.utils');
-const dbUtils = require('../utils/db.utils');
 const helpers = require('../utils/helper');
 const fileUtils = require('../utils/file.utils');
+const httpClient = require('../http-client');
+const FormData = require('form-data');
+const { zip } = require('zip-a-folder');
+const exec = require('child_process').exec;
 
 const logger = log4js.getLogger('agent.controller');
 const agentModel = mongoose.model('agent');
 const agentActionModel = mongoose.model('agent-action');
 const flowModel = mongoose.model('flow');
+
+const LICENSE_FILE = './generatedAgent/LICENSE';
+const README_FILE = './generatedAgent/scriptFiles/README.md';
 
 let fileIDDownloadingList = {};
 
@@ -41,13 +47,13 @@ router.post('/:id/init', async (req, res) => {
 
 		let doc = await agentModel.findOne({ agentId: agentId }).lean();
 		if (!doc) {
-			logger.trace(`[${txnId}] Agent Not Found -`, agentId);
+			logger.error(`[${txnId}] Agent Not Found -`, agentId);
 			return res.status(404).json({
 				message: 'Agent Not Found'
 			});
 		}
 		// const flows = await flowModel.find({ app: req.locals.app, $or: [{ 'inputStage.options.agentId': agentId }, { 'stages.options.agentId': agentId }] }).select('_id inputStage stages').lean();
-		const flows = await flowModel.find({ app: req.locals.app, $or: [{ 'inputStage.options.agentId': agentId }, { 'stages.options.agentId': agentId }] }).lean();
+		const flows = await flowModel.find({ app: req.locals.app, $or: [{ 'inputStage.options.agents': agentId }, { 'stages.options.agents': agentId }] }).lean();
 		logger.trace(`[${txnId}] Flows found - ${flows.map(_d => _d._id)}`);
 		const allFlows = [];
 		let newRes = [];
@@ -87,7 +93,7 @@ router.post('/:id/heartbeat', async (req, res) => {
 
 		let doc = await agentModel.findOne({ agentId: agentId }).lean();
 		if (!doc) {
-			logger.trace(`[${txnId}] [${agentId}] Agent Not Found`);
+			logger.error(`[${txnId}] [${agentId}] Agent Not Found`);
 			return res.status(404).json({
 				message: 'Agent Not Found'
 			});
@@ -116,7 +122,7 @@ router.post('/:id/heartbeat', async (req, res) => {
 router.get('/:id/password', async (req, res) => {
 	try {
 		const agentId = req.params.id;
-		let doc = await agentModel.findById({ agentId: agentId }).lean();
+		let doc = await agentModel.findById({ _id: agentId }).lean();
 		if (!doc) {
 			return res.status(404).json({
 				message: 'Agent Not Found'
@@ -328,19 +334,34 @@ router.post('/:id/upload', async (req, res) => {
 		const decryptedData = fileUtils.decryptData(encryptedData, uploadHeaders.symmetricKey);
 		logger.debug('decryptedData - ', decryptedData);
 
-		// if (uploadHeaders.totalChunks === uploadHeaders.currentChunk) {
-		// 	logger.info(`[${txnId}] All Chunks of file ${uploadHeaders.originalFileName} of flow ${uploadHeaders.flowName} received, uploading file to flow`);
-		// 	const doc = await flowModel.findById(uploadHeaders.flowId);
-		// 	if (!doc) {
-		// 		return res.status(400).json({ message: 'Invalid Flow' });
-		// 	}
-		// 	if (doc.isBinary) {
-		// 		dbUtils.uploadFiletoDB(uploadHeaders, encryptedData);
-		// 	}
-		// } else {
-		// 	return res.status(200).json({ message: 'Chunk Successfully Uploaded' });
-		// }
-		res.status(200).json({ message: 'Chunk Successfully Uploaded' });
+		logger.info(`[${txnId}] File ${uploadHeaders.originalFileName} for the flow ${uploadHeaders.flowName} received, uploading file to flow`);
+		const doc = await flowModel.findById(uploadHeaders.flowId);
+		if (!doc) {
+			return res.status(400).json({ message: 'Invalid Flow' });
+		}
+
+		const formData = new FormData();
+		formData.append('file', decryptedData);
+		let flowUrl = config.baseUrlBM + '/' + doc.app + '/' + doc.inputStage.options.path;
+		const options = {
+			url: flowUrl,
+			method: 'POST',
+			headers: {
+				'Content-Type': 'multipart/form-data',
+				'TxnId': req.header('DATA-STACK-Txn-Id'),
+			},
+			body: formData
+		};
+		const res = await httpClient.httpRequest(options);
+		if (!res) {
+			logger.error(`Flow ${doc.name} is down`);
+			throw new Error(`Flow ${doc.name} is down`);
+		}
+		if (res.statusCode === 200) {
+			res.status(200).json({ message: 'File Successfully Uploaded' });
+		} else {
+			res.status(res.statusCode).send(res.body);
+		}
 	} catch (err) {
 		logger.error(err);
 		res.status(500).json({
@@ -375,5 +396,163 @@ router.post('/:id/download', async (req, res) => {
 		});
 	}
 });
+
+router.get('/:id/download/exec', async (req, res) => {
+	try {
+		let agentId = req.params.id;
+		let os = req.query.os;
+		let arch = req.query.arch;
+		logger.info(`Processing Agent Executable Download for - ${JSON.stringify({ agentId, os, arch })}`);
+
+		let exeFileName = `datastack-agent-${os}-${arch}`;
+		if (os === 'windows') exeFileName += '.exe';
+		let sentinelFileName = `datastack-sentinel-${os}-${arch}`;
+		if (os === 'windows') sentinelFileName += '.exe';
+		let exeFilePath = `./generatedAgent/exes/${exeFileName}`;
+		let sentinelFilePath = `./generatedAgent/sentinels/${sentinelFileName}`;
+
+		logger.debug(`File Paths - ${JSON.stringify({ exeFilePath, sentinelFilePath })}`);
+		if (!fs.existsSync(exeFilePath)) {
+			return res.status(400).json({ message: 'Oops! Executable not found for the selected platform.' });
+		}
+		if (!fs.existsSync(sentinelFilePath)) {
+			return res.status(400).json({ message: 'Oops! Sentinel not found for the selected platform.' });
+		}
+
+		let _agent = await agentModel.findOne({ _id: agentId }).lean();
+		if (!_agent) {
+			logger.error(`[${agentId}] Agent Not Found`);
+			return res.status(404).json({
+				message: 'Agent Not Found'
+			});
+		}
+
+		logger.trace(`Agent data - ${JSON.stringify(_agent)}`);
+
+		let agentID = _agent.agentId;
+		let agentName = _agent.name;
+		let agentConfig = {
+			'agent-id': agentID,
+			'agent-name': agentName,
+			'agent-port-number': '63859',
+			'base-url': config.gwFQDN,
+			'central-folder': '.',
+			'heartbeat-frequency': config.hbFrequency,
+			'log-level': process.env.LOG_LEVEL || 'info',
+			'sentinel-port-number': '54321'
+		};
+		logger.trace("config initialized - ", agentConfig);
+		let confStr = createConf(agentConfig);
+		let baseDir = process.cwd() + '/generatedAgent/AGENT/';
+		if (!fs.existsSync(baseDir)) {
+			fs.mkdirSync(baseDir);
+		}
+
+		let folderName = `${baseDir}${_agent.name}_${os}_${arch}`;
+		let zipFile = folderName + '.zip';
+		if (fs.existsSync(zipFile)) {
+			fs.unlinkSync(zipFile);
+		}
+		if (fs.existsSync(folderName)) {
+			deleteFolderRecursive(folderName);
+		}
+		fs.mkdirSync(folderName);
+		return generateAgentStructure(folderName, os, false)
+			.then(() => {
+				fs.writeFileSync(folderName + '/conf/agent.conf', confStr);
+				fs.copyFileSync(exeFilePath, folderName + '/bin/' + (os == 'windows' ? 'datastack-agent.exe' : 'datastack-agent'));
+				fs.copyFileSync(sentinelFilePath, folderName + '/bin/' + (os == 'windows' ? 'datastack-sentinel.exe' : 'datastack-sentinel'));
+			})
+			.then(_d => {
+				logger.debug(`${JSON.stringify({ _d })}`);
+				return zipAFolder(folderName, zipFile);
+			})
+			.then(() => {
+				return res.status(200).download(zipFile);
+			})
+			.then(() => {
+				logger.debug(`Removing zip and folder`);
+				deleteFolderRecursive(folderName);
+			})
+			.catch(err => {
+				logger.error(`[${req.get('TxnId')}] Error generating agent structure - ${err}`);
+			});
+	} catch (err) {
+		logger.error(`Error downloading Agent - ${err}`);
+		res.status(500).json({
+			message: err.message
+		});
+	}
+});
+
+function createConf(config) {
+	let str = '';
+	Object.keys(config).forEach(_k => {
+		if (config[_k] === null) str += `${_k}=\n`;
+		else str += `${_k}=${config[_k]}\n`;
+	});
+	return str;
+}
+
+
+function zipAFolder(src, dest) {
+	return zip(src, dest);
+}
+
+function deleteFolderRecursive(path) {
+	if (fs.existsSync(path)) {
+		fs.readdirSync(path).forEach(function (file) {
+			var curPath = path + '/' + file;
+			if (fs.lstatSync(curPath).isDirectory()) { // recurse
+				deleteFolderRecursive(curPath);
+			} else { // delete file
+				fs.unlinkSync(curPath);
+			}
+		});
+		fs.rmdirSync(path);
+	}
+}
+
+function generateAgentStructure(baseDir, os) {
+	fs.mkdirSync(`${baseDir}/bin`);
+	fs.mkdirSync(`${baseDir}/conf`);
+	fs.mkdirSync(`${baseDir}/data`);
+	fs.mkdirSync(`${baseDir}/log`);
+	fs.mkdirSync(`${baseDir}/log/temp`);
+	fs.copyFileSync(LICENSE_FILE, baseDir + '/LICENSE');
+	fs.copyFileSync(README_FILE, baseDir + '/README.md');
+	let scriptLocation = './generatedAgent/scriptFiles/' + os;
+	if (!fs.existsSync(scriptLocation)) {
+		throw new Error('Script files not found for ' + os);
+	}
+
+	let promises = fs.readdirSync(scriptLocation).map(file => {
+		fs.copyFileSync(`${scriptLocation}/${file}`, baseDir + '/' + file);
+		if (os === 'linux' || os === 'darwin') {
+			return shFilePermission(baseDir + '/' + file);
+		}
+		return Promise.resolve();
+	});
+	return Promise.all(promises);
+}
+
+function shFilePermission(file) {
+	let cmdStr = 'chmod +x ' + file;
+	logger.debug({ cmdStr });
+	let cmd = exec(cmdStr);
+	return new Promise((resolve, reject) => {
+		cmd.stdout.on('data', (data) => {
+			logger.debug('exec data output ' + data);
+		});
+		cmd.stdout.on('close', (data) => {
+			logger.debug('exec close output ' + data);
+			resolve();
+		});
+		cmd.on('error', (err) => {
+			logger.error('Err' + err);
+			reject(err);
+		});
+	});
+}
 
 module.exports = router;
