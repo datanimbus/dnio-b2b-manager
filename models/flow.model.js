@@ -19,28 +19,28 @@ const schema = mongooseUtils.MakeSchema(definition, {
 });
 
 schema.index({ name: 1, app: 1 }, { unique: '__CUSTOM_NAME_DUPLICATE_ERROR__', sparse: true, collation: { locale: 'en_US', strength: 2 } });
-schema.index({ 'inputStage.options.path': 1, app: 1 }, { unique: '__CUSTOM_API_DUPLICATE_ERROR__', sparse: true, collation: { locale: 'en_US', strength: 2 } });
+schema.index({ 'inputNode.options.path': 1, app: 1 }, { unique: '__CUSTOM_API_DUPLICATE_ERROR__', sparse: true, collation: { locale: 'en_US', strength: 2 } });
 
 schema.plugin(mongooseUtils.metadataPlugin());
 
 schema.pre('save', function (next) {
-	if (!this.inputStage || !this.inputStage.type) {
-		return next(new Error('Input Stage is Mandatory'));
+	if (!this.inputNode || !this.inputNode.type) {
+		return next(new Error('Input Node is Mandatory'));
 	}
 	if (this.isNew) {
-		if (!this.inputStage || !this.inputStage.options) {
-			this.inputStage.options = {};
+		if (!this.inputNode || !this.inputNode.options) {
+			this.inputNode.options = {};
 		}
-		if (this.inputStage && this.inputStage.options && this.inputStage.options.path && this.inputStage.options.path.trim()) {
-			this.inputStage.options.path = this.inputStage.options.path.trim();
-			if (this.inputStage.options.path.trim().charAt(0) != '/') {
-				this.inputStage.options.path = '/' + this.inputStage.options.path;
+		if (this.inputNode && this.inputNode.options && this.inputNode.options.path && this.inputNode.options.path.trim()) {
+			this.inputNode.options.path = this.inputNode.options.path.trim();
+			if (this.inputNode.options.path.trim().charAt(0) != '/') {
+				this.inputNode.options.path = '/' + this.inputNode.options.path;
 			}
 		}
-		if (!this.inputStage.options.path || !this.inputStage.options.path.trim()) {
-			this.inputStage.options.path = '/' + _.camelCase(this.name);
+		if (!this.inputNode.options.path || !this.inputNode.options.path.trim()) {
+			this.inputNode.options.path = '/' + _.camelCase(this.name);
 		}
-		if (this.stages && this.stages.length == 1 && this.inputStage.options.contentType == 'BINARY' && this.stages[0].options.contentType == 'BINARY') {
+		if (this.nodes && this.nodes.length == 1 && this.inputNode.options.contentType == 'BINARY' && this.nodes[0].options.contentType == 'BINARY') {
 			this.isBinary = true;
 		}
 		if (!this.deploymentName) {

@@ -38,8 +38,8 @@ const definition = {
 		'enum': ['Pending', 'Stopped', 'Error', 'Active', 'Draft'],
 		'default': 'Draft'
 	},
-	'inputStage': { 'type': 'Object' },
-	'stages': { 'type': 'Object' },
+	'inputNode': { 'type': 'Object' },
+	'nodes': { 'type': 'Object' },
 	'dataStructures': { 'type': 'Object' },
 	'port': { 'type': 'String' },
 	'description': { 'type': 'String' },

@@ -12,9 +12,9 @@ async function initRouterMap() {
 		global.activeFlows = {};
 		flows.forEach(item => {
 			if (config.isK8sEnv()) {
-				global.activeFlows['/' + item.app + item.inputStage.options.path] = `http://${item.deploymentName}.${item.namespace}`;
+				global.activeFlows['/' + item.app + item.inputNode.options.path] = `http://${item.deploymentName}.${item.namespace}`;
 			} else {
-				global.activeFlows['/' + item.app + item.inputStage.options.path] = `http://localhost:${item.port || 31000}`;
+				global.activeFlows['/' + item.app + item.inputNode.options.path] = `http://localhost:${item.port || 31000}`;
 			}
 		});
 		logger.trace(global.activeFlows);

@@ -39,7 +39,7 @@ const definition = {
 		'enum': ['Pending', 'Stopped', 'Error', 'Active', 'Draft'],
 		'default': 'Draft'
 	},
-	'stages': { 'type': 'Object' },
+	'nodes': { 'type': 'Object' },
 	'port': { 'type': 'String' },
 	'description': { 'type': 'String' },
 	'_metadata': {

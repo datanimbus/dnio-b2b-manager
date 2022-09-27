@@ -2,8 +2,8 @@ function validatePayload(payload) {
 	if (!payload.name) {
 		return 'Name is mandatory';
 	}
-	if (!payload.inputStage || !payload.inputStage.type) {
-		return 'Input Stage is required';
+	if (!payload.inputNode || !payload.inputNode.type) {
+		return 'Input Node is required';
 	}
 }
 
