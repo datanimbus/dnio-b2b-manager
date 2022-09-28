@@ -27,9 +27,17 @@ router.use(async (req, res) => {
         delete headers['connection'];
         delete headers['user-agent'];
         delete headers['content-length'];
-        const proxyPath = global.activeFlows[path] + ':80/api/b2b' + path;
-        logger.info('Proxying request to: ', proxyPath);
-        proxy(proxyPath, { memoizeHost: false, parseReqBody: false })(req, res);
+        const proxyHost = global.activeFlows[path];
+        const proxyPath = '/api/b2b' + path;
+        logger.info('Proxying request to: ', proxyHost + proxyPath);
+        proxy(proxyHost, {
+            memoizeHost: false,
+            parseReqBody: false,
+            preserveHostHdr: false,
+            proxyReqPathResolver: function (req) {
+                return proxyPath;
+            }
+        })(req, res);
         // const resp = await httpClient.httpRequest({
         //     method,
         //     url: proxyPath,
