@@ -9,7 +9,7 @@ const routerUtils = require('./utils/router.utils');
 const logger = log4js.getLogger(global.loggerName);
 routerUtils.initRouterMap();
 
-router.use(async (req, res, next) => {
+router.use(async (req, res) => {
     try {
         const path = req.path;
         const method = req.method;
@@ -29,7 +29,7 @@ router.use(async (req, res, next) => {
         delete headers['content-length'];
         const proxyPath = global.activeFlows[path] + '/api/b2b' + path;
         logger.info('Proxying request to: ', proxyPath);
-        proxy(proxyPath, { memoizeHost: false, preserveHostHdr: true, parseReqBody: false })(req, res, next);
+        proxy(proxyPath, { memoizeHost: false, parseReqBody: false })(req, res);
         // const resp = await httpClient.httpRequest({
         //     method,
         //     url: proxyPath,
