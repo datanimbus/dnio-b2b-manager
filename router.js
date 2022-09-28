@@ -1,5 +1,5 @@
 const log4js = require('log4js');
-const router = require('express').Router();
+const router = require('express').Router({ mergeParams: true });
 const { v4: uuid } = require('uuid');
 const proxy = require('express-http-proxy');
 
