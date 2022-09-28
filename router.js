@@ -9,7 +9,7 @@ const routerUtils = require('./utils/router.utils');
 const logger = log4js.getLogger(global.loggerName);
 routerUtils.initRouterMap();
 
-router.use(async (req, res) => {
+router.use(async (req, res, next) => {
     try {
         const path = req.path;
         const method = req.method;
