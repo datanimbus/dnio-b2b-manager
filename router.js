@@ -33,7 +33,7 @@ router.use(async (req, res) => {
         proxy(proxyHost, {
             memoizeHost: false,
             parseReqBody: false,
-            preserveHostHdr: false,
+            preserveHostHdr: true,
             proxyReqPathResolver: function (req) {
                 return proxyPath;
             }
