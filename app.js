@@ -43,11 +43,7 @@ const app = express();
 
 app.use(express.json({ inflate: true, limit: config.MAX_JSON_SIZE }));
 app.use(express.urlencoded({ extended: true }));
-app.use(express.raw({ type: ['application/xml', 'text/xml','application/octet-stream'] }));
-app.use(fileUpload({
-    useTempFiles: true,
-    tempFileDir: './uploads'
-}));
+app.use(express.raw({ type: ['application/xml', 'text/xml', 'application/octet-stream'] }));
 
 app.use((req, res, next) => {
 	if (req.path.split('/').indexOf('live') == -1 && req.path.split('/').indexOf('ready') == -1) {
@@ -68,6 +64,10 @@ app.use((req, res, next) => {
 //testing comment
 
 app.use('/b2b', require('./router'));
+app.use(fileUpload({
+	useTempFiles: true,
+	tempFileDir: './uploads'
+}));
 app.use('/bm', AuthCacheMW({ permittedUrls: permittedUrls, secret: config.RBAC_JWT_KEY, decodeOnly: true }), require('./controllers'));
 
 const server = app.listen(config.port, () => {
