@@ -7,45 +7,27 @@ const definition = {
 		'type': 'String',
 		'required': true
 	},
-	'api': {
+	'flowId': {
 		'type': 'String',
 		'required': true
+	},
+	'headers': {
+		'type': 'Object',
 	},
 	'name': {
 		'type': 'String'
 	},
-	'direction': {
-		'type': 'String',
-		'enum': ['Outbound', 'Inbound']
-	},
-	'version': {
-		'type': 'Number',
-		'default': 1
-	},
-	'runningVersion': {
-		'type': 'Number'
-	},
-	'runningFlow': {					 //Internal
-		'type': 'String'
-	},
-	'nextFlow': {					 //Internal
-		'type': 'String'
-	},
-	'deploymentName': {					 //Internal
-		'type': 'String'
-	},
 	'status': {                          //Internal
 		'type': 'String',
-		'enum': ['Pending', 'Stopped', 'Error', 'Active', 'Draft'],
-		'default': 'Draft'
+		'enum': ['PENDING', 'ERROR', 'SUCCESS', 'UNKNOWN'],
+		'default': 'PENDING'
 	},
-	'nodes': { 'type': 'Object' },
-	'port': { 'type': 'String' },
-	'description': { 'type': 'String' },
 	'_metadata': {
 		'type': {
 			'version': {
-				'release': { 'type': 'Number' }
+				'type': {
+					'release': { 'type': 'Number' }
+				}
 			},
 			'lastUpdatedBy': { 'type': 'String' }
 		}

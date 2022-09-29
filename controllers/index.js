@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 
 const queryUtils = require('../utils/query.utils');
 
-const logger = log4js.getLogger('index.controller');
+const logger = log4js.getLogger(global.loggerName);
 const faasModel = mongoose.model('faas');
 
 router.get('/faas/fetchAll', async (req, res) => {

@@ -9,7 +9,7 @@ const queryUtils = require('../utils/query.utils');
 const routerUtils = require('../utils/router.utils');
 const config = require('../config');
 
-const logger = log4js.getLogger('flow.utils.controller');
+const logger = log4js.getLogger(global.loggerName);
 const flowModel = mongoose.model('flow');
 
 let dockerRegistryType = process.env.DOCKER_REGISTRY_TYPE ? process.env.DOCKER_REGISTRY_TYPE : '';

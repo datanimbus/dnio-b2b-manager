@@ -7,7 +7,7 @@ const queryUtils = require('../utils/query.utils');
 const k8sUtils = require('../utils/k8s.utils');
 const config = require('../config');
 
-const logger = log4js.getLogger('faas.controller');
+const logger = log4js.getLogger(global.loggerName);
 const faasModel = mongoose.model('faas');
 const faasDraftModel = mongoose.model('faas.draft');
 

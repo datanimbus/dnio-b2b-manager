@@ -15,7 +15,7 @@ const FormData = require('form-data');
 const { zip } = require('zip-a-folder');
 const exec = require('child_process').exec;
 
-const logger = log4js.getLogger('agent.controller');
+const logger = log4js.getLogger(global.loggerName);
 const agentModel = mongoose.model('agent');
 const agentActionModel = mongoose.model('agent-action');
 const flowModel = mongoose.model('flow');

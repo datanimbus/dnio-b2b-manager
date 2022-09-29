@@ -6,7 +6,7 @@ const _ = require('lodash');
 const queryUtils = require('../utils/query.utils');
 const commonUtils = require('../utils/common.utils');
 
-const logger = log4js.getLogger('dataFormat.controller');
+const logger = log4js.getLogger(global.loggerName);
 const dataFormatModel = mongoose.model('dataFormat');
 
 

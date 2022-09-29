@@ -3,16 +3,15 @@ const router = require('express').Router({ mergeParams: true });
 const { v4: uuid } = require('uuid');
 const proxy = require('express-http-proxy');
 
-const httpClient = require('./http-client');
 const routerUtils = require('./utils/router.utils');
+const flowUtils = require('./utils/flow.utils');
 
 const logger = log4js.getLogger(global.loggerName);
 routerUtils.initRouterMap();
 
-router.use(async (req, res) => {
+router.use('/:app/:api', async (req, res) => {
     try {
-        const path = req.path;
-        const method = req.method;
+        const path = '/' + req.params.app + '/' + req.params.api;
         logger.debug('Looking for path in map:', path, global.activeFlows[path]);
         if (!global.activeFlows[path]) {
             return res.status(400).json({ message: `No Flows with path ${path} Found` });
@@ -27,8 +26,11 @@ router.use(async (req, res) => {
         delete headers['connection'];
         delete headers['user-agent'];
         delete headers['content-length'];
-        const proxyHost = global.activeFlows[path];
-        const proxyPath = '/api/b2b' + path;
+        const routeData = global.activeFlows[path];
+        const proxyHost = routeData.proxyHost;
+        const proxyPath = routeData.proxyPath;
+        // const proxyPath = '/api/b2b' + path;
+        flowUtils.createInteraction(req, { flowId: routeData.flowId });
         logger.info('Proxying request to: ', proxyHost + proxyPath);
         proxy(proxyHost, {
             memoizeHost: false,

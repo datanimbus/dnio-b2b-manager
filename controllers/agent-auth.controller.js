@@ -7,7 +7,7 @@ const config = require('../config');
 const securityUtils = require('../utils/security.utils');
 const cacheUtils = require('../utils/cache.utils');
 
-const logger = log4js.getLogger('agent.controller');
+const logger = log4js.getLogger(global.loggerName);
 const agentModel = mongoose.model('agent');
 
 

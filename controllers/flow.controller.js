@@ -8,7 +8,7 @@ const deployUtils = require('../utils/deploy.utils');
 const flowUtils = require('../utils/flow.utils');
 const config = require('../config');
 
-const logger = log4js.getLogger('flow.controller');
+const logger = log4js.getLogger(global.loggerName);
 const flowModel = mongoose.model('flow');
 
 
