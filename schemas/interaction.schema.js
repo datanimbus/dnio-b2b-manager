@@ -26,7 +26,7 @@ const definition = {
 		'type': {
 			'version': {
 				'type': {
-					'release': { 'type': 'Number' }
+					'release': { 'type': 'String' }
 				}
 			},
 			'lastUpdatedBy': { 'type': 'String' }
