@@ -70,8 +70,15 @@ schema.pre('save', function (next) {
 		return next(new Error('App Value is Mandatory'));
 	}
 	if (!this.definition) return next();
-	let def = typeof this.definition === 'string' ? JSON.parse(this.definition)[0].definition : this.definition[0].definition;
-	this.attributeCount = commonUtils.countAttr(def);
+	let temp;
+	if (typeof this.definition === 'string') {
+		temp = JSON.parse(this.definition);
+	} else {
+		temp = this.definition;
+	}
+	if (temp && temp[0] && temp[0].definition) {
+		this.attributeCount = commonUtils.countAttr(temp[0].definition)
+	}
 	next();
 });
 
