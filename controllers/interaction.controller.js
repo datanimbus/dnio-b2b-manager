@@ -8,6 +8,7 @@ const queryUtils = require('../utils/query.utils');
 
 const logger = log4js.getLogger(global.loggerName);
 const interactionModel = mongoose.model('interaction');
+const flowModel = mongoose.model('flow');
 
 
 
@@ -125,7 +126,7 @@ router.put('/:id', async (req, res) => {
 
 router.get('/:flowId/:interactionId/state', async (req, res) => {
 	try {
-		let doc = await interactionModel.findById(req.params.flowId).lean();
+		let doc = await flowModel.findById(req.params.flowId).lean();
 		if (!doc) {
 			return res.status(404).json({
 				message: 'Data Model Not Found'
