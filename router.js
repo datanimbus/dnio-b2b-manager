@@ -30,14 +30,14 @@ router.use('/:app/:api', async (req, res) => {
         const proxyHost = routeData.proxyHost;
         const proxyPath = routeData.proxyPath;
         // const proxyPath = '/api/b2b' + path;
-        flowUtils.createInteraction(req, { flowId: routeData.flowId });
+        const result = await flowUtils.createInteraction(req, { flowId: routeData.flowId });
         logger.info('Proxying request to: ', proxyHost + proxyPath);
         proxy(proxyHost, {
             memoizeHost: false,
             parseReqBody: false,
             preserveHostHdr: true,
             proxyReqPathResolver: function (req) {
-                return proxyPath;
+                return proxyPath + '?intrId=' + result._id;
             }
         })(req, res);
         // const resp = await httpClient.httpRequest({

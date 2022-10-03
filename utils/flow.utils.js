@@ -39,6 +39,7 @@ async function createInteraction(req, options) {
 		const status = await doc.save();
 		logger.info(`Interaction Created for [${req.headers['data-stack-txn-id']}] [${req.headers['data-stack-remote-txn-id']}]`);
 		logger.debug(status);
+		return status;
 	} catch (err) {
 		logger.error(err);
 	}
