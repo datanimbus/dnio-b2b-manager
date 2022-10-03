@@ -27,17 +27,19 @@ router.use('/:app/:api', async (req, res) => {
         delete headers['user-agent'];
         delete headers['content-length'];
         const routeData = global.activeFlows[path];
-        const proxyHost = routeData.proxyHost;
-        const proxyPath = routeData.proxyPath;
-        // const proxyPath = '/api/b2b' + path;
+        if (!routeData || !routeData.proxyHost || !routeData.proxyPath) {
+            return res.status(404).json({ message: 'No Route Found' });
+        }
         const result = await flowUtils.createInteraction(req, { flowId: routeData.flowId });
+        const proxyHost = routeData.proxyHost;
+        const proxyPath = routeData.proxyPath + '?interactionId=' + result._id;
         logger.info('Proxying request to: ', proxyHost + proxyPath);
         proxy(proxyHost, {
             memoizeHost: false,
             parseReqBody: false,
             preserveHostHdr: true,
             proxyReqPathResolver: function (req) {
-                return proxyPath + '?intrId=' + result._id;
+                return proxyPath;
             }
         })(req, res);
         // const resp = await httpClient.httpRequest({
