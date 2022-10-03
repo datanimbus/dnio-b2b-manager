@@ -25,17 +25,15 @@ const appcenterCon = mongoose.createConnection(config.mongoUrl, config.mongoAppC
 appcenterCon.on('connecting', () => { logger.info(' *** Appcenter DB CONNECTING *** '); });
 appcenterCon.on('disconnected', () => { logger.error(' *** Appcenter DB LOST CONNECTION *** '); });
 appcenterCon.on('reconnect', () => { logger.info(' *** Appcenter DB RECONNECTED *** '); });
-appcenterCon.on('connected', () => { logger.info('Connected to Appcenter DB DB'); });
+appcenterCon.on('connected', () => { logger.info('Connected to Appcenter DB DB'); global.appcenterCon = appcenterCon; });
 appcenterCon.on('reconnectFailed', () => { logger.error(' *** Appcenter DB FAILED TO RECONNECT *** '); });
-global.appcenterCon = appcenterCon;
 
 const logsDB = mongoose.createConnection(config.mongoLogUrl, config.mongoLogsOptions);
 logsDB.on('connecting', () => { logger.info(` *** ${config.logsDB} CONNECTING *** `); });
 logsDB.on('disconnected', () => { logger.error(` *** ${config.logsDB} LOST CONNECTION *** `); });
 logsDB.on('reconnect', () => { logger.info(` *** ${config.logsDB} RECONNECTED *** `); });
-logsDB.on('connected', () => { logger.info(`Connected to ${config.logsDB} DB`); });
+logsDB.on('connected', () => { logger.info(`Connected to ${config.logsDB} DB`); global.logsDB = logsDB; });
 logsDB.on('reconnectFailed', () => { logger.error(` *** ${config.logsDB} FAILED TO RECONNECT *** `); });
-global.logsDB = logsDB;
 
 mongoose.connect(config.mongoAuthorUrl, config.mongoAuthorOptions).then(() => {
 	global.authorDB = mongoose.connection.db;
