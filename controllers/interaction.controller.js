@@ -44,19 +44,18 @@ router.get('/:id', async (req, res) => {
 	}
 });
 
-router.post('/', async (req, res) => {
+
+router.post('/utils/update', async (req, res) => {
 	try {
+		const filter = req.query.filter;
 		const payload = req.body;
-		const key = payload.jsonSchema.title.toCamelCase();
-		logger.info(key);
-		let doc = await interactionModel.findOne({ key });
-		if (doc) {
-			return res.status(400).json({
-				message: 'Data Model with Same Key Exist'
+		const doc = interactionModel.findOne(filter);
+		if (!doc) {
+			return res.status(404).json({
+				message: 'Data Model Not Found'
 			});
 		}
-		payload.key = key;
-		doc = new interactionModel(payload);
+		_.merge(doc, payload);
 		const status = await doc.save(req);
 		res.status(200).json(status);
 	} catch (err) {
@@ -67,46 +66,61 @@ router.post('/', async (req, res) => {
 	}
 });
 
-router.put('/:id', async (req, res) => {
-	try {
-		const payload = req.body;
-		let doc = await interactionModel.findById(req.params.id);
-		if (!doc) {
-			return res.status(404).json({
-				message: 'Data Model Not Found'
-			});
-		}
-		Object.keys(payload).forEach(key => {
-			doc[key] = payload[key];
-		});
-		const status = await doc.save(req);
-		res.status(200).json(status);
-	} catch (err) {
-		logger.error(err);
-		res.status(500).json({
-			message: err.message
-		});
-	}
-});
 
-router.delete('/:id', async (req, res) => {
-	try {
-		let doc = await interactionModel.findById(req.params.id);
-		if (!doc) {
-			return res.status(404).json({
-				message: 'Data Model Not Found'
-			});
-		}
-		await doc.remove(req);
-		res.status(200).json({
-			message: 'Document Deleted'
-		});
-	} catch (err) {
-		logger.error(err);
-		res.status(500).json({
-			message: err.message
-		});
-	}
-});
+// router.post('/', async (req, res) => {
+// 	try {
+// 		const payload = req.body;
+// 		doc = new interactionModel(payload);
+// 		const status = await doc.save(req);
+// 		res.status(200).json(status);
+// 	} catch (err) {
+// 		logger.error(err);
+// 		res.status(500).json({
+// 			message: err.message
+// 		});
+// 	}
+// });
+
+// router.put('/:id', async (req, res) => {
+// 	try {
+// 		const payload = req.body;
+// 		let doc = await interactionModel.findById(req.params.id);
+// 		if (!doc) {
+// 			return res.status(404).json({
+// 				message: 'Data Model Not Found'
+// 			});
+// 		}
+// 		Object.keys(payload).forEach(key => {
+// 			doc[key] = payload[key];
+// 		});
+// 		const status = await doc.save(req);
+// 		res.status(200).json(status);
+// 	} catch (err) {
+// 		logger.error(err);
+// 		res.status(500).json({
+// 			message: err.message
+// 		});
+// 	}
+// });
+
+// router.delete('/:id', async (req, res) => {
+// 	try {
+// 		let doc = await interactionModel.findById(req.params.id);
+// 		if (!doc) {
+// 			return res.status(404).json({
+// 				message: 'Data Model Not Found'
+// 			});
+// 		}
+// 		await doc.remove(req);
+// 		res.status(200).json({
+// 			message: 'Document Deleted'
+// 		});
+// 	} catch (err) {
+// 		logger.error(err);
+// 		res.status(500).json({
+// 			message: err.message
+// 		});
+// 	}
+// });
 
 module.exports = router;
