@@ -22,6 +22,9 @@ const definition = {
 		'enum': ['PENDING', 'ERROR', 'SUCCESS', 'UNKNOWN'],
 		'default': 'PENDING'
 	},
+	'payloadMetaData': {
+		'type': 'Object'
+	},
 	'_metadata': {
 		'type': {
 			'version': {
