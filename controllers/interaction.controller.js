@@ -3,6 +3,7 @@ const log4js = require('log4js');
 const mongoose = require('mongoose');
 const _ = require('lodash');
 
+const config = require('../config');
 const queryUtils = require('../utils/query.utils');
 
 const logger = log4js.getLogger(global.loggerName);
@@ -121,5 +122,24 @@ router.put('/:id', async (req, res) => {
 // 		});
 // 	}
 // });
+
+router.get('/:flowId/:interactionId/state', async (req, res) => {
+	try {
+		let doc = await interactionModel.findById(req.params.flowId).lean();
+		if (!doc) {
+			return res.status(404).json({
+				message: 'Data Model Not Found'
+			});
+		}
+		const dbname = config.DATA_STACK_NAMESPACE + '-' + doc.app;
+		const records = await global.appcenterCon.db(dbname).collection('b2b.node.state').find({ interactionId: req.params.interactionId }).lean();
+		res.status(200).json(records);
+	} catch (err) {
+		logger.error(err);
+		res.status(500).json({
+			message: err.message
+		});
+	}
+});
 
 module.exports = router;
