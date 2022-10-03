@@ -1,6 +1,7 @@
 const router = require('express').Router({ mergeParams: true });
 const log4js = require('log4js');
 const mongoose = require('mongoose');
+const _ = require('lodash');
 
 const queryUtils = require('../utils/query.utils');
 
@@ -81,27 +82,25 @@ router.post('/utils/update', async (req, res) => {
 // 	}
 // });
 
-// router.put('/:id', async (req, res) => {
-// 	try {
-// 		const payload = req.body;
-// 		let doc = await interactionModel.findById(req.params.id);
-// 		if (!doc) {
-// 			return res.status(404).json({
-// 				message: 'Data Model Not Found'
-// 			});
-// 		}
-// 		Object.keys(payload).forEach(key => {
-// 			doc[key] = payload[key];
-// 		});
-// 		const status = await doc.save(req);
-// 		res.status(200).json(status);
-// 	} catch (err) {
-// 		logger.error(err);
-// 		res.status(500).json({
-// 			message: err.message
-// 		});
-// 	}
-// });
+router.put('/:id', async (req, res) => {
+	try {
+		const payload = req.body;
+		let doc = await interactionModel.findById(req.params.id);
+		if (!doc) {
+			return res.status(404).json({
+				message: 'Data Model Not Found'
+			});
+		}
+		_.merge(doc, payload);
+		const status = await doc.save(req);
+		res.status(200).json(status);
+	} catch (err) {
+		logger.error(err);
+		res.status(500).json({
+			message: err.message
+		});
+	}
+});
 
 // router.delete('/:id', async (req, res) => {
 // 	try {
