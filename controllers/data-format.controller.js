@@ -54,7 +54,7 @@ router.post('/', async (req, res) => {
 		const payload = req.body;
 		payload.app = req.locals.app;
 		if (payload.definition && payload.definition.length > 0) {
-			const errors = commonUtils.validateDefinition(payload.definition[0].definition);
+			const errors = commonUtils.validateDefinition(payload.definition);
 			if (errors) {
 				return res.status(400).json({ message: 'Validation Failed', errors: errors });
 			}
@@ -75,7 +75,7 @@ router.put('/:id', async (req, res) => {
 	try {
 		const payload = req.body;
 		if (payload.definition && payload.definition.length > 0) {
-			const errors = commonUtils.validateDefinition(payload.definition[0].definition);
+			const errors = commonUtils.validateDefinition(payload.definition);
 			if (errors) {
 				return res.status(400).json({ message: 'Validation Failed', errors: errors });
 			}

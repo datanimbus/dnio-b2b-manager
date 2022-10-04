@@ -76,8 +76,8 @@ schema.pre('save', function (next) {
 	} else {
 		temp = this.definition;
 	}
-	if (temp && temp[0] && temp[0].definition) {
-		this.attributeCount = commonUtils.countAttr(temp[0].definition)
+	if (temp && temp.length > 0) {
+		this.attributeCount = commonUtils.countAttr(temp);
 	}
 	next();
 });
