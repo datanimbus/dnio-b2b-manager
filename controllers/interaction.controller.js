@@ -12,9 +12,10 @@ const flowModel = mongoose.model('flow');
 
 
 
-router.get('/', async (req, res) => {
+router.get('/:flowId', async (req, res) => {
 	try {
 		const filter = queryUtils.parseFilter(req.query.filter);
+		filter.flowId = req.params.flowId;
 		if (req.query.countOnly) {
 			const count = await interactionModel.countDocuments(filter);
 			return res.status(200).json(count);
@@ -30,7 +31,7 @@ router.get('/', async (req, res) => {
 	}
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:flowId/:id', async (req, res) => {
 	try {
 		let doc = await interactionModel.findById(req.params.id).lean();
 		if (!doc) {
@@ -69,22 +70,7 @@ router.post('/utils/update', async (req, res) => {
 	}
 });
 
-
-// router.post('/', async (req, res) => {
-// 	try {
-// 		const payload = req.body;
-// 		doc = new interactionModel(payload);
-// 		const status = await doc.save(req);
-// 		res.status(200).json(status);
-// 	} catch (err) {
-// 		logger.error(err);
-// 		res.status(500).json({
-// 			message: err.message
-// 		});
-// 	}
-// });
-
-router.put('/:id', async (req, res) => {
+router.put('/:flowId/:id', async (req, res) => {
 	try {
 		const payload = req.body;
 		let doc = await interactionModel.findById(req.params.id);
@@ -104,27 +90,7 @@ router.put('/:id', async (req, res) => {
 	}
 });
 
-// router.delete('/:id', async (req, res) => {
-// 	try {
-// 		let doc = await interactionModel.findById(req.params.id);
-// 		if (!doc) {
-// 			return res.status(404).json({
-// 				message: 'Data Model Not Found'
-// 			});
-// 		}
-// 		await doc.remove(req);
-// 		res.status(200).json({
-// 			message: 'Document Deleted'
-// 		});
-// 	} catch (err) {
-// 		logger.error(err);
-// 		res.status(500).json({
-// 			message: err.message
-// 		});
-// 	}
-// });
-
-router.get('/:flowId/:interactionId/state', async (req, res) => {
+router.get('/:flowId/:id/state', async (req, res) => {
 	try {
 		let doc = await flowModel.findById(req.params.flowId).lean();
 		if (!doc) {
@@ -134,9 +100,33 @@ router.get('/:flowId/:interactionId/state', async (req, res) => {
 		}
 		const appcenterCon = mongoose.connections[1];
 		const dbname = config.DATA_STACK_NAMESPACE + '-' + doc.app;
-		const colName = appcenterCon.useDb(dbname).collection('b2b.node.state');
-		const records = await colName.find({ interactionId: req.params.interactionId }).toArray();
+		const dataDB = appcenterCon.useDb(dbname);
+		const stateCollection = dataDB.collection('b2b.node.state');
+		const stateDataCollection = dataDB.collection('b2b.node.state.data');
+		const records = await stateCollection.find({ interactionId: req.params.id }).toArray();
 		res.status(200).json(records);
+	} catch (err) {
+		logger.error(err);
+		res.status(500).json({
+			message: err.message
+		});
+	}
+});
+
+router.get('/:flowId/:id/state/:stateId/data', async (req, res) => {
+	try {
+		let doc = await flowModel.findById(req.params.flowId).lean();
+		if (!doc) {
+			return res.status(404).json({
+				message: 'Data Model Not Found'
+			});
+		}
+		const appcenterCon = mongoose.connections[1];
+		const dbname = config.DATA_STACK_NAMESPACE + '-' + doc.app;
+		const dataDB = appcenterCon.useDb(dbname);
+		const stateDataCollection = dataDB.collection('b2b.node.state.data');
+		const record = await stateDataCollection.findOne({ interactionId: req.params.id, nodeId: req.params.stateId });
+		res.status(200).json(record);
 	} catch (err) {
 		logger.error(err);
 		res.status(500).json({
