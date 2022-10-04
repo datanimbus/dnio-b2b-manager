@@ -132,8 +132,10 @@ router.get('/:flowId/:interactionId/state', async (req, res) => {
 				message: 'Data Model Not Found'
 			});
 		}
+		const appcenterCon = mongoose.connections[1];
 		const dbname = config.DATA_STACK_NAMESPACE + '-' + doc.app;
-		const records = await global.appcenterCon.db(dbname).collection('b2b.node.state').find({ interactionId: req.params.interactionId }).lean();
+		const colName = appcenterCon.useDb(dbname).collection('b2b.node.state');
+		const records = await colName.find({ interactionId: req.params.interactionId }).toArray();
 		res.status(200).json(records);
 	} catch (err) {
 		logger.error(err);
