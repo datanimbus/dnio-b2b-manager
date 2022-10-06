@@ -88,10 +88,11 @@ router.put('/:id', async (req, res) => {
 		}
 		delete payload._metadata;
 		delete payload.__v;
-		// Object.keys(payload).forEach(key => {
-		// 	doc[key] = payload[key];
-		// });
-		_.merge(doc, payload);
+		delete payload.version;
+		Object.keys(payload).forEach(key => {
+			doc[key] = payload[key];
+		});
+		// _.merge(doc, payload);
 		doc._req = req;
 		const status = await doc.save();
 		res.status(200).json(status);
