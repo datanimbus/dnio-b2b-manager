@@ -17,6 +17,7 @@ require('./db-factory');
 const logger = log4js.getLogger(global.loggerName);
 logger.level = process.env.LOG_LEVEL || 'info';
 global.activeRequest = 0;
+global.logger = logger;
 
 function initSocket(server) {
 	const io = socket(server);
