@@ -63,7 +63,7 @@ app.use((req, res, next) => {
 
 //testing comment
 
-app.use('/b2b', require('./router'));
+app.use('/pipes', require('./router'));
 app.use(fileUpload({
 	useTempFiles: true,
 	tempFileDir: './uploads'

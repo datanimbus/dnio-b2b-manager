@@ -53,7 +53,7 @@ router.post('/:id/init', async (req, res) => {
 			});
 		}
 		// const flows = await flowModel.find({ app: req.locals.app, $or: [{ 'inputNode.options.agentId': agentId }, { 'nodes.options.agentId': agentId }] }).select('_id inputNode nodes').lean();
-		const flows = await flowModel.find({ app: req.locals.app, $or: [{ 'inputNode.options.agents': agentId }, { 'nodes.options.agents': agentId }] }).lean();
+		const flows = await flowModel.find({ app: req.params.app, $or: [{ 'inputNode.options.agents.agentId': agentId }, { 'nodes.options.agents.agentId': agentId }] }).lean();
 		logger.trace(`[${txnId}] Flows found - ${flows.map(_d => _d._id)}`);
 		const allFlows = [];
 		let newRes = [];
@@ -64,9 +64,9 @@ router.post('/:id/init', async (req, res) => {
 			// agentNodes.forEach(node => {
 			// 	allFlows.push({ flowId: flow._id, options: node.options });
 			// });
-			if (flow.inputNode && flow.inputNode.options && flow.inputNode.options.agentId == agentId) {
-				allFlows.push({ flowId: flow._id, options: flow.inputNode.options });
-			}
+			// if (flow.inputNode && flow.inputNode.options && flow.inputNode.options.agentId == agentId) {
+			// 	allFlows.push({ flowId: flow._id, options: flow.inputNode.options });
+			// }
 			return helpers.constructEvent(doc, flow, action);
 		});
 		await Promise.all(promises).then((_d) => {
