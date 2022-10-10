@@ -3,6 +3,9 @@ const log4js = require('log4js');
 const mongoose = require('mongoose');
 const JWT = require('jsonwebtoken');
 const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+const { v4: uuid } = require('uuid');
 
 const config = require('../config');
 const queryUtils = require('../utils/query.utils');
@@ -58,7 +61,7 @@ router.post('/:id/init', async (req, res) => {
 		const allFlows = [];
 		let newRes = [];
 		let promises = flows.map(flow => {
-			logger.trace(`Floe Json - ${JSON.stringify({ flow })}`);
+			logger.trace(`[${txnId}] Flow JSON - ${JSON.stringify({ flow })}`);
 			let action = flow.status === 'Active' ? 'start' : 'create';
 			// let agentNodes = flow.nodes.filter((ele) => ele.options.agentId = agentId);
 			// agentNodes.forEach(node => {
@@ -67,7 +70,7 @@ router.post('/:id/init', async (req, res) => {
 			// if (flow.inputNode && flow.inputNode.options && flow.inputNode.options.agentId == agentId) {
 			// 	allFlows.push({ flowId: flow._id, options: flow.inputNode.options });
 			// }
-			return helpers.constructEvent(doc, flow, action);
+			return helpers.constructFlowEvent(req, doc, flow, action);
 		});
 		await Promise.all(promises).then((_d) => {
 			newRes = [].concat.apply([], _d);
@@ -100,7 +103,8 @@ router.post('/:id/heartbeat', async (req, res) => {
 		}
 
 		const actions = [];
-		const docs = await agentActionModel.find({ agentId: agentId, sentOrRead: false }).select('action metaData timestamp');
+		// const docs = await agentActionModel.find({ agentId: agentId, sentOrRead: false }).select('action metaData timestamp');
+		const docs = await agentActionModel.find({ agentId: agentId, sentOrRead: false });
 		if (docs.length > 0) {
 			await Promise.all(docs.map(async (doc) => {
 				actions.push(doc.toObject());
@@ -296,8 +300,9 @@ router.post('/:id/upload', async (req, res) => {
 		let uploadHeaders = {
 			'mirrorPath': req.header('DATA-STACK-Mirror-Directory'),
 			'os': req.header('DATA-STACK-Operating-System'),
+			'agentName': req.header('DATA-STACK-Agent-Name'),
 			'agentId': req.header('DATA-STACK-Agent-Id'),
-			'appName': req.header('DATA-STACK-App-Name'),
+			'app': req.header('DATA-STACK-App-Name'),
 			'flowName': req.header('DATA-STACK-Flow-Name'),
 			'flowId': req.header('DATA-STACK-Flow-Id'),
 			'checksum': req.header('DATA-STACK-File-Checksum'),
@@ -319,49 +324,95 @@ router.post('/:id/upload', async (req, res) => {
 			'compression': req.header('DATA-STACK-Compression'),
 			'datastackFileToken': req.header('DATA-STACK-File-Token')
 		};
-		logger.debug('upload headers - ', JSON.stringify(uploadHeaders));
-
-		uploadHeaders.newLocation = uploadHeaders.newLocation.replace('\\', '\\\\');
+		logger.debug(`[${txnId}] Upload headers - `, JSON.stringify(uploadHeaders));
 
 		if (!req.files || Object.keys(req.files).length === 0) {
 			return res.status(400).send('No files were uploaded');
 		}
 		const reqFile = req.files.file;
-		logger.debug('Request file info - ', reqFile);
-		const encryptedData = fs.readFileSync(reqFile.tempFilePath, 'utf8');
-		logger.debug('encryptedData - ', encryptedData.toString());
+		logger.debug(`[${txnId}] Request file info - `, reqFile);
 
-		const decryptedData = fileUtils.decryptData(encryptedData, uploadHeaders.symmetricKey);
-		logger.debug('decryptedData - ', decryptedData);
+		const appcenterCon = mongoose.connections[1];
+		const dbname = config.DATA_STACK_NAMESPACE + '-' + uploadHeaders.app;
+		const dataDB = appcenterCon.useDb(dbname);
+		const gfsBucket = new mongoose.mongo.GridFSBucket(dataDB, { bucketName: "b2b.files" });
 
-		logger.info(`[${txnId}] File ${uploadHeaders.originalFileName} for the flow ${uploadHeaders.flowName} received, uploading file to flow`);
-		const doc = await flowModel.findById(uploadHeaders.flowId);
-		if (!doc) {
-			return res.status(400).json({ message: 'Invalid Flow' });
-		}
+		logger.debug(`[${txnId}] Uploading file chunk ${uploadHeaders.currentChunk}/${uploadHeaders.totalChunks} of file ${uploadHeaders.originalFileName} for flow ${uploadHeaders.flowName} in DB`);
+		fs.createReadStream(reqFile.tempFilePath).
+			pipe(gfsBucket.openUploadStream(crypto.createHash('md5').update(uuid()).digest('hex'), {
+				metadata: { uploadHeaders }
+			})).
+			on('error', function (error) {
+				logger.error(`[${txnId}] Error uploading file - ${error}`);
+				return res.status(500).json({
+					message: `Error uploading File - ${error.message}`
+				});
+			}).
+			on('finish', function (file) {
+				logger.debug(`[${txnId}] Successfully uploaded file chunk ${uploadHeaders.currentChunk}/${uploadHeaders.totalChunks} of file ${uploadHeaders.originalFileName} for flow ${uploadHeaders.flowName} in DB`);
+				logger.trace(`[${txnId}] File details - ${JSON.stringify(file)}`);
+				if (uploadHeaders.totalChunks === uploadHeaders.currentChunk) {
+					logger.debug(`[${txnId}] All Chunks of file ${uploadHeaders.originalFileName} of flow ${uploadHeaders.flowName} received, uploading file to flow`);
+					// Creating Interaction for INPUT_FILE_UPLOAD_TO_DB_SUCCESSFULL
+					// const result = await flowUtils.createInteraction(req, { flowId: uploadHeaders.flowId });
+					// ReleaseToken
+					// VerifyIsFlowBinToBin -> IsBinary -> File Processed Success & Download Entry
+					// NotBinary -> GetFileFromDB -> Upload File to Flow -> File Processed Success
 
-		const formData = new FormData();
-		formData.append('file', decryptedData);
-		let flowUrl = config.baseUrlBM + '/' + doc.app + '/' + doc.inputNode.options.path;
-		const options = {
-			url: flowUrl,
-			method: 'POST',
-			headers: {
-				'Content-Type': 'multipart/form-data',
-				'TxnId': req.header('DATA-STACK-Txn-Id'),
-			},
-			body: formData
-		};
-		const res = await httpClient.httpRequest(options);
-		if (!res) {
-			logger.error(`Flow ${doc.name} is down`);
-			throw new Error(`Flow ${doc.name} is down`);
-		}
-		if (res.statusCode === 200) {
-			res.status(200).json({ message: 'File Successfully Uploaded' });
-		} else {
-			res.status(res.statusCode).send(res.body);
-		}
+					let metaDataObj = generateFileProcessedSuccessMetaData(uploadHeaders);
+					let agentEvent = helpers.constructAgentEvent(req, uploadHeaders, 'FILE_PROCESSED_SUCCESS', metaDataObj);
+					const actionDoc = new agentActionModel(agentEvent);
+					actionDoc._req = req;
+					let status = actionDoc.save();
+					logger.debug('Agent Action Create Status: ', status);
+					logger.debug('actionDoc - ', actionDoc);
+
+					let chunkChecksumList = uploadHeaders.chunkChecksum;
+
+					let downloadMetaDataObj = generateFileDownloadMetaData(uploadHeaders, file.filename, chunkChecksumList);
+					agentEvent = helpers.constructAgentEvent(req, uploadHeaders, 'DOWNLOAD_REQUEST', downloadMetaDataObj);
+					const downloadActionDoc = new agentActionModel(agentEvent);
+					downloadActionDoc._req = req;
+					status = downloadActionDoc.save();
+					logger.debug('Agent Download Action Create Status: ', status);
+					logger.debug('downloadActionDoc - ', downloadActionDoc);
+				}
+			});
+
+
+		// Chunking from agent for file upload
+		// How do we upload files from flow after processing?
+
+		// logger.info(`[${txnId}] File ${uploadHeaders.originalFileName} for the flow ${uploadHeaders.flowName} received, uploading file to flow`);
+		// const doc = await flowModel.findById(uploadHeaders.flowId);
+		// if (!doc) {
+		// 	return res.status(400).json({ message: 'Invalid Flow' });
+		// }
+
+		// const formData = new FormData();
+		// formData.append('file', decryptedData);
+		// let flowUrl = config.baseUrlBM + '/' + doc.app + '/' + doc.inputNode.options.path;
+		// const options = {
+		// 	url: flowUrl,
+		// 	method: 'POST',
+		// 	headers: {
+		// 		'Content-Type': 'multipart/form-data',
+		// 		'TxnId': req.header('DATA-STACK-Txn-Id'),
+		// 	},
+		// 	body: formData
+		// };
+		// const res = await httpClient.httpRequest(options);
+		// if (!res) {
+		// 	logger.error(`Flow ${doc.name} is down`);
+		// 	throw new Error(`Flow ${doc.name} is down`);
+		// }
+		// if (res.statusCode === 200) {
+		// 	res.status(200).json({ message: 'File Successfully Uploaded' });
+		// } else {
+		// 	res.status(res.statusCode).send(res.body);
+		// }
+
+		return res.status(200).json({ message: `Chunk Successfully Uploaded` });
 	} catch (err) {
 		logger.error(err);
 		res.status(500).json({
@@ -377,6 +428,7 @@ router.post('/:id/download', async (req, res) => {
 		logger.info(`[${txnId}] Processing Agent Download Action of -`, agentId);
 
 		const fileId = req.header('DATA-STACK-Agent-File-Id');
+		logger.trace(`[${txnId}] FileId-`, fileId);
 		if (fileIDDownloadingList[fileId] === true) {
 			return res.status(400).json({ message: "File is already downloading" });
 		} else {
@@ -388,6 +440,47 @@ router.post('/:id/download', async (req, res) => {
 			} else {
 				//getFileChunkFromDB
 			}
+
+			const appcenterCon = mongoose.connections[1];
+			const dbname = config.DATA_STACK_NAMESPACE + '-' + payload.appName;
+			const dataDB = appcenterCon.useDb(dbname);
+			const gfsBucket = new mongoose.mongo.GridFSBucket(dataDB, { bucketName: "b2b.files" });
+			let file;
+			try {
+				file = (await gfsBucket.find({ filename: fileId }).toArray())[0];
+			} catch (e) {
+				logger.error(`[${txnId}] Error finding file - ${e}`);
+				return res.status(500).json({ message: e.message });
+			}
+			logger.trace(`[${txnId}] FileInfo -`, file);
+			if (!file) {
+				logger.error(`[${txnId}] File not found`);
+				return res.status(400).json({ message: 'File not found' });
+			}
+
+			let tmpFilePath = path.join(process.cwd(), 'tmp', fileId);
+
+			const readStream = gfsBucket.openDownloadStream(file._id);
+			const writeStream = fs.createWriteStream(tmpFilePath);
+			readStream.pipe(writeStream);
+
+			readStream.on('error', function (err) {
+				logger.error(`[${txnId}] Error streaming file - ${err}`);
+			});
+
+			writeStream.on('error', function (err) {
+				logger.error(`[${txnId}] Error streaming file - ${err}`);
+			});
+
+			writeStream.on('close', async function () {
+				let downloadFilePath = tmpFilePath;
+				const encryptedData = fs.readFileSync(downloadFilePath, 'utf8');
+				// logger.trace('encryptedData - ', encryptedData);
+				// const decryptedData = fileUtils.decryptDataGCM(encryptedData, config.encryptionKey);
+				// logger.trace('decryptedData - ', decryptedData);
+				return res.status(200).send(encryptedData);
+
+			});
 		}
 	} catch (err) {
 		logger.error(err);
@@ -553,6 +646,34 @@ function shFilePermission(file) {
 			reject(err);
 		});
 	});
+}
+
+function generateFileProcessedSuccessMetaData(metaDataInfo) {
+	let metaData = {};
+	metaData.originalFileName = metaDataInfo.originalFileName;
+	metaData.newFileName = metaDataInfo.newFileName;
+	metaData.newLocation = metaDataInfo.newLocation.replace('\\', '\\\\');
+	metaData.mirrorPath = metaDataInfo.mirrorPath.replace('\\', '\\\\');
+	metaData.md5CheckSum = metaDataInfo.checksum;
+	metaData.remoteTxnID = metaDataInfo.remoteTxnId;
+	metaData.odpTxnID = metaDataInfo.odpTxnId;
+	return metaData;
+}
+
+function generateFileDownloadMetaData(metaDataInfo, fileId, chunkChecksumList) {
+	let metaData = {};
+	metaData.fileName = metaDataInfo.originalFileName;
+	metaData.remoteTxnID = metaDataInfo.remoteTxnId;
+	metaData.odpTxnID = metaDataInfo.odpTxnIdDPTxnId;
+	metaData.checkSum = metaDataInfo.checksum;
+	metaData.password = metaDataInfo.symmetricKey;
+	metaData.fileID = fileId,
+		metaData.OperatingSystem = metaDataInfo.os;
+	metaData.chunkChecksumList = chunkChecksumList;
+	metaData.totalChunks = metaDataInfo.totalChunks;
+	metaData.fileLocation = metaDataInfo.fileLocation;
+	metaData.downloadAgentID = metaDataInfo.agentId;
+	return metaData;
 }
 
 module.exports = router;

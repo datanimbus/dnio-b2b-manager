@@ -1,8 +1,8 @@
 ARG LATEST_B2BGW=dev
 ARG RELEASE=dev
 # FROM data.stack:govault.${RELEASE} AS vault
-FROM data.stack:b2b-agent-watcher.${RELEASE} AS watcher
-FROM data.stack:b2bgw.${LATEST_B2BGW} AS agent
+FROM data.stack.b2b-agent-watcher.${RELEASE} AS watcher
+FROM data.stack.b2b-agents.${LATEST_B2BGW} AS agent
 FROM node:18.7.0-alpine3.16
 
 RUN apk update
