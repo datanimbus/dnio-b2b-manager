@@ -338,47 +338,49 @@ router.post('/:id/upload', async (req, res) => {
 		const gfsBucket = new mongoose.mongo.GridFSBucket(dataDB, { bucketName: "b2b.files" });
 
 		logger.debug(`[${txnId}] Uploading file chunk ${uploadHeaders.currentChunk}/${uploadHeaders.totalChunks} of file ${uploadHeaders.originalFileName} for flow ${uploadHeaders.flowName} in DB`);
-		fs.createReadStream(reqFile.tempFilePath).
-			pipe(gfsBucket.openUploadStream(crypto.createHash('md5').update(uuid()).digest('hex'), {
-				metadata: { uploadHeaders }
-			})).
-			on('error', function (error) {
-				logger.error(`[${txnId}] Error uploading file - ${error}`);
-				return res.status(500).json({
-					message: `Error uploading File - ${error.message}`
+
+		const file = await new Promise((resolve, reject) => {
+			fs.createReadStream(reqFile.tempFilePath).
+				pipe(gfsBucket.openUploadStream(crypto.createHash('md5').update(uuid()).digest('hex'), {
+					metadata: { uploadHeaders }
+				})).
+				on('error', function (error) {
+					logger.error(`[${txnId}] Error uploading file - ${error}`);
+					reject(error);
+				}).
+				on('finish', function (file) {
+					logger.debug(`[${txnId}] Successfully uploaded file chunk ${uploadHeaders.currentChunk}/${uploadHeaders.totalChunks} of file ${uploadHeaders.originalFileName} for flow ${uploadHeaders.flowName} in DB`);
+					logger.trace(`[${txnId}] File details - ${JSON.stringify(file)}`);
+					resolve(file);
 				});
-			}).
-			on('finish', function (file) {
-				logger.debug(`[${txnId}] Successfully uploaded file chunk ${uploadHeaders.currentChunk}/${uploadHeaders.totalChunks} of file ${uploadHeaders.originalFileName} for flow ${uploadHeaders.flowName} in DB`);
-				logger.trace(`[${txnId}] File details - ${JSON.stringify(file)}`);
-				if (uploadHeaders.totalChunks === uploadHeaders.currentChunk) {
-					logger.debug(`[${txnId}] All Chunks of file ${uploadHeaders.originalFileName} of flow ${uploadHeaders.flowName} received, uploading file to flow`);
-					// Creating Interaction for INPUT_FILE_UPLOAD_TO_DB_SUCCESSFULL
-					// const result = await flowUtils.createInteraction(req, { flowId: uploadHeaders.flowId });
-					// ReleaseToken
-					// VerifyIsFlowBinToBin -> IsBinary -> File Processed Success & Download Entry
-					// NotBinary -> GetFileFromDB -> Upload File to Flow -> File Processed Success
+		});
 
-					let metaDataObj = generateFileProcessedSuccessMetaData(uploadHeaders);
-					let agentEvent = helpers.constructAgentEvent(req, uploadHeaders, 'FILE_PROCESSED_SUCCESS', metaDataObj);
-					const actionDoc = new agentActionModel(agentEvent);
-					actionDoc._req = req;
-					let status = actionDoc.save();
-					logger.debug('Agent Action Create Status: ', status);
-					logger.debug('actionDoc - ', actionDoc);
+		if (uploadHeaders.totalChunks === uploadHeaders.currentChunk) {
+			logger.debug(`[${txnId}] All Chunks of file ${uploadHeaders.originalFileName} of flow ${uploadHeaders.flowName} received, uploading file to flow`);
+			// Creating Interaction for INPUT_FILE_UPLOAD_TO_DB_SUCCESSFULL
+			// const result = await flowUtils.createInteraction(req, { flowId: uploadHeaders.flowId });
+			// ReleaseToken
+			// VerifyIsFlowBinToBin -> IsBinary -> File Processed Success & Download Entry
+			// NotBinary -> GetFileFromDB -> Upload File to Flow -> File Processed Success
 
-					let chunkChecksumList = uploadHeaders.chunkChecksum;
+			let metaDataObj = generateFileProcessedSuccessMetaData(uploadHeaders);
+			let agentEvent = helpers.constructAgentEvent(req, uploadHeaders, 'FILE_PROCESSED_SUCCESS', metaDataObj);
+			const actionDoc = new agentActionModel(agentEvent);
+			actionDoc._req = req;
+			let status = actionDoc.save();
+			logger.debug('Agent Action Create Status: ', status);
+			logger.debug('actionDoc - ', actionDoc);
 
-					let downloadMetaDataObj = generateFileDownloadMetaData(uploadHeaders, file.filename, chunkChecksumList);
-					agentEvent = helpers.constructAgentEvent(req, uploadHeaders, 'DOWNLOAD_REQUEST', downloadMetaDataObj);
-					const downloadActionDoc = new agentActionModel(agentEvent);
-					downloadActionDoc._req = req;
-					status = downloadActionDoc.save();
-					logger.debug('Agent Download Action Create Status: ', status);
-					logger.debug('downloadActionDoc - ', downloadActionDoc);
-				}
-			});
+			let chunkChecksumList = uploadHeaders.chunkChecksum;
 
+			let downloadMetaDataObj = generateFileDownloadMetaData(uploadHeaders, file.filename, chunkChecksumList);
+			agentEvent = helpers.constructAgentEvent(req, uploadHeaders, 'DOWNLOAD_REQUEST', downloadMetaDataObj);
+			const downloadActionDoc = new agentActionModel(agentEvent);
+			downloadActionDoc._req = req;
+			status = downloadActionDoc.save();
+			logger.debug('Agent Download Action Create Status: ', status);
+			logger.debug('downloadActionDoc - ', downloadActionDoc);
+		}
 
 		// Chunking from agent for file upload
 		// How do we upload files from flow after processing?
@@ -458,28 +460,14 @@ router.post('/:id/download', async (req, res) => {
 				return res.status(400).json({ message: 'File not found' });
 			}
 
-			let tmpFilePath = path.join(process.cwd(), 'tmp', fileId);
-
 			const readStream = gfsBucket.openDownloadStream(file._id);
-			const writeStream = fs.createWriteStream(tmpFilePath);
-			readStream.pipe(writeStream);
+			readStream.pipe(res);
 
 			readStream.on('error', function (err) {
 				logger.error(`[${txnId}] Error streaming file - ${err}`);
-			});
-
-			writeStream.on('error', function (err) {
-				logger.error(`[${txnId}] Error streaming file - ${err}`);
-			});
-
-			writeStream.on('close', async function () {
-				let downloadFilePath = tmpFilePath;
-				const encryptedData = fs.readFileSync(downloadFilePath, 'utf8');
-				// logger.trace('encryptedData - ', encryptedData);
-				// const decryptedData = fileUtils.decryptDataGCM(encryptedData, config.encryptionKey);
-				// logger.trace('decryptedData - ', decryptedData);
-				return res.status(200).send(encryptedData);
-
+				return res.status(500).json({
+						message: `Error streaming file - ${err.message}`
+					});
 			});
 		}
 	} catch (err) {

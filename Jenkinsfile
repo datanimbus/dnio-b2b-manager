@@ -35,6 +35,16 @@ pipeline {
                 }
             }
         }
+        stage('SCM Agent') {
+            steps {
+                git branch: "$BRANCH_NAME", url: 'https://github.com/appveen/ds-agent.git'
+            }
+        }
+        stage('SCM Agent Watcher') {
+            steps {
+                git branch: "$BRANCH_NAME", url: 'https://github.com/appveen/ds-agent-watcher.git'
+            }
+        }
         stage('Build') {
             steps {
                 sh "chmod 777 ./scripts/build.sh"

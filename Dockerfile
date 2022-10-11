@@ -1,8 +1,6 @@
-ARG LATEST_B2BGW=dev
-ARG RELEASE=dev
-# FROM data.stack:govault.${RELEASE} AS vault
-FROM data.stack.b2b-agent-watcher.${RELEASE} AS watcher
-FROM data.stack.b2b-agents.${LATEST_B2BGW} AS agent
+ARG LATEST_AGENTS=dev
+FROM data.stack.b2b.agent.watcher.${LATEST_AGENTS} AS watcher
+FROM data.stack.b2b.agents.${LATEST_AGENTS} AS agent
 FROM node:18.7.0-alpine3.16
 
 RUN apk update
@@ -20,8 +18,6 @@ RUN npm audit fix
 RUN rm -rf /usr/local/lib/node_modules/npm/node_modules/node-gyp/test
 
 COPY . .
-
-# COPY --from=vault /app/exec ./generatedAgent/vault
 
 COPY --from=watcher /app/exec ./generatedAgent/sentinels
 COPY --from=agent /app/scriptFiles/LICENSE ./generatedAgent/
