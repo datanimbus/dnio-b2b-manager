@@ -86,6 +86,8 @@ echo "****************************************************"
 echo "data.stack:bm :: Building BM using TAG :: $TAG"
 echo "****************************************************"
 
+cd $WORKSPACE/ds-b2b-manager
+
 sed -i.bak s#__image_tag__#$TAG# Dockerfile
 
 if [ $cleanBuild ]; then
