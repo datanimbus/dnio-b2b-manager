@@ -37,12 +37,16 @@ pipeline {
         }
         stage('SCM Agent') {
             steps {
-                git branch: "$BRANCH_NAME", url: 'https://github.com/appveen/ds-agent.git'
+                dir('ds-agent') {
+                  git branch: "$BRANCH_NAME", url: 'https://github.com/appveen/ds-agent.git'
+                }
             }
         }
         stage('SCM Agent Watcher') {
             steps {
-                git branch: "$BRANCH_NAME", url: 'https://github.com/appveen/ds-agent-watcher.git'
+                dir('ds-agent-watcher') {
+                  git branch: "$BRANCH_NAME", url: 'https://github.com/appveen/ds-agent-watcher.git'
+                }
             }
         }
         stage('Build') {
