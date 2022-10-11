@@ -1,6 +1,6 @@
 ARG LATEST_AGENTS=dev
-FROM data.stack.b2b.agent.watcher.${LATEST_AGENTS} AS watcher
-FROM data.stack.b2b.agents.${LATEST_AGENTS} AS agent
+FROM data.stack.b2b.agent.watcher:${LATEST_AGENTS} AS watcher
+FROM data.stack.b2b.agents:${LATEST_AGENTS} AS agent
 FROM node:18.7.0-alpine3.16
 
 RUN apk update
