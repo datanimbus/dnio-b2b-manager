@@ -29,15 +29,15 @@ router.delete('/:id', async (req, res) => {
 		logger.debug(`[${req.get('TxnId')}] Data formats deleted`);
 
 		// Deleting Partners
-		logger.debug(`[${req.get('TxnId')}] Deleting Partners`);
-		const partnerDocs = await mongoose.model('partners').find({ app: app });
-		logger.trace(`[${req.get('TxnId')}] Partners to delete - ${JSON.stringify(partnerDocs)}`);
-		promises = partnerDocs.map(doc => {
-			doc._req = req;
-			return doc.remove(req).catch(err => logger.error(`[${req.get('TxnId')}] Error Deleting Partners - ${err.message}`));
-		});
-		await Promise.all(promises);
-		logger.debug(`[${req.get('TxnId')}] Partners deleted`);
+		// logger.debug(`[${req.get('TxnId')}] Deleting Partners`);
+		// const partnerDocs = await mongoose.model('partners').find({ app: app });
+		// logger.trace(`[${req.get('TxnId')}] Partners to delete - ${JSON.stringify(partnerDocs)}`);
+		// promises = partnerDocs.map(doc => {
+		// 	doc._req = req;
+		// 	return doc.remove(req).catch(err => logger.error(`[${req.get('TxnId')}] Error Deleting Partners - ${err.message}`));
+		// });
+		// await Promise.all(promises);
+		// logger.debug(`[${req.get('TxnId')}] Partners deleted`);
 
 		// Deleting Agents
 		logger.debug(`[${req.get('TxnId')}] Deleting Agents`);
