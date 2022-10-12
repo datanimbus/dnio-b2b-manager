@@ -46,7 +46,7 @@ TAG=`cat CURRENT_BM`
 echo "$buildAgent"
 echo "$buildAgentWatcher"
 
-if [ "$buildAgent"==true ]; then
+if [ "$buildAgent"=="true" ]; then
     echo "****************************************************"
     echo "data.stack:bm :: Building Agents using TAG :: $TAG"
     echo "****************************************************"
@@ -74,7 +74,7 @@ else
     echo "****************************************************"
 fi
 
-if [ "$buildAgentWatcher"==true ]; then
+if [ "$buildAgentWatcher"=="true" ]; then
     echo "****************************************************"
     echo "data.stack:bm :: Building Agent Watcher using TAG :: $TAG"
     echo "****************************************************"
