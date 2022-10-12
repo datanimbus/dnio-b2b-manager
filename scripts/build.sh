@@ -99,6 +99,8 @@ else
     echo "****************************************************"
 fi
 
+cd $WORKSPACE
+
 LATEST_AGENT=`cat LATEST_AGENT`
 LATEST_AGENT_WATCHER=`cat LATEST_AGENT_WATCHER`
 
@@ -106,7 +108,6 @@ echo "****************************************************"
 echo "data.stack:bm :: Building BM using TAG :: $TAG"
 echo "****************************************************"
 
-cd $WORKSPACE
 
 sed -i.bak s#__image_tag__#$TAG# Dockerfile
 
