@@ -5,7 +5,10 @@ const JWT = require('jsonwebtoken');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const FormData = require('form-data');
 const { v4: uuid } = require('uuid');
+const { zip } = require('zip-a-folder');
+const { exec } = require('child_process');
 
 const config = require('../config');
 const queryUtils = require('../utils/query.utils');
@@ -14,9 +17,6 @@ const cacheUtils = require('../utils/cache.utils');
 const helpers = require('../utils/helper');
 const fileUtils = require('../utils/file.utils');
 const httpClient = require('../http-client');
-const FormData = require('form-data');
-const { zip } = require('zip-a-folder');
-const exec = require('child_process').exec;
 
 const logger = log4js.getLogger(global.loggerName);
 const agentModel = mongoose.model('agent');
@@ -58,7 +58,7 @@ router.post('/:id/init', async (req, res) => {
 		// const flows = await flowModel.find({ app: req.locals.app, $or: [{ 'inputNode.options.agentId': agentId }, { 'nodes.options.agentId': agentId }] }).select('_id inputNode nodes').lean();
 		const flows = await flowModel.find({ app: req.params.app, $or: [{ 'inputNode.options.agents.agentId': agentId }, { 'nodes.options.agents.agentId': agentId }] }).lean();
 		logger.trace(`[${txnId}] Flows found - ${flows.map(_d => _d._id)}`);
-		const allFlows = [];
+		// const allFlows = [];
 		let newRes = [];
 		let promises = flows.map(flow => {
 			logger.trace(`[${txnId}] Flow JSON - ${JSON.stringify({ flow })}`);
@@ -335,7 +335,7 @@ router.post('/:id/upload', async (req, res) => {
 		const appcenterCon = mongoose.connections[1];
 		const dbname = config.DATA_STACK_NAMESPACE + '-' + uploadHeaders.app;
 		const dataDB = appcenterCon.useDb(dbname);
-		const gfsBucket = new mongoose.mongo.GridFSBucket(dataDB, { bucketName: "b2b.files" });
+		const gfsBucket = new mongoose.mongo.GridFSBucket(dataDB, { bucketName: 'b2b.files' });
 
 		logger.debug(`[${txnId}] Uploading file chunk ${uploadHeaders.currentChunk}/${uploadHeaders.totalChunks} of file ${uploadHeaders.originalFileName} for flow ${uploadHeaders.flowName} in DB`);
 
@@ -414,7 +414,7 @@ router.post('/:id/upload', async (req, res) => {
 		// 	res.status(res.statusCode).send(res.body);
 		// }
 
-		return res.status(200).json({ message: `Chunk Successfully Uploaded` });
+		return res.status(200).json({ message: 'Chunk Successfully Uploaded' });
 	} catch (err) {
 		logger.error(err);
 		res.status(500).json({
@@ -432,12 +432,12 @@ router.post('/:id/download', async (req, res) => {
 		const fileId = req.header('DATA-STACK-Agent-File-Id');
 		logger.trace(`[${txnId}] FileId-`, fileId);
 		if (fileIDDownloadingList[fileId] === true) {
-			return res.status(400).json({ message: "File is already downloading" });
+			return res.status(400).json({ message: 'File is already downloading' });
 		} else {
 			const payload = req.body;
 			logger.info(`[${txnId}] payload -`, JSON.stringify(payload));
 
-			if (req.header('DATA-STACK-BufferEncryption') != "true") {
+			if (req.header('DATA-STACK-BufferEncryption') != 'true') {
 				//GetCompleteFileFromDB
 			} else {
 				//getFileChunkFromDB
@@ -446,7 +446,7 @@ router.post('/:id/download', async (req, res) => {
 			const appcenterCon = mongoose.connections[1];
 			const dbname = config.DATA_STACK_NAMESPACE + '-' + payload.appName;
 			const dataDB = appcenterCon.useDb(dbname);
-			const gfsBucket = new mongoose.mongo.GridFSBucket(dataDB, { bucketName: "b2b.files" });
+			const gfsBucket = new mongoose.mongo.GridFSBucket(dataDB, { bucketName: 'b2b.files' });
 			let file;
 			try {
 				file = (await gfsBucket.find({ filename: fileId }).toArray())[0];
@@ -466,8 +466,8 @@ router.post('/:id/download', async (req, res) => {
 			readStream.on('error', function (err) {
 				logger.error(`[${txnId}] Error streaming file - ${err}`);
 				return res.status(500).json({
-						message: `Error streaming file - ${err.message}`
-					});
+					message: `Error streaming file - ${err.message}`
+				});
 			});
 		}
 	} catch (err) {
@@ -522,7 +522,7 @@ router.get('/:id/download/exec', async (req, res) => {
 			'log-level': process.env.LOG_LEVEL || 'info',
 			'sentinel-port-number': '54321'
 		};
-		logger.trace("config initialized - ", agentConfig);
+		logger.trace('config initialized - ', agentConfig);
 		let confStr = createConf(agentConfig);
 		let baseDir = process.cwd() + '/generatedAgent/AGENT/';
 		if (!fs.existsSync(baseDir)) {
@@ -552,7 +552,7 @@ router.get('/:id/download/exec', async (req, res) => {
 				return res.status(200).download(zipFile);
 			})
 			.then(() => {
-				logger.debug(`Removing zip and folder`);
+				logger.debug('Removing zip and folder');
 				deleteFolderRecursive(folderName);
 			})
 			.catch(err => {
@@ -655,8 +655,8 @@ function generateFileDownloadMetaData(metaDataInfo, fileId, chunkChecksumList) {
 	metaData.odpTxnID = metaDataInfo.odpTxnIdDPTxnId;
 	metaData.checkSum = metaDataInfo.checksum;
 	metaData.password = metaDataInfo.symmetricKey;
-	metaData.fileID = fileId,
-		metaData.OperatingSystem = metaDataInfo.os;
+	metaData.fileID = fileId;
+	metaData.OperatingSystem = metaDataInfo.os;
 	metaData.chunkChecksumList = chunkChecksumList;
 	metaData.totalChunks = metaDataInfo.totalChunks;
 	metaData.fileLocation = metaDataInfo.fileLocation;

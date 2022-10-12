@@ -102,7 +102,6 @@ router.get('/:flowId/:id/state', async (req, res) => {
 		const dbname = config.DATA_STACK_NAMESPACE + '-' + doc.app;
 		const dataDB = appcenterCon.useDb(dbname);
 		const stateCollection = dataDB.collection('b2b.node.state');
-		const stateDataCollection = dataDB.collection('b2b.node.state.data');
 		const records = await stateCollection.find({ interactionId: req.params.id }).toArray();
 		res.status(200).json(records);
 	} catch (err) {
