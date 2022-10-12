@@ -12,7 +12,7 @@ cd $WORKSPACE/ds-b2b-base
 
 sed -i.bak s#__image_tag__#$TAG# Dockerfile
 
-if [ $cleanBuild ]; then
+if $cleanBuild ; then
     docker build --no-cache -t data.stack.b2b.base:$TAG .
 else 
     docker build -t data.stack.b2b.base:$TAG .
@@ -31,7 +31,7 @@ cd $WORKSPACE/ds-faas
 
 sed -i.bak s#__image_tag__#$TAG# Dockerfile
 
-if [ $cleanBuild ]; then
+if $cleanBuild ; then
     docker build --no-cache -t data.stack.faas.base:$TAG .
 else 
     docker build -t data.stack.faas.base:$TAG .
