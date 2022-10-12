@@ -4,6 +4,8 @@ pipeline {
 
     parameters{
         string(name: 'tag', defaultValue: 'dev', description: 'Image Tag')
+        booleanParam(name: 'buildAgent', defaultValue: false, description: 'Build B2B Agents')
+        booleanParam(name: 'buildAgentWatcher', defaultValue: false, description: 'Build B2B Agent Watcher')
         booleanParam(name: 'cleanBuild', defaultValue: false, description: 'Clean Build')
         booleanParam(name: 'pushToS3', defaultValue: false, description: 'Push to S3')
         booleanParam(name: 'deploy', defaultValue: true, description: 'Deploy in machine')
@@ -36,6 +38,11 @@ pipeline {
             }
         }
         stage('SCM Agent') {
+            when {
+                expression {
+                    params.buildAgent  == true
+                }
+            }
             steps {
                 dir('ds-agent') {
                   git branch: "$BRANCH_NAME", url: 'https://github.com/appveen/ds-agent.git'
@@ -43,6 +50,11 @@ pipeline {
             }
         }
         stage('SCM Agent Watcher') {
+            when {
+                expression {
+                    params.buildAgentWatcher  == true
+                }
+            }
             steps {
                 dir('ds-agent-watcher') {
                   git branch: "$BRANCH_NAME", url: 'https://github.com/appveen/ds-agent-watcher.git'
