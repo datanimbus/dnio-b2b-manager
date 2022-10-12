@@ -10,6 +10,7 @@ const express = require('express');
 const log4js = require('log4js');
 const { AuthCacheMW } = require('@appveen/ds-auth-cache');
 const fileUpload = require('express-fileupload');
+const cookieParser = require('cookie-parser');
 
 const config = require('./config');
 require('./db-factory');
@@ -45,6 +46,7 @@ const app = express();
 app.use(express.json({ inflate: true, limit: config.MAX_JSON_SIZE }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.raw({ type: ['application/xml', 'text/xml', 'application/octet-stream'] }));
+app.use(cookieParser());
 
 app.use((req, res, next) => {
 	if (req.path.split('/').indexOf('live') == -1 && req.path.split('/').indexOf('ready') == -1) {
