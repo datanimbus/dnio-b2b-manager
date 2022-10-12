@@ -549,8 +549,9 @@ router.get('/:id/download/exec', async (req, res) => {
 				return zipAFolder(folderName, zipFile);
 			})
 			.then(() => {
-				res.setHeader('Content-Disposition', 'attachment; filename="' + fileName + '.zip"');
-				return res.status(200).sendFile(zipFile);
+				res.set('Content-Type', 'application/zip');
+				res.set('Content-Disposition', 'attachment; filename="' + fileName + '.zip"');
+				return fs.createReadStream(zipFile).pipe(res);
 			})
 			.then(() => {
 				logger.debug('Removing zip and folder');
