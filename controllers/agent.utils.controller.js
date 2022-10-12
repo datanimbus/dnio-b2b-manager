@@ -528,7 +528,7 @@ router.get('/:id/download/exec', async (req, res) => {
 		if (!fs.existsSync(baseDir)) {
 			fs.mkdirSync(baseDir);
 		}
-
+		let fileName = `${_agent.name}_${os}_${arch}.zip`;
 		let folderName = `${baseDir}${_agent.name}_${os}_${arch}`;
 		let zipFile = folderName + '.zip';
 		if (fs.existsSync(zipFile)) {
@@ -549,8 +549,8 @@ router.get('/:id/download/exec', async (req, res) => {
 				return zipAFolder(folderName, zipFile);
 			})
 			.then(() => {
-				res.setHeader('Content-Disposition', 'attachment; filename="' + zipFile + '.zip"');
-				return res.status(200).download(zipFile);
+				res.setHeader('Content-Disposition', 'attachment; filename="' + fileName + '.zip"');
+				return res.status(200).sendFile(zipFile);
 			})
 			.then(() => {
 				logger.debug('Removing zip and folder');
