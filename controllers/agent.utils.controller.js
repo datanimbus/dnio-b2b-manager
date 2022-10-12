@@ -549,6 +549,7 @@ router.get('/:id/download/exec', async (req, res) => {
 				return zipAFolder(folderName, zipFile);
 			})
 			.then(() => {
+				res.setHeader('Content-Disposition', 'attachment; filename="' + zipFile + '.zip"');
 				return res.status(200).download(zipFile);
 			})
 			.then(() => {
