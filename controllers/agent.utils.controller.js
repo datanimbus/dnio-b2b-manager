@@ -538,28 +538,27 @@ router.get('/:id/download/exec', async (req, res) => {
 			deleteFolderRecursive(folderName);
 		}
 		fs.mkdirSync(folderName);
-		return generateAgentStructure(folderName, os, false)
-			.then(() => {
-				fs.writeFileSync(folderName + '/conf/agent.conf', confStr);
-				fs.copyFileSync(exeFilePath, folderName + '/bin/' + (os == 'windows' ? 'datastack-agent.exe' : 'datastack-agent'));
-				fs.copyFileSync(sentinelFilePath, folderName + '/bin/' + (os == 'windows' ? 'datastack-sentinel.exe' : 'datastack-sentinel'));
-			})
-			.then(_d => {
-				logger.debug(`${JSON.stringify({ _d })}`);
-				return zipAFolder(folderName, zipFile);
-			})
-			.then(() => {
-				res.set('Content-Type', 'application/zip');
-				res.set('Content-Disposition', 'attachment; filename="' + fileName + '.zip"');
-				return fs.createReadStream(zipFile).pipe(res);
-			})
-			.then(() => {
-				logger.debug('Removing zip and folder');
-				deleteFolderRecursive(folderName);
-			})
-			.catch(err => {
-				logger.error(`[${req.get('TxnId')}] Error generating agent structure - ${err}`);
+		await generateAgentStructure(folderName, os, false);
+		fs.writeFileSync(folderName + '/conf/agent.conf', confStr);
+		fs.copyFileSync(exeFilePath, folderName + '/bin/' + (os == 'windows' ? 'datastack-agent.exe' : 'datastack-agent'));
+		fs.copyFileSync(sentinelFilePath, folderName + '/bin/' + (os == 'windows' ? 'datastack-sentinel.exe' : 'datastack-sentinel'));
+		await zipAFolder(folderName, zipFile);
+		// res.set('Content-Type', 'application/zip');
+		res.set('Content-Disposition', 'attachment; filename="' + fileName + '.zip"');
+		const readStream = fs.createReadStream(zipFile);
+		readStream.pipe(res);
+		readStream.on('end', function () {
+			logger.debug('Removing zip and folder');
+			deleteFolderRecursive(folderName);
+		});
+		readStream.on('error', function (err) {
+			logger.error(`[${req.get('TxnId')}] Error generating agent structure - ${err}`);
+			logger.debug('Removing zip and folder');
+			deleteFolderRecursive(folderName);
+			res.status(500).json({
+				message: err.message
 			});
+		});
 	} catch (err) {
 		logger.error(`Error downloading Agent - ${err}`);
 		res.status(500).json({
