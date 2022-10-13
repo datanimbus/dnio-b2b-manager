@@ -9,7 +9,7 @@ const flowUtils = require('./utils/flow.utils');
 const logger = log4js.getLogger(global.loggerName);
 routerUtils.initRouterMap();
 
-router.use('/:app/:api', async (req, res) => {
+router.use('/:app/:api', async (req, res, next) => {
     try {
         const path = '/' + req.params.app + '/' + req.params.api;
         logger.debug('Looking for path in map:', path, global.activeFlows[path]);
@@ -38,10 +38,10 @@ router.use('/:app/:api', async (req, res) => {
             memoizeHost: false,
             parseReqBody: false,
             preserveHostHdr: true,
-            proxyReqPathResolver: function (req) {
+            proxyReqPathResolver: function () {
                 return proxyPath;
             }
-        })(req, res);
+        })(req, res, next);
         // const resp = await httpClient.httpRequest({
         //     method,
         //     url: proxyPath,

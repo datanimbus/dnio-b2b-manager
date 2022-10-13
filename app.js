@@ -43,11 +43,6 @@ let permittedUrls = [
 
 const app = express();
 
-app.use(express.json({ inflate: true, limit: config.MAX_JSON_SIZE }));
-app.use(express.urlencoded({ extended: true }));
-app.use(express.raw({ type: ['application/xml', 'text/xml', 'application/octet-stream'] }));
-app.use(cookieParser());
-
 app.use((req, res, next) => {
 	if (req.path.split('/').indexOf('live') == -1 && req.path.split('/').indexOf('ready') == -1) {
 		logger.info(req.method, req.path, req.query);
@@ -67,6 +62,12 @@ app.use((req, res, next) => {
 //testing comment
 
 app.use(['/b2b/pipes'], require('./router'));
+
+app.use(express.json({ inflate: true, limit: config.MAX_JSON_SIZE }));
+app.use(express.urlencoded({ extended: true }));
+app.use(express.raw({ type: ['application/xml', 'text/xml', 'application/octet-stream'] }));
+app.use(cookieParser());
+
 app.use(fileUpload({
 	useTempFiles: true,
 	tempFileDir: './uploads'
