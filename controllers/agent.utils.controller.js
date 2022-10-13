@@ -543,7 +543,7 @@ router.get('/:id/download/exec', async (req, res) => {
 		fs.copyFileSync(exeFilePath, folderName + '/bin/' + (os == 'windows' ? 'datastack-agent.exe' : 'datastack-agent'));
 		fs.copyFileSync(sentinelFilePath, folderName + '/bin/' + (os == 'windows' ? 'datastack-sentinel.exe' : 'datastack-sentinel'));
 		await zipAFolder(folderName, zipFile);
-		// res.set('Content-Type', 'application/zip');
+		res.set('Content-Type', 'application/octet-stream');
 		res.set('Content-Disposition', 'attachment; filename="' + fileName + '.zip"');
 		const readStream = fs.createReadStream(zipFile);
 		readStream.pipe(res);
