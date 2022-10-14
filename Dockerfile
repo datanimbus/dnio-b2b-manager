@@ -2,7 +2,7 @@ ARG LATEST_AGENTS=dev
 ARG LATEST_AGENT_WATCHER=dev
 FROM data.stack.b2b.agent.watcher:${LATEST_AGENT_WATCHER} AS watcher
 FROM data.stack.b2b.agents:${LATEST_AGENTS} AS agent
-FROM node:18.7.0-alpine3.16
+FROM node:18.9.1-alpine3.16
 
 RUN apk update
 RUN apk upgrade
