@@ -3,9 +3,9 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 const socket = require('socket.io');
-const fs = require('fs');
-const path = require('path');
-const https = require('https');
+// const fs = require('fs');
+// const path = require('path');
+// const https = require('https');
 const express = require('express');
 const log4js = require('log4js');
 const { AuthCacheMW } = require('@appveen/ds-auth-cache');
@@ -98,9 +98,9 @@ process.on('SIGTERM', () => {
 			// Waiting For all pending requests to finish;
 			if (global.activeRequest === 0) {
 				// Closing Express Server;
-				httpsServer.close(() => {
-					logger.info('HTTPs Server Stopped.');
-				});
+				// httpsServer.close(() => {
+				// 	logger.info('HTTPs Server Stopped.');
+				// });
 				server.close(() => {
 					logger.info('HTTP Server Stopped.');
 					process.exit(0);
