@@ -78,12 +78,12 @@ const server = app.listen(config.port, () => {
 	logger.info('HTTP Server is listening on:', config.port);
 });
 
-const httpsServer = https.createServer({
-	cert: fs.readFileSync(path.join(__dirname, 'keys', 'b2b-manager.crt')),
-	key: fs.readFileSync(path.join(__dirname, 'keys', 'b2b-manager.key')),
-}, app).listen(config.httpsPort, () => {
-	logger.info('HTTPs Server is listening on:', config.httpsPort);
-});
+// const httpsServer = https.createServer({
+// 	cert: fs.readFileSync(path.join(__dirname, 'keys', 'b2b-manager.crt')),
+// 	key: fs.readFileSync(path.join(__dirname, 'keys', 'b2b-manager.key')),
+// }, app).listen(config.httpsPort, () => {
+// 	logger.info('HTTPs Server is listening on:', config.httpsPort);
+// });
 
 initSocket(server);
 
