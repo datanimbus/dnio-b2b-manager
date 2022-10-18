@@ -22,7 +22,7 @@
   "dependencies": {
     "@appveen/data.stack-utils": "^1.0.19",
     "@appveen/ds-auth-cache": "^1.0.2",
-    "@appveen/ds-sdk": "^2.1.1",
+    "@appveen/ds-sdk": "^2.3.3",
     "@appveen/utils": "^2.1.6",
     "ajv": "^8.11.0",
     "express": "^4.18.1",
