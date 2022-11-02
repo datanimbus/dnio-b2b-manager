@@ -22,8 +22,12 @@ function constructFlowEvent(req, doc, flow, action) {
 		const outputObj = flow.nodes[0];
 		const inputType = inputObj.type;
 		const outputType = outputObj.type;
-		let inputContentType = 'JSON';
-		let outputContentType = 'JSON';
+		let inputContentType = 'BINARY';
+		let outputContentType = 'BINARY';
+
+		if (inputObj.options.contentType === 'application/json') {
+			inputContentType = 'JSON';
+		}
 
 		if (inputObj.dataStructure && inputObj.dataStructure.outgoing && inputObj.dataStructure.outgoing._id) {
 			inputContentType = flow.dataStructures[inputObj.dataStructure.outgoing._id].formatType || 'JSON';
@@ -114,10 +118,10 @@ function constructFlowEvent(req, doc, flow, action) {
 	}
 }
 
-function constructAgentEvent(req, eventDetails, agentAction, metaData) {
+function constructAgentEvent(req, agentId, eventDetails, agentAction, metaData) {
 	try {
 		const obj = {
-			'agentId': eventDetails.agentId,
+			'agentId': agentId,
 			'appName': eventDetails.app,
 			'agentName': eventDetails.agentName,
 			'flowName': eventDetails.flowName,
