@@ -344,7 +344,7 @@ router.post('/:id/upload', async (req, res) => {
 				return res.status(400).json({ message: 'Invalid Flow' });
 			}
 
-			if (doc.isBinary === true) {
+			if (doc.isBinary) {
 				let targentAgentId = doc.nodes[0].options.agents[0].agentId;
 				logger.info(`[${txnId}] Adding Download Request to TargentAgent ${targentAgentId} for the file ${uploadHeaders.originalFileName}, for the Binary Flow ${uploadHeaders.flowName}`);
 				let metaDataObj = generateFileProcessedSuccessMetaData(uploadHeaders);
@@ -398,7 +398,7 @@ router.post('/:id/upload', async (req, res) => {
 			formData.append('file', decryptedData);
 
 			let flowUrl;
-			if (isK8sEnv()) {
+			if (config.isK8sEnv()) {
 				const flowBaseUrl = 'http://' + doc.deploymentName + '.' + doc.namespace;
 				flowUrl = flowBaseUrl + '/api/b2b' + doc.inputNode.options.path;
 			} else {
