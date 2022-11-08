@@ -84,10 +84,14 @@ router.put('/:id/deploy', async (req, res) => {
 			if (status.statusCode != 200 && status.statusCode != 202) {
 				return res.status(status.statusCode).json({ message: 'Unable to deploy Flow' });
 			}
+			doc.status = 'Pending';
+			doc.isNew = false;
+			res.status(200).json({ message: 'Flow Deployed' });
+		} else if (doc.isBinary) {
+			doc.status = 'Active';
+			doc.isNew = false;
+			res.status(200).json({ message: 'Flow Deployed' });
 		}
-		doc.status = 'Pending';
-		doc.isNew = false;
-		res.status(200).json({ message: 'Flow Deployed' });
 	} catch (err) {
 		logger.error(err);
 		if (typeof err === 'string') {

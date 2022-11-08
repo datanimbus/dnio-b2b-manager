@@ -17,18 +17,12 @@ const definition = {
 	'macAddress': {
 		'type': 'String'
 	},
-	'appName': {
-		'type': 'String'
-	},
-	'partnerName': {
+	'app': {
 		'type': 'String'
 	},
 	'timestamp': {
 		'type': 'Date',
 		'default': Date.now
-	},
-	'agentType': {
-		'type': 'String'
 	},
 	'agentName': {
 		'type': 'String'

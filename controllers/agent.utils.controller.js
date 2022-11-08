@@ -22,6 +22,7 @@ const logger = log4js.getLogger(global.loggerName);
 const agentModel = mongoose.model('agent');
 const agentActionModel = mongoose.model('agent-action');
 const flowModel = mongoose.model('flow');
+const agentLogModel = mongoose.model('agent-logs');
 
 const LICENSE_FILE = './generatedAgent/LICENSE';
 const README_FILE = './generatedAgent/scriptFiles/README.md';
@@ -366,7 +367,7 @@ router.post('/:id/upload', async (req, res) => {
 			}
 
 			const encryptedData = await new Promise((resolve, reject) => {
-				const downloadStream = gfsBucket.openDownloadStream(file._id);
+				const downloadStream = gfsBucket.openDownloadStream(fileDetails._id);
 				let bufs = [];
 				let buf;
 				downloadStream.on('data', (chunk) => {
@@ -560,6 +561,24 @@ router.get('/:id/download/exec', async (req, res) => {
 		deleteFolderRecursive(folderName);
 	} catch (err) {
 		logger.error(`Error downloading Agent - ${err}`);
+		res.status(500).json({
+			message: err.message
+		});
+	}
+});
+
+router.post('/logs', async (req, res) => {
+	try {
+		const payload = req.body;
+		logger.trace(`Received request to upload agent log`);
+		logger.trace(`Agent Log payload -`, JSON.stringify(payload));
+		const agentLogDoc = new agentLogModel(payload);
+		agentLogDoc._req = req;
+		let status = agentLogDoc.save();
+		logger.debug('Agent Action Create Status: ', status);
+		logger.trace('actionDoc - ', agentLogDoc);
+	} catch (err) {
+		logger.error(err);
 		res.status(500).json({
 			message: err.message
 		});

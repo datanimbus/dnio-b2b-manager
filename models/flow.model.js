@@ -40,7 +40,7 @@ schema.pre('save', function (next) {
 		if (!this.inputNode.options.path || !this.inputNode.options.path.trim()) {
 			this.inputNode.options.path = '/' + _.camelCase(this.name);
 		}
-		if (this.nodes && this.nodes.length == 1 && this.inputNode.options.contentType == 'BINARY' && this.nodes[0].options.contentType == 'BINARY') {
+		if (this.nodes && this.nodes.length == 1 && this.inputNode.type == 'FILE' && this.nodes[0].type == 'FILE') {
 			this.isBinary = true;
 		}
 		if (!this.deploymentName) {
