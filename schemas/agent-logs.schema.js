@@ -39,6 +39,9 @@ const definition = {
 				'release': { 'type': 'Number' }
 			}
 		}
+	},
+	'content': {
+		'type': 'String'
 	}
 };
 

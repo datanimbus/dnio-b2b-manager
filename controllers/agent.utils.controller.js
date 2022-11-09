@@ -352,8 +352,8 @@ router.post('/:id/upload', async (req, res) => {
 				const actionDoc = new agentActionModel(agentEvent);
 				actionDoc._req = req;
 				let status = actionDoc.save();
-				logger.debug('Agent Action Create Status: ', status);
-				logger.trace('actionDoc - ', actionDoc);
+				logger.debug(`[${txnId}] Agent Action Create Status - `, status);
+				logger.trace(`[${txnId}] Action Doc - `, actionDoc);
 
 				let chunkChecksumList = uploadHeaders.chunkChecksum;
 
@@ -362,8 +362,8 @@ router.post('/:id/upload', async (req, res) => {
 				const downloadActionDoc = new agentActionModel(agentEvent);
 				downloadActionDoc._req = req;
 				status = downloadActionDoc.save();
-				logger.debug('Agent Download Action Create Status: ', status);
-				logger.trace('downloadActionDoc - ', downloadActionDoc);
+				logger.debug(`[${txnId}] Agent Download Action Create Status - `, status);
+				logger.trace(`[${txnId}] Download Action Doc - `, downloadActionDoc);
 			}
 
 			const encryptedData = await new Promise((resolve, reject) => {
@@ -382,30 +382,31 @@ router.post('/:id/upload', async (req, res) => {
 					resolve(buf);
 				});
 			});
-			logger.trace('EncryptedData string - ', encryptedData.toString());
+			logger.trace(`[${txnId}] EncryptedData string - `, encryptedData.toString());
 
 			let decryptedData;
 			try {
 				decryptedData = fileUtils.decryptDataGCM(encryptedData.toString(), config.encryptionKey);
-				logger.trace('DecryptedData - ', decryptedData);
+				logger.trace(`[${txnId}] DecryptedData - `, decryptedData);
 			} catch (err) {
 				logger.error(`[${txnId}] Error decrypting data - ${err}`);
 				return res.status(500).json({ message: err.message });
 			}
 
 			logger.info(`[${txnId}] File ${uploadHeaders.originalFileName} for the flow ${uploadHeaders.flowName} received, uploading file to flow`);
-			const formData = new FormData();
-			formData.append('file', decryptedData);
+			let formData = new FormData();
+			formData.append('file', Buffer.from(decryptedData));
 
 			let flowUrl;
 			if (config.isK8sEnv()) {
 				const flowBaseUrl = 'http://' + doc.deploymentName + '.' + doc.namespace;
-				flowUrl = flowBaseUrl + '/api/b2b' + doc.inputNode.options.path;
+				flowUrl = flowBaseUrl + '/api/b2b' + doc.app + doc.inputNode.options.path;
 			} else {
-				flowUrl = 'http://localhost:8080/api/b2b/' + uploadHeaders.app + doc.inputNode.options.path;
+				flowUrl = 'http://localhost:8080/api/b2b/' + doc.app + doc.inputNode.options.path;
 			}
 
-			const options = {
+			logger.debug(`[${txnId}] FlowUrl - `, flowUrl);
+			const flowRes = await httpClient.httpRequest({
 				url: flowUrl,
 				method: 'POST',
 				headers: {
@@ -413,9 +414,8 @@ router.post('/:id/upload', async (req, res) => {
 					'Content-Type': 'multipart/form-data',
 					'TxnId': req.header('DATA-STACK-Txn-Id'),
 				},
-				body: formData
-			};
-			const flowRes = await httpClient.httpRequest(options);
+				form: formData
+			});
 			if (!flowRes) {
 				logger.error(`Flow ${doc.name} is down`);
 				throw new Error(`Flow ${doc.name} is down`);
@@ -423,6 +423,7 @@ router.post('/:id/upload', async (req, res) => {
 			if (flowRes.statusCode === 200) {
 				return res.status(200).json({ message: 'File Successfully Uploaded' });
 			} else {
+				logger.error(`[${txnId}] Error requesting the flow - ${flowRes.statusCode} ${flowRes.body}`);
 				return res.status(flowRes.statusCode).send(flowRes.body);
 			}
 		}
@@ -576,7 +577,8 @@ router.post('/logs', async (req, res) => {
 		agentLogDoc._req = req;
 		let status = agentLogDoc.save();
 		logger.debug('Agent Action Create Status: ', status);
-		logger.trace('actionDoc - ', agentLogDoc);
+		logger.trace('Agent Log Doc - ', agentLogDoc);
+		return res.status(200).json({ message: "Agent Log Successfully Uploaded" });
 	} catch (err) {
 		logger.error(err);
 		res.status(500).json({
