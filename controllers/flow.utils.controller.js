@@ -8,6 +8,7 @@ const k8sUtils = require('../utils/k8s.utils');
 const queryUtils = require('../utils/query.utils');
 const routerUtils = require('../utils/router.utils');
 const config = require('../config');
+const yamljs = require('json-to-pretty-yaml');
 
 const logger = log4js.getLogger(global.loggerName);
 const flowModel = mongoose.model('flow');
@@ -206,6 +207,111 @@ router.put('/:id/stop', async (req, res) => {
 		res.status(500).json({
 			message: err.message
 		});
+	}
+});
+
+router.get('/:id/yamls', async (req, res) => {
+	try {
+		const doc = await flowModel.findById(req.params.id);
+
+		const namespace = (config.DATA_STACK_NAMESPACE + '-' + doc.app).toLowerCase();
+		const port = 80;
+		const name = doc.deploymentName;
+		const envKeys = ['FQDN', 'LOG_LEVEL', 'MONGO_APPCENTER_URL', 'MONGO_AUTHOR_DBNAME', 'MONGO_AUTHOR_URL', 'MONGO_LOGS_DBNAME', 'MONGO_LOGS_URL', 'MONGO_RECONN_TIME', 'MONGO_RECONN_TRIES', 'STREAMING_CHANNEL', 'STREAMING_HOST', 'STREAMING_PASS', 'STREAMING_RECONN_ATTEMPTS', 'STREAMING_RECONN_TIMEWAIT', 'STREAMING_USER', 'DATA_STACK_NAMESPACE', 'CACHE_CLUSTER', 'CACHE_HOST', 'CACHE_PORT', 'CACHE_RECONN_ATTEMPTS', 'CACHE_RECONN_TIMEWAIT_MILLI', 'RELEASE', 'TLS_REJECT_UNAUTHORIZED', 'API_REQUEST_TIMEOUT'];
+		const envVars = [];
+		envKeys.forEach(key => {
+			envVars.push({ name: key, value: process.env[key] });
+		});
+		envVars.push({ name: 'DATA_STACK_APP_NS', value: namespace });
+		// envVars.push({ name: 'NODE_OPTIONS', value: `--max-old-space-size=${config.maxHeapSize}` });
+		// envVars.push({ name: 'NODE_ENV', value: 'production' });
+		envVars.push({ name: 'DATA_STACK_FLOW_ID', value: `${doc._id}` });
+		envVars.push({ name: 'DATA_STACK_APP', value: `${doc.app}` });
+
+		const options = {
+			startupProbe: {
+				httpGet: {
+					path: '/api/b2b/internal/health/ready',
+					port: +(data.port || 8080),
+					scheme: 'HTTP'
+				},
+				initialDelaySeconds: 5,
+				timeoutSeconds: 30,
+				periodSeconds: 10,
+				failureThreshold: 5
+			}
+		};
+
+		const deployData = {
+			apiVersion: 'apps/v1',
+			kind: 'Deployment',
+			metadata: {
+				name: name,
+				namespace: namespace
+			},
+			spec: {
+				replicas: 1,
+				selector: {
+					matchLabels: {
+						app: name
+					}
+				},
+				template: {
+					metadata: {
+						labels: {
+							app: name
+						}
+					},
+					spec: {
+						containers: [
+							{
+								name: name,
+								image: flowBaseImage,
+								ports: [
+									{
+										containerPort: port
+									}
+								],
+								env: envVars
+							}
+						]
+					}
+				}
+			}
+		};
+		if (options.livenessProbe) deployData.spec.template.spec.containers[0]['livenessProbe'] = options.livenessProbe;
+		if (options.readinessProbe) deployData.spec.template.spec.containers[0]['readinessProbe'] = options.readinessProbe;
+		if (options.readinessProbe) deployData.spec.template.spec.containers[0]['startupProbe'] = options.startupProbe;
+
+		const serviceData = {
+			apiVersion: 'v1',
+			kind: 'Service',
+			metadata: {
+				name: name,
+				namespace: namespace
+			},
+			spec: {
+				type: 'ClusterIP',
+				selector: {
+					app: name
+				},
+				ports: [
+					{
+						protocol: 'TCP',
+						port: 80,
+						targetPort: port
+					}
+				]
+			}
+		};
+
+		const serviceText = yamljs.stringify(serviceData);
+		const deploymentText = yamljs.stringify(deployData);
+		res.status(200).json({ service: serviceText, deployment: deploymentText });
+
+	} catch (err) {
+		logger.error(err);
+		res.status(500).json({ message: err.message });
 	}
 });
 
