@@ -232,7 +232,7 @@ router.get('/:id/yamls', async (req, res) => {
 			startupProbe: {
 				httpGet: {
 					path: '/api/b2b/internal/health/ready',
-					port: +(data.port || 8080),
+					port: +(port || 8080),
 					scheme: 'HTTP'
 				},
 				initialDelaySeconds: 5,
