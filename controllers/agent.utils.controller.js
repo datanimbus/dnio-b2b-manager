@@ -486,7 +486,7 @@ router.post('/:id/download', async (req, res) => {
 				return res.status(400).json({ message: 'File not found' });
 			}
 
-			const downloadFilePath = path.join(process.cwd(), 'downloads', payload.fileName);
+			const downloadFilePath = path.join(__dirname, 'downloads', payload.fileName);
 			let writeStream = fs.createWriteStream(downloadFilePath);
 
 			const encryptedData = await new Promise((resolve, reject) => {
@@ -503,13 +503,13 @@ router.post('/:id/download', async (req, res) => {
 				downloadStream.on('end', () => {
 					buf = Buffer.concat(bufs);
 					writeStream.write(buf);
-						resolve(buf);
+					resolve(buf);
 				});
 			});
 			logger.trace(`[${txnId}] EncryptedData - `, encryptedData);
 			logger.trace(`[${txnId}] EncryptedData string - `, encryptedData.toString());
 			logger.trace(`[${txnId}] MD5 Checksum of EncryptedData - `, fileUtils.createHash(encryptedData));
-			
+
 			res.status(200).send(encryptedData);
 		}
 	} catch (err) {
