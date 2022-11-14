@@ -18,7 +18,7 @@ function encryptDataGCM(data, key) {
     const nonce = crypto.randomBytes(12);
     var cipher = crypto.createCipheriv(ALGORITHM, hashedkey, nonce);
     const encrypted = Buffer.concat([nonce, cipher.update(Buffer.from(compressedData).toString("base64")), cipher.final(), cipher.getAuthTag()]);
-    return encrypted;
+    return Buffer.from(encrypted).toString("base64");;
 }
 
 function decompress(decryptedBuffer) {
@@ -30,16 +30,17 @@ function decompress(decryptedBuffer) {
 function decryptDataGCM(nonceCiphertextTag, key) {
     const hashedkey = createHash(key);
     nonceCiphertextTag = Buffer.from(nonceCiphertextTag, 'base64');
-    var nonce = nonceCiphertextTag.slice(0, 12);
-    var ciphertext = nonceCiphertextTag.slice(12, -16);
-    var tag = nonceCiphertextTag.slice(-16);
-    var decipher = crypto.createDecipheriv(ALGORITHM, hashedkey, nonce); 
+    let nonce = nonceCiphertextTag.slice(0, 12);
+    let ciphertext = nonceCiphertextTag.slice(12, -16);
+    let tag = nonceCiphertextTag.slice(-16);
+    let decipher = crypto.createDecipheriv(ALGORITHM, hashedkey, nonce);
     decipher.setAuthTag(tag);
-    var decrypted = decipher.update(ciphertext, null, 'utf8') + decipher.final('utf8');
+    let decrypted = decipher.update(ciphertext, null, 'utf8') + decipher.final('utf8');
 
-    const decompressedData = decompress(Buffer.from(decrypted,'base64'));
+    const decompressedData = decompress(Buffer.from(decrypted, 'base64'));
     return decompressedData;
 }
 
 module.exports.encryptDataGCM = encryptDataGCM;
 module.exports.decryptDataGCM = decryptDataGCM;
+module.exports.createHash = createHash;

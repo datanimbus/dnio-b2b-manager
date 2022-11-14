@@ -2,21 +2,6 @@ const definition = {
 	'agentId': {
 		'type': 'String'
 	},
-	'responseAgentID': {
-		'type': 'String'
-	},
-	'heartBeatFrequency': {
-		'type': 'String'
-	},
-	'status': {
-		'type': 'String'
-	},
-	'ipAddress': {
-		'type': 'String'
-	},
-	'macAddress': {
-		'type': 'String'
-	},
 	'app': {
 		'type': 'String'
 	},
@@ -25,6 +10,12 @@ const definition = {
 		'default': Date.now
 	},
 	'agentName': {
+		'type': 'String'
+	},
+	'ipAddress': {
+		'type': 'String'
+	},
+	'macAddress': {
 		'type': 'String'
 	},
 	'pendingFiles': {

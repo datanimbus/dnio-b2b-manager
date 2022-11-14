@@ -9,6 +9,7 @@ const FormData = require('form-data');
 const { v4: uuid } = require('uuid');
 const { zip } = require('zip-a-folder');
 const { exec } = require('child_process');
+const _ = require('lodash');
 
 const config = require('../config');
 const queryUtils = require('../utils/query.utils');
@@ -17,6 +18,7 @@ const cacheUtils = require('../utils/cache.utils');
 const helpers = require('../utils/helper');
 const fileUtils = require('../utils/file.utils');
 const httpClient = require('../http-client');
+const flowUtils = require('../utils/flow.utils');
 
 const logger = log4js.getLogger(global.loggerName);
 const agentModel = mongoose.model('agent');
@@ -333,7 +335,6 @@ router.post('/:id/upload', async (req, res) => {
 		if (uploadHeaders.totalChunks === uploadHeaders.currentChunk) {
 			logger.debug(`[${txnId}] All Chunks of file ${uploadHeaders.originalFileName} of flow ${uploadHeaders.flowName} received`);
 			// Creating Interaction for INPUT_FILE_UPLOAD_TO_DB_SUCCESSFULL
-			// const result = await flowUtils.createInteraction(req, { flowId: uploadHeaders.flowId });
 			// ReleaseToken
 			// VerifyIsFlowBinToBin -> IsBinary -> File Processed Success & Download Entry
 			// NotBinary -> GetFileFromDB -> Upload File to Flow -> File Processed Success
@@ -364,70 +365,82 @@ router.post('/:id/upload', async (req, res) => {
 				status = downloadActionDoc.save();
 				logger.debug(`[${txnId}] Agent Download Action Create Status - `, status);
 				logger.trace(`[${txnId}] Download Action Doc - `, downloadActionDoc);
-			}
-
-			const encryptedData = await new Promise((resolve, reject) => {
-				const downloadStream = gfsBucket.openDownloadStream(fileDetails._id);
-				let bufs = [];
-				let buf;
-				downloadStream.on('data', (chunk) => {
-					bufs.push(chunk);
-				});
-				downloadStream.on('error', (err) => {
-					logger.error(`[${txnId}] Error streaming file - ${err}`);
-					reject(error);
-				});
-				downloadStream.on('end', () => {
-					buf = Buffer.concat(bufs);
-					resolve(buf);
-				});
-			});
-			logger.trace(`[${txnId}] EncryptedData string - `, encryptedData.toString());
-
-			let decryptedData;
-			try {
-				decryptedData = fileUtils.decryptDataGCM(encryptedData.toString(), config.encryptionKey);
-				logger.trace(`[${txnId}] DecryptedData - `, decryptedData);
-			} catch (err) {
-				logger.error(`[${txnId}] Error decrypting data - ${err}`);
-				return res.status(500).json({ message: err.message });
-			}
-
-			logger.info(`[${txnId}] File ${uploadHeaders.originalFileName} for the flow ${uploadHeaders.flowName} received, uploading file to flow`);
-			let formData = new FormData();
-			formData.append('file', Buffer.from(decryptedData));
-
-			let flowUrl;
-			if (config.isK8sEnv()) {
-				const flowBaseUrl = 'http://' + doc.deploymentName + '.' + doc.namespace;
-				flowUrl = flowBaseUrl + '/api/b2b' + doc.app + doc.inputNode.options.path;
 			} else {
-				flowUrl = 'http://localhost:8080/api/b2b/' + doc.app + doc.inputNode.options.path;
-			}
+				const encryptedData = await new Promise((resolve, reject) => {
+					const downloadStream = gfsBucket.openDownloadStream(fileDetails._id);
+					let bufs = [];
+					let buf;
+					downloadStream.on('data', (chunk) => {
+						bufs.push(chunk);
+					});
+					downloadStream.on('error', (err) => {
+						logger.error(`[${txnId}] Error streaming file - ${err}`);
+						reject(error);
+					});
+					downloadStream.on('end', () => {
+						buf = Buffer.concat(bufs);
+						resolve(buf);
+					});
+				});
+				logger.trace(`[${txnId}] EncryptedData string - `, encryptedData.toString());
 
-			logger.debug(`[${txnId}] FlowUrl - `, flowUrl);
-			const flowRes = await httpClient.httpRequest({
-				url: flowUrl,
-				method: 'POST',
-				headers: {
-					'Authorization': req.header('authorization'),
-					'Content-Type': 'multipart/form-data',
-					'TxnId': req.header('DATA-STACK-Txn-Id'),
-				},
-				form: formData
-			});
-			if (!flowRes) {
-				logger.error(`Flow ${doc.name} is down`);
-				throw new Error(`Flow ${doc.name} is down`);
-			}
-			if (flowRes.statusCode === 200) {
-				return res.status(200).json({ message: 'File Successfully Uploaded' });
-			} else {
-				logger.error(`[${txnId}] Error requesting the flow - ${flowRes.statusCode} ${flowRes.body}`);
-				return res.status(flowRes.statusCode).send(flowRes.body);
+				let decryptedData;
+				try {
+					decryptedData = fileUtils.decryptDataGCM(encryptedData.toString(), config.encryptionKey);
+					logger.trace(`[${txnId}] DecryptedData - `, decryptedData);
+					fs.writeFileSync(uploadHeaders.originalFileName, decryptedData);
+				} catch (err) {
+					logger.error(`[${txnId}] Error decrypting data - ${err}`);
+					return res.status(500).json({ message: err.message });
+				}
+
+				logger.info(`[${txnId}] File ${uploadHeaders.originalFileName} for the flow ${uploadHeaders.flowName} received, uploading file to flow`);
+				let formData = new FormData();
+				formData.append('file', fs.createReadStream(uploadHeaders.originalFileName));
+
+				let flowUrl;
+				if (config.isK8sEnv()) {
+					const flowBaseUrl = 'http://' + doc.deploymentName + '.' + doc.namespace;
+					flowUrl = flowBaseUrl + '/api/b2b' + doc.app + doc.inputNode.options.path;
+				} else {
+					flowUrl = 'http://localhost:8080/api/b2b/' + doc.app + doc.inputNode.options.path;
+				}
+
+				const result = await flowUtils.createInteraction(req, { flowId: uploadHeaders.flowId });
+				logger.trace(`[${txnId}] Interaction status - `, result);
+				logger.debug(`[${txnId}] FlowUrl - `, flowUrl);
+				const flowRes = await httpClient.httpRequest({
+					url: flowUrl + '?interactionId=' + result._id,
+					method: 'POST',
+					headers: {
+						'Authorization': req.header('authorization'),
+						'DATA-STACK-Txn-Id': req.header('DATA-STACK-Txn-Id'),
+						'DATA-STACK-Remote-Txn-Id': req.header('DATA-STACK-Remote-Txn-Id')
+					},
+					body: formData
+				});
+				if (!flowRes) {
+					logger.error(`Flow ${doc.name} is down`);
+					generateFileProcessedErrorActionForAgent(req, uploadHeaders, "Flow is not reachable");
+					throw new Error(`Flow ${doc.name} is down`);
+				} else if (flowRes.statusCode === 200 || flowRes.statusCode === 202) {
+					logger.info(`[${txnId}] Adding FileProcessedSuccess Request to Agent ${agentId} for the file ${uploadHeaders.originalFileName}, for the Flow ${uploadHeaders.flowName}`);
+					let metaDataObj = generateFileProcessedSuccessMetaData(uploadHeaders);
+					let agentEvent = helpers.constructAgentEvent(req, agentId, uploadHeaders, 'FILE_PROCESSED_SUCCESS', metaDataObj);
+					const actionDoc = new agentActionModel(agentEvent);
+					actionDoc._req = req;
+					let status = actionDoc.save();
+					logger.trace(`[${txnId}] Agent Action Create Status - `, status);
+					logger.trace(`[${txnId}] Action Doc - `, actionDoc);
+					return res.status(200).send('File Successfully Uploaded');
+				} else {
+					logger.error(`[${txnId}] Error requesting the flow - ${flowRes.statusCode} ${flowRes.body}`);
+					generateFileProcessedErrorActionForAgent(req, uploadHeaders, flowRes.body);
+					return res.status(flowRes.statusCode).send(flowRes.body);
+				}
 			}
 		}
-		return res.status(200).json({ message: 'Chunk Successfully Uploaded' });
+		return res.status(200).send('Chunk Successfully Uploaded');
 	} catch (err) {
 		logger.error(err);
 		res.status(500).json({
@@ -448,7 +461,7 @@ router.post('/:id/download', async (req, res) => {
 			return res.status(400).json({ message: 'File is already downloading' });
 		} else {
 			const payload = req.body;
-			logger.info(`[${txnId}] payload -`, JSON.stringify(payload));
+			logger.trace(`[${txnId}] payload -`, JSON.stringify(payload));
 
 			if (req.header('DATA-STACK-BufferEncryption') != 'true') {
 				//GetCompleteFileFromDB
@@ -473,15 +486,31 @@ router.post('/:id/download', async (req, res) => {
 				return res.status(400).json({ message: 'File not found' });
 			}
 
-			const readStream = gfsBucket.openDownloadStream(file._id);
-			readStream.pipe(res);
+			const downloadFilePath = path.join(process.cwd(), 'downloads', payload.fileName);
+			let writeStream = fs.createWriteStream(downloadFilePath);
 
-			readStream.on('error', function (err) {
-				logger.error(`[${txnId}] Error streaming file - ${err}`);
-				return res.status(500).json({
-					message: `Error streaming file - ${err.message}`
+			const encryptedData = await new Promise((resolve, reject) => {
+				const downloadStream = gfsBucket.openDownloadStream(file._id);
+				let bufs = [];
+				let buf;
+				downloadStream.on('data', (chunk) => {
+					bufs.push(chunk);
+				});
+				downloadStream.on('error', (err) => {
+					logger.error(`[${txnId}] Error streaming file - ${err}`);
+					reject(err);
+				});
+				downloadStream.on('end', () => {
+					buf = Buffer.concat(bufs);
+					writeStream.write(buf);
+						resolve(buf);
 				});
 			});
+			logger.trace(`[${txnId}] EncryptedData - `, encryptedData);
+			logger.trace(`[${txnId}] EncryptedData string - `, encryptedData.toString());
+			logger.trace(`[${txnId}] MD5 Checksum of EncryptedData - `, fileUtils.createHash(encryptedData));
+			
+			res.status(200).send(encryptedData);
 		}
 	} catch (err) {
 		logger.error(err);
@@ -570,15 +599,78 @@ router.get('/:id/download/exec', async (req, res) => {
 
 router.post('/logs', async (req, res) => {
 	try {
+		const agentId = req.header('DATA-STACK-Agent-Id');
+		const agentName = req.header('DATA-STACK-Agent-Name');
+		const ipAddress = req.header('DATA-STACK-Ip-Address');
+		const macAddress = req.header('DATA-STACK-Mac-Address');
+		const app = req.locals.app;
 		const payload = req.body;
-		logger.trace(`Received request to upload agent log`);
+		logger.info(`Received request to upload agent log - `, agentId, app);
 		logger.trace(`Agent Log payload -`, JSON.stringify(payload));
-		const agentLogDoc = new agentLogModel(payload);
+		let agentLogObject = JSON.parse(JSON.stringify(payload));
+		agentLogObject['agentId'] = agentId;
+		agentLogObject['agentName'] = agentName;
+		agentLogObject['app'] = app;
+		agentLogObject['ipAddress'] = ipAddress;
+		agentLogObject['macAddress'] = macAddress;
+		const agentLogDoc = new agentLogModel(agentLogObject);
 		agentLogDoc._req = req;
 		let status = agentLogDoc.save();
 		logger.debug('Agent Action Create Status: ', status);
 		logger.trace('Agent Log Doc - ', agentLogDoc);
 		return res.status(200).json({ message: "Agent Log Successfully Uploaded" });
+	} catch (err) {
+		logger.error(err);
+		res.status(500).json({
+			message: err.message
+		});
+	}
+});
+
+router.get('/:id/logs', async (req, res) => {
+	try {
+		const agentId = req.params.id;
+		const app = req.locals.app;
+		logger.info(`Received request for fetching agent log - `, agentId, app);
+		let agentLogs = [];
+		const logs = await agentLogModel.find({ agentId: agentId, app: app });
+		if (logs.length > 0) {
+			await Promise.all(logs.map(async (doc) => {
+				agentLogs.push(doc.toObject());
+				doc._req = req;
+				await doc.save();
+			}));
+		}
+		return res.status(200).json({ agentLogs: agentLogs });
+	} catch (err) {
+		logger.error(err);
+		res.status(500).json({
+			message: err.message
+		});
+	}
+});
+
+router.post('/:id/agentAction', async (req, res) => {
+	try {
+		const targentAgentId = req.params.id;
+		const txnId = req.header('data-stack-txn-id');
+		const action = req.header('action');
+		logger.info(`[${txnId}] Received request for adding ${action} action to TargentAgent ${targentAgentId}`);
+		let payload = JSON.parse(JSON.stringify(req.body));
+		logger.trace(`Agent Action payload -`, payload);
+		logger.trace(`Agent Action payload.metaDataInfo -`, payload.metaDataInfo);
+		logger.trace(`Agent Action payload.eventDetails -`, payload.eventDetails);
+
+		if (action === 'download') {
+			let downloadMetaDataObj = generateFileDownloadMetaData(payload.metaDataInfo, payload.metaDataInfo.fileID, '', targentAgentId);
+			let agentEvent = helpers.constructAgentEvent(req, targentAgentId, payload.eventDetails, 'DOWNLOAD_REQUEST', downloadMetaDataObj);
+			const downloadActionDoc = new agentActionModel(agentEvent);
+			downloadActionDoc._req = req;
+			let status = downloadActionDoc.save();
+			logger.trace(`[${txnId}] Agent Download Action Create Status - `, status);
+			logger.trace(`[${txnId}] Download Action Doc - `, downloadActionDoc);
+		}
+		return res.status(200).json({ message: 'Added agent action successfully' });
 	} catch (err) {
 		logger.error(err);
 		res.status(500).json({
@@ -665,7 +757,7 @@ function generateFileProcessedSuccessMetaData(metaDataInfo) {
 	metaData.mirrorPath = metaDataInfo.mirrorPath.replace('\\', '\\\\');
 	metaData.md5CheckSum = metaDataInfo.checksum;
 	metaData.remoteTxnID = metaDataInfo.remoteTxnId;
-	metaData.odpTxnID = metaDataInfo.odpTxnId;
+	metaData.dataStackTxnID = metaDataInfo.datastackTxnId;
 	return metaData;
 }
 
@@ -673,7 +765,7 @@ function generateFileDownloadMetaData(metaDataInfo, fileId, chunkChecksumList, a
 	let metaData = {};
 	metaData.fileName = metaDataInfo.originalFileName;
 	metaData.remoteTxnID = metaDataInfo.remoteTxnId;
-	metaData.odpTxnID = metaDataInfo.odpTxnIdDPTxnId;
+	metaData.dataStackTxnID = metaDataInfo.datastackTxnId;
 	metaData.checkSum = metaDataInfo.checksum;
 	metaData.password = metaDataInfo.symmetricKey;
 	metaData.fileID = fileId;
@@ -713,6 +805,29 @@ function generateUploadHeaders(req) {
 	uploadHeaders.compression = req.header('DATA-STACK-Compression');
 	uploadHeaders.datastackFileToken = req.header('DATA-STACK-File-Token');
 	return uploadHeaders;
+}
+
+function generateFileProcessedErrorActionForAgent(req, uploadHeaders, errorMsg) {
+	let errorMetaDataObj = generateFileProcessedErrorMetaData(uploadHeaders, errorMsg);
+	let agentId = req.header('DATA-STACK-Agent-Id');
+	let agentEvent = helpers.constructAgentEvent(req, agentId, uploadHeaders, 'FILE_PROCESSED_ERROR', errorMetaDataObj);
+	const actionDoc = new agentActionModel(agentEvent);
+	actionDoc._req = req;
+	let status = actionDoc.save();
+	logger.trace(`[${uploadHeaders.datastackTxnId}] Agent Error Action Create Status - `, status);
+	logger.trace(`[${uploadHeaders.datastackTxnId}] Action Error Doc - `, actionDoc);
+}
+
+function generateFileProcessedErrorMetaData(metaDataInfo, errorMsg) {
+	let metaData = {};
+	metaData.originalFileName = metaDataInfo.originalFileName;
+	metaData.newFileName = metaDataInfo.newFileName;
+	metaData.newLocation = metaDataInfo.newLocation.replace('\\', '\\\\');
+	metaData.md5CheckSum = metaDataInfo.checksum;
+	metaData.remoteTxnID = metaDataInfo.remoteTxnId;
+	metaData.dataStackTxnID = metaDataInfo.datastackTxnId;
+	metaData.errorMessage = errorMsg;
+	return metaData;
 }
 
 module.exports = router;
