@@ -82,7 +82,7 @@ if $buildAgentWatcher ; then
     sed -i.bak s#__signing_key_password__#$SIGNING_KEY_PASSWORD# Dockerfile
 
     if [ $cleanBuild ]; then
-        docker build --no-cache -t data.stack.b2b.agent.watcher:$TAG .
+        docker build --no-cache --pull -t data.stack.b2b.agent.watcher:$TAG .
     else 
         docker build -t data.stack.b2b.agent.watcher:$TAG .
     fi

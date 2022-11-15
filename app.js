@@ -15,6 +15,11 @@ const cookieParser = require('cookie-parser');
 const config = require('./config');
 require('./db-factory');
 
+log4js.configure({
+	appenders: { out: { type: 'stdout', layout: { type: 'basic' } } },
+	categories: { default: { appenders: ['out'], level: LOG_LEVEL } }
+});
+
 const logger = log4js.getLogger(global.loggerName);
 logger.level = process.env.LOG_LEVEL || 'info';
 global.activeRequest = 0;

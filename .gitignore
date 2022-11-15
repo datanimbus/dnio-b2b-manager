@@ -108,6 +108,7 @@ generatedFaas
 code-gen/flows/stage.utils.js
 code-gen/flows/route.js
 send.sh
+build.sh
 ds-faas
 ds-b2b-base
 LAST_PULL
