@@ -13,7 +13,7 @@ cd $WORKSPACE/ds-b2b-base
 sed -i.bak s#__image_tag__#$TAG# Dockerfile
 
 if $cleanBuild ; then
-    docker build --no-cache -t data.stack.b2b.base:$TAG .
+    docker build --no-cache --pull -t data.stack.b2b.base:$TAG .
 else 
     docker build -t data.stack.b2b.base:$TAG .
 fi
@@ -32,7 +32,7 @@ cd $WORKSPACE/ds-faas
 sed -i.bak s#__image_tag__#$TAG# Dockerfile
 
 if $cleanBuild ; then
-    docker build --no-cache -t data.stack.faas.base:$TAG .
+    docker build --no-cache --pull -t data.stack.faas.base:$TAG .
 else 
     docker build -t data.stack.faas.base:$TAG .
 fi
@@ -54,7 +54,7 @@ if $buildAgent ; then
     sed -i.bak s#__signing_key_password__#$SIGNING_KEY_PASSWORD# Dockerfile
 
     if [ $cleanBuild ]; then
-        docker build --no-cache -t data.stack.b2b.agents:$TAG .
+        docker build --no-cache --pull -t data.stack.b2b.agents:$TAG .
     else 
         docker build -t data.stack.b2b.agents:$TAG .
     fi
@@ -111,7 +111,7 @@ echo "****************************************************"
 sed -i.bak s#__image_tag__#$TAG# Dockerfile
 
 if [ $cleanBuild ]; then
-    docker build --no-cache -t data.stack.bm:$TAG --build-arg LATEST_AGENTS=$LATEST_AGENT --build-arg LATEST_AGENT_WATCHER=$LATEST_AGENT_WATCHER .
+    docker build --no-cache --pull -t data.stack.bm:$TAG --build-arg LATEST_AGENTS=$LATEST_AGENT --build-arg LATEST_AGENT_WATCHER=$LATEST_AGENT_WATCHER .
 else 
     docker build -t data.stack.bm:$TAG --build-arg LATEST_AGENTS=$LATEST_AGENT --build-arg LATEST_AGENT_WATCHER=$LATEST_AGENT_WATCHER .
 fi
