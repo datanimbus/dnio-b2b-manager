@@ -8,19 +8,18 @@ const socket = require('socket.io');
 // const https = require('https');
 const express = require('express');
 const log4js = require('log4js');
+const { AuthCacheMW } = require('@appveen/ds-auth-cache');
+const fileUpload = require('express-fileupload');
+const cookieParser = require('cookie-parser');
+
+const LOG_LEVEL = process.env.LOG_LEVEL ? process.env.LOG_LEVEL : 'info';
 log4js.configure({
 	appenders: { out: { type: 'stdout', layout: { type: 'basic' } } },
 	categories: { default: { appenders: ['out'], level: LOG_LEVEL } }
 });
 
-
-const { AuthCacheMW } = require('@appveen/ds-auth-cache');
-const fileUpload = require('express-fileupload');
-const cookieParser = require('cookie-parser');
-
 const config = require('./config');
 require('./db-factory');
-
 
 const logger = log4js.getLogger(global.loggerName);
 logger.level = process.env.LOG_LEVEL || 'info';
