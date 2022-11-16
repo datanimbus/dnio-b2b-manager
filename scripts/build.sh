@@ -111,7 +111,7 @@ echo "****************************************************"
 sed -i.bak s#__image_tag__#$TAG# Dockerfile
 
 if [ $cleanBuild ]; then
-    docker build --no-cache --pull -t data.stack.bm:$TAG --build-arg LATEST_AGENTS=$LATEST_AGENT --build-arg LATEST_AGENT_WATCHER=$LATEST_AGENT_WATCHER .
+    docker build --no-cache -t data.stack.bm:$TAG --build-arg LATEST_AGENTS=$LATEST_AGENT --build-arg LATEST_AGENT_WATCHER=$LATEST_AGENT_WATCHER .
 else 
     docker build -t data.stack.bm:$TAG --build-arg LATEST_AGENTS=$LATEST_AGENT --build-arg LATEST_AGENT_WATCHER=$LATEST_AGENT_WATCHER .
 fi
