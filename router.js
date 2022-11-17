@@ -17,7 +17,8 @@ router.use('/:app/:api', async (req, res, next) => {
             return res.status(400).json({ message: `No Flows with path ${path} Found` });
         }
         const headers = JSON.parse(JSON.stringify(req.headers));
-        headers['data-stack-txn-id'] = uuid();
+        let txnId = uuid().split('-')
+        headers['data-stack-txn-id'] = `${txnId[1]}${txnId[2]}`;
         if (!req.header('data-stack-remote-txn-id')) {
             headers['data-stack-remote-txn-id'] = uuid();
         }
