@@ -1,4 +1,8 @@
 const log4js = require('log4js');
+log4js.configure({
+    appenders: { out: { type: 'stdout', layout: { type: 'basic' } } },
+    categories: { default: { appenders: ['out'], level: LOG_LEVEL } }
+});
 const dataStackUtils = require('@appveen/data.stack-utils');
 
 const LOGGER_NAME = isK8sEnv() ? `[${process.env.HOSTNAME}] [B2B-MANAGER v${process.env.IMAGE_TAG}]` : `[B2B-MANAGER v${process.env.IMAGE_TAG}]`;
@@ -116,9 +120,9 @@ module.exports = {
     TZ_DEFAULT: process.env.TZ_DEFAULT || 'Zulu',
     agentMonitoringExpiry: process.env.B2B_HB_LOG_EXPIRY ? parseInt(process.env.B2B_HB_LOG_EXPIRY) : 30 * 60,
     maxFileSize: process.env.B2B_AGENT_MAX_FILE_SIZE ? getFileSize(process.env.B2B_AGENT_MAX_FILE_SIZE) : 1000 * 1024 * 1024,
-	logRotationType: process.env.B2B_AGENT_LOG_ROTATION_TYPE || 'days',
-	logRetentionCount: process.env.B2B_AGENT_LOG_RETENTION_COUNT || 10,
-	logMaxFileSize: process.env.B2B_AGENT_LOG_MAX_FILE_SIZE ? getFileSize(process.env.B2B_AGENT_LOG_MAX_FILE_SIZE) : 10 * 1024 * 1024,
+    logRotationType: process.env.B2B_AGENT_LOG_ROTATION_TYPE || 'days',
+    logRetentionCount: process.env.B2B_AGENT_LOG_RETENTION_COUNT || 10,
+    logMaxFileSize: process.env.B2B_AGENT_LOG_MAX_FILE_SIZE ? getFileSize(process.env.B2B_AGENT_LOG_MAX_FILE_SIZE) : 10 * 1024 * 1024,
     B2B_FLOW_REJECT_ZONE_ACTION: process.env.B2B_FLOW_REJECT_ZONE_ACTION || 'queue',
     B2B_FLOW_MAX_CONCURRENT_FILES: parseInt(process.env.B2B_FLOW_MAX_CONCURRENT_FILES || '0'),
     uploadRetryCounter: process.env.UPLOAD_RETRY_COUNTER || '5',
@@ -138,15 +142,15 @@ module.exports = {
     flowPendingWaitTime: process.env.B2B_FLOW_PENDING_WAIT_TIME ? parseInt(process.env.B2B_FLOW_PENDING_WAIT_TIME) : 10,
     encryptFile: process.env.B2B_ENCRYPT_FILE || 'true',
     retainFileOnSuccess: process.env.B2B_RETAIN_FILE_ON_SUCCESS || 'true',
-	retainFileOnError: process.env.B2B_RETAIN_FILE_ON_ERROR || 'true',
+    retainFileOnError: process.env.B2B_RETAIN_FILE_ON_ERROR || 'true',
     b2bFlowFsMountPath: process.env.B2B_FLOW_FS_MOUNT_PATH || '/tmp'
 };
 
 function getFileSize(size) {
-	let factor = 1;
-	let unit = size.substr(size.length - 1);
-	let s = parseInt(size.substr(0, size.length - 1));
-	if (unit.toLowerCase() == 'k') factor *= 1024;
-	if (unit.toLowerCase() == 'm') factor *= (1024 * 1024);
-	return s * factor;
+    let factor = 1;
+    let unit = size.substr(size.length - 1);
+    let s = parseInt(size.substr(0, size.length - 1));
+    if (unit.toLowerCase() == 'k') factor *= 1024;
+    if (unit.toLowerCase() == 'm') factor *= (1024 * 1024);
+    return s * factor;
 }
