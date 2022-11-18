@@ -6,10 +6,7 @@ const models = require('./models');
 const queue = require('./queue');
 const init = require('./init');
 
-const LOGGER_NAME = config.isK8sEnv() ? `[${config.hostname}] [B2B-MANAGER v${config.imageTag}]` : `[B2B-MANAGER v${config.imageTag}]`;
-const logger = log4js.getLogger(LOGGER_NAME);
-logger.level = process.env.LOG_LEVEL || 'info';
-global.loggerName = LOGGER_NAME;
+let logger = global.logger;
 
 // let baseImageVersion = require('./package.json').version;
 // const LOGGER_NAME = config.isK8sEnv() ? `[${config.appNamespace}] [${config.hostname}] [${config.serviceName} v${config.serviceVersion}]` : `[${config.serviceName} v${config.serviceVersion}]`

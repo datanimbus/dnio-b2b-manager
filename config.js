@@ -1,16 +1,22 @@
 const log4js = require('log4js');
 const LOG_LEVEL = process.env.LOG_LEVEL ? process.env.LOG_LEVEL : 'info';
+let version = require('./package.json').version;
+
 log4js.configure({
     appenders: { out: { type: 'stdout', layout: { type: 'basic' } } },
     categories: { default: { appenders: ['out'], level: LOG_LEVEL } }
 });
 const dataStackUtils = require('@appveen/data.stack-utils');
 
-const LOGGER_NAME = isK8sEnv() ? `[${process.env.HOSTNAME}] [B2B-MANAGER v${process.env.IMAGE_TAG}]` : `[B2B-MANAGER v${process.env.IMAGE_TAG}]`;
-const logger = log4js.getLogger(LOGGER_NAME);
-const DATA_STACK_NAMESPACE = process.env.DATA_STACK_NAMESPACE || 'appveen';
+// const LOGGER_NAME = isK8sEnv() ? `[${process.env.HOSTNAME}] [B2B-MANAGER v${process.env.IMAGE_TAG}]` : `[B2B-MANAGER v${process.env.IMAGE_TAG}]`;
 
-logger.debug(`DATA_STACK_NAMESPACE : ${process.env.DATA_STACK_NAMESPACE}`);
+const LOGGER_NAME = isK8sEnv() ? `[${process.env.DATA_STACK_NAMESPACE}] [${process.env.HOSTNAME}] [BM ${version}]` : `[BM ${version}]`;
+global.loggerName = LOGGER_NAME;
+const logger = log4js.getLogger(LOGGER_NAME);
+
+global.logger = logger;
+
+const DATA_STACK_NAMESPACE = process.env.DATA_STACK_NAMESPACE || 'appveen';
 
 if (process.env.KUBERNETES_SERVICE_HOST && process.env.KUBERNETES_SERVICE_PORT) {
     dataStackUtils.kubeutil.check()
@@ -144,7 +150,8 @@ module.exports = {
     encryptFile: process.env.B2B_ENCRYPT_FILE || 'true',
     retainFileOnSuccess: process.env.B2B_RETAIN_FILE_ON_SUCCESS || 'true',
     retainFileOnError: process.env.B2B_RETAIN_FILE_ON_ERROR || 'true',
-    b2bFlowFsMountPath: process.env.B2B_FLOW_FS_MOUNT_PATH || '/tmp'
+    b2bFlowFsMountPath: process.env.B2B_FLOW_FS_MOUNT_PATH || '/tmp',
+    envVarsForFlows: ['FQDN', 'LOG_LEVEL', 'MONGO_APPCENTER_URL', 'MONGO_AUTHOR_DBNAME', 'MONGO_AUTHOR_URL', 'MONGO_LOGS_DBNAME', 'MONGO_LOGS_URL', 'MONGO_RECONN_TIME', 'MONGO_RECONN_TRIES', 'STREAMING_CHANNEL', 'STREAMING_HOST', 'STREAMING_PASS', 'STREAMING_RECONN_ATTEMPTS', 'STREAMING_RECONN_TIMEWAIT', 'STREAMING_USER', 'DATA_STACK_NAMESPACE', 'CACHE_CLUSTER', 'CACHE_HOST', 'CACHE_PORT', 'CACHE_RECONN_ATTEMPTS', 'CACHE_RECONN_TIMEWAIT_MILLI', 'RELEASE', 'TLS_REJECT_UNAUTHORIZED', 'API_REQUEST_TIMEOUT']
 };
 
 function getFileSize(size) {
