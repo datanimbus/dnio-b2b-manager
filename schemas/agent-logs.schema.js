@@ -31,7 +31,10 @@ const definition = {
 			}
 		}
 	},
-	'content': {
+	'logLevel': {
+		'type': 'String'
+	},
+	'message': {
 		'type': 'String'
 	}
 };

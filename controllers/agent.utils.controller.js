@@ -607,17 +607,21 @@ router.post('/logs', async (req, res) => {
 		const payload = req.body;
 		logger.info(`Received request to upload agent log - `, agentId, app);
 		logger.trace(`Agent Log payload -`, JSON.stringify(payload));
-		let agentLogObject = JSON.parse(JSON.stringify(payload));
-		agentLogObject['agentId'] = agentId;
-		agentLogObject['agentName'] = agentName;
-		agentLogObject['app'] = app;
-		agentLogObject['ipAddress'] = ipAddress;
-		agentLogObject['macAddress'] = macAddress;
-		const agentLogDoc = new agentLogModel(agentLogObject);
-		agentLogDoc._req = req;
-		let status = agentLogDoc.save();
-		logger.debug('Agent Action Create Status: ', status);
-		logger.trace('Agent Log Doc - ', agentLogDoc);
+		let agentLogObjectArray = JSON.parse(JSON.stringify(payload));
+		logger.trace(`Agent Log parsed payload - `, agentLogObjectArray);
+		for (let i in agentLogObjectArray) {
+			let agentLogObject = agentLogObjectArray[i];
+			agentLogObject['agentId'] = agentId;
+			agentLogObject['agentName'] = agentName;
+			agentLogObject['app'] = app;
+			agentLogObject['ipAddress'] = ipAddress;
+			agentLogObject['macAddress'] = macAddress;
+			const agentLogDoc = new agentLogModel(agentLogObject);
+			agentLogDoc._req = req;
+			let status = agentLogDoc.save();
+			logger.debug('Agent Action Create Status: ', status);
+			logger.trace('Agent Log Doc - ', agentLogDoc);
+		}
 		return res.status(200).json({ message: "Agent Log Successfully Uploaded" });
 	} catch (err) {
 		logger.error(err);
