@@ -353,7 +353,7 @@ router.post('/:id/upload', async (req, res) => {
 				const actionDoc = new agentActionModel(agentEvent);
 				actionDoc._req = req;
 				let status = actionDoc.save();
-				logger.debug(`[${txnId}] Agent Action Create Status - `, status);
+				logger.trace(`[${txnId}] Agent Action Create Status - `, status);
 				logger.trace(`[${txnId}] Action Doc - `, actionDoc);
 
 				let chunkChecksumList = uploadHeaders.chunkChecksum;
@@ -363,7 +363,7 @@ router.post('/:id/upload', async (req, res) => {
 				const downloadActionDoc = new agentActionModel(agentEvent);
 				downloadActionDoc._req = req;
 				status = downloadActionDoc.save();
-				logger.debug(`[${txnId}] Agent Download Action Create Status - `, status);
+				logger.trace(`[${txnId}] Agent Download Action Create Status - `, status);
 				logger.trace(`[${txnId}] Download Action Doc - `, downloadActionDoc);
 			} else {
 				const encryptedData = await new Promise((resolve, reject) => {
@@ -619,7 +619,7 @@ router.post('/logs', async (req, res) => {
 			const agentLogDoc = new agentLogModel(agentLogObject);
 			agentLogDoc._req = req;
 			let status = agentLogDoc.save();
-			logger.debug('Agent Action Create Status: ', status);
+			logger.trace('Agent Action Create Status: ', status);
 			logger.trace('Agent Log Doc - ', agentLogDoc);
 		}
 		return res.status(200).json({ message: "Agent Log Successfully Uploaded" });
