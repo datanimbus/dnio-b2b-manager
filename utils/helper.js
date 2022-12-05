@@ -79,6 +79,9 @@ function constructFlowEvent(req, doc, flow, action) {
 				//do nothing
 			} else if (agentType === 'FILE' && agent.blockType === 'input') {
 				let fileSuffix = inputContentType;
+				if (inputContentType === 'EXCEL') {
+					fileSuffix = flow.dataStructures[inputObj.dataStructure.outgoing._id].excelType;
+				}
 				metaData = {
 					'fileSuffix': _.lowerCase(fileSuffix),
 					'fileMaxSize': envConfig.maxFileSize
@@ -88,6 +91,9 @@ function constructFlowEvent(req, doc, flow, action) {
 				}
 			} else if (agentType === 'FILE' && agent.blockType === 'output') {
 				let fileSuffix = outputContentType;
+				if (outputContentType === 'EXCEL') {
+					fileSuffix = flow.dataStructures[outputObj.dataStructure.outgoing._id].excelType;
+				}
 				metaData = {
 					'fileSuffix': _.lowerCase(fileSuffix)
 				};
