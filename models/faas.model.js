@@ -159,7 +159,7 @@ schema.pre('save', async function (next) {
 	if (!this.status) {
 		this.status = 'STOPPED';
 	}
-	if (!this.code) {
+	if (!this.code || this._isNew) {
 		this.code =
 			`router.get('/${this.app}/${_.camelCase(this.name)}', async (req, res)=>{
 
