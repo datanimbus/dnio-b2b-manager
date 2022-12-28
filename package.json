@@ -37,7 +37,7 @@
     "log4js": "^6.4.4",
     "moment": "^2.29.2",
     "mongodb": "^4.5.0",
-    "mongoose": "^6.7.2",
+    "mongoose": "^6.8.0",
     "node-schedule": "^2.1.0",
     "recursive-copy": "^2.0.14",
     "request": "^2.88.2",
