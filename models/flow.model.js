@@ -18,8 +18,8 @@ const schema = mongooseUtils.MakeSchema(definition, {
 	versionKey: 'version'
 });
 
-schema.index({ name: 1, app: 1 }, { unique: '__CUSTOM_NAME_DUPLICATE_ERROR__', sparse: true, collation: { locale: 'en_US', strength: 2 } });
-schema.index({ 'inputNode.options.path': 1, app: 1 }, { unique: '__CUSTOM_API_DUPLICATE_ERROR__', sparse: true, collation: { locale: 'en_US', strength: 2 } });
+schema.index({ name: 1, app: 1 }, { unique: true, sparse: true, collation: { locale: 'en_US', strength: 2 } });
+schema.index({ 'inputNode.options.path': 1, app: 1 }, { unique: true, sparse: true, collation: { locale: 'en_US', strength: 2 } });
 
 schema.plugin(mongooseUtils.metadataPlugin());
 
