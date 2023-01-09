@@ -12,9 +12,17 @@ async function initRouterMap() {
 		global.activeFlows = {};
 		flows.forEach(item => {
 			if (config.isK8sEnv()) {
-				global.activeFlows['/' + item.app + item.inputStage.options.path] = `http://${item.deploymentName}.${item.namespace}`;
+				global.activeFlows['/' + item.app + item.inputNode.options.path] = {
+					proxyHost: `http://${item.deploymentName}.${item.namespace}`,
+					proxyPath: '/api/b2b/' + item.app + item.inputNode.options.path,
+					flowId: item._id
+				};
 			} else {
-				global.activeFlows['/' + item.app + item.inputStage.options.path] = `http://localhost:${item.port || 31000}`;
+				global.activeFlows['/' + item.app + item.inputNode.options.path] = {
+					proxyHost: 'http://localhost:8080',
+					proxyPath: '/api/b2b/' + item.app + item.inputNode.options.path,
+					flowId: item._id
+				};
 			}
 		});
 		logger.trace(global.activeFlows);

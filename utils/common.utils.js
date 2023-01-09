@@ -52,10 +52,13 @@ function validateDefinition(fields) {
 				errors[i] = 'Key not set';
 			} else if (validatePropertyTypes.indexOf(def.type) == -1) {
 				errors[i] = 'Not Valid Type';
-			} else if (!def.properties.name) {
+			} else if (def.key != '_self' && !def.properties.name) {
 				errors[i] = 'Label not set';
 			} else if (def.type === 'Object' || def.type == 'Array') {
-				errors[i] = validateDefinition(def.definition);
+				let tempErrors = validateDefinition(def.definition);
+				if (!_.isEmpty(tempErrors)) {
+					errors[i] = tempErrors;
+				}
 			}
 		});
 	}

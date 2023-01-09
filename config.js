@@ -1,11 +1,22 @@
 const log4js = require('log4js');
+const LOG_LEVEL = process.env.LOG_LEVEL ? process.env.LOG_LEVEL : 'info';
+let version = require('./package.json').version;
+
+log4js.configure({
+    appenders: { out: { type: 'stdout', layout: { type: 'basic' } } },
+    categories: { default: { appenders: ['out'], level: LOG_LEVEL } }
+});
 const dataStackUtils = require('@appveen/data.stack-utils');
 
-const LOGGER_NAME = isK8sEnv() ? `[${process.env.HOSTNAME}] [B2B-MANAGER v${process.env.IMAGE_TAG}]` : `[B2B-MANAGER v${process.env.IMAGE_TAG}]`;
-const logger = log4js.getLogger(LOGGER_NAME);
-const DATA_STACK_NAMESPACE = process.env.DATA_STACK_NAMESPACE || 'appveen';
+// const LOGGER_NAME = isK8sEnv() ? `[${process.env.HOSTNAME}] [B2B-MANAGER v${process.env.IMAGE_TAG}]` : `[B2B-MANAGER v${process.env.IMAGE_TAG}]`;
 
-logger.debug(`DATA_STACK_NAMESPACE : ${process.env.DATA_STACK_NAMESPACE}`);
+const LOGGER_NAME = isK8sEnv() ? `[${process.env.DATA_STACK_NAMESPACE}] [${process.env.HOSTNAME}] [BM ${version}]` : `[BM ${version}]`;
+global.loggerName = LOGGER_NAME;
+const logger = log4js.getLogger(LOGGER_NAME);
+
+global.logger = logger;
+
+const DATA_STACK_NAMESPACE = process.env.DATA_STACK_NAMESPACE || 'appveen';
 
 if (process.env.KUBERNETES_SERVICE_HOST && process.env.KUBERNETES_SERVICE_PORT) {
     dataStackUtils.kubeutil.check()
@@ -69,7 +80,7 @@ module.exports = {
     baseUrlSM: get('sm') + '/sm',
     baseUrlNE: get('ne') + '/ne',
     baseUrlUSR: get('user') + '/rbac',
-    baseUrlPM: get('bm') + '/bm',
+    baseUrlBM: get('bm') + '/bm',
     baseUrlSEC: get('sec') + '/sec',
     baseUrlDM: get('dm') + '/dm',
     maxHeapSize: process.env.NODE_MAX_HEAP_SIZE || '4096',
@@ -114,14 +125,40 @@ module.exports = {
     },
     verifyDeploymentUser: parseBoolean(process.env.VERIFY_DEPLOYMENT_USER) || false,
     TZ_DEFAULT: process.env.TZ_DEFAULT || 'Zulu',
-    B2B_AGENT_MAX_FILE_SIZE: process.env.B2B_AGENT_MAX_FILE_SIZE || 100 * 1024 * 1024,
+    agentMonitoringExpiry: process.env.B2B_HB_LOG_EXPIRY ? parseInt(process.env.B2B_HB_LOG_EXPIRY) : 30 * 60,
+    maxFileSize: process.env.B2B_AGENT_MAX_FILE_SIZE ? getFileSize(process.env.B2B_AGENT_MAX_FILE_SIZE) : 1000 * 1024 * 1024,
+    logRotationType: process.env.B2B_AGENT_LOG_ROTATION_TYPE || 'days',
+    logRetentionCount: process.env.B2B_AGENT_LOG_RETENTION_COUNT || 10,
+    logMaxFileSize: process.env.B2B_AGENT_LOG_MAX_FILE_SIZE ? getFileSize(process.env.B2B_AGENT_LOG_MAX_FILE_SIZE) : 10 * 1024 * 1024,
     B2B_FLOW_REJECT_ZONE_ACTION: process.env.B2B_FLOW_REJECT_ZONE_ACTION || 'queue',
     B2B_FLOW_MAX_CONCURRENT_FILES: parseInt(process.env.B2B_FLOW_MAX_CONCURRENT_FILES || '0'),
+    uploadRetryCounter: process.env.UPLOAD_RETRY_COUNTER || '5',
+    downloadRetryCounter: process.env.DOWNLOAD_RETRY_COUNTER || '5',
+    maxConcurrentUploads: parseInt(process.B2B_DEFAULT_CONCURRENT_FILE_UPLOADS || 5),
+    maxConcurrentDownloads: parseInt(process.B2B_DEFAULT_CONCURRENT_FILE_DOWNLOADS || 5),
     B2B_ENABLE_TIMEBOUND: parseBoolean(process.env.B2B_ENABLE_TIMEBOUND),
     B2B_ENABLE_TRUSTED_IP: parseBoolean(process.env.B2B_ENABLE_TRUSTED_IP),
     VERIFY_DEPLOYMENT_USER: parseBoolean(process.env.VERIFY_DEPLOYMENT_USER),
     secret: process.env.TOKEN_SECRET || 'u?5k167v13w5fhjhuiweuyqi67621gqwdjavnbcvadjhgqyuqagsduyqtw87e187etqiasjdbabnvczmxcnkzn',
     RBAC_JWT_KEY: process.env.RBAC_JWT_KEY || 'u?5k167v13w5fhjhuiweuyqi67621gqwdjavnbcvadjhgqyuqagsduyqtw87e187etqiasjdbabnvczmxcnkzn',
     MAX_JSON_SIZE: process.env.MAX_JSON_SIZE || '5mb',
-    encryptionKey: process.env.ENCRYPTION_KEY || '34857057658800771270426551038148'
+    encryptionKey: process.env.ENCRYPTION_KEY || '34857057658800771270426551038148',
+    gwFQDN: process.env.B2B_GATEWAY_FQDN || 'localhost',
+    hbFrequency: process.env.B2B_HB_FREQUENCY ? parseInt(process.env.B2B_HB_FREQUENCY) : 10,
+    hbMissCount: process.env.B2B_HB_MISSED_COUNT ? parseInt(process.env.B2B_HB_MISSED_COUNT) : 10,
+    flowPendingWaitTime: process.env.B2B_FLOW_PENDING_WAIT_TIME ? parseInt(process.env.B2B_FLOW_PENDING_WAIT_TIME) : 10,
+    encryptFile: process.env.B2B_ENCRYPT_FILE || 'true',
+    retainFileOnSuccess: process.env.B2B_RETAIN_FILE_ON_SUCCESS || 'true',
+    retainFileOnError: process.env.B2B_RETAIN_FILE_ON_ERROR || 'true',
+    b2bFlowFsMountPath: process.env.B2B_FLOW_FS_MOUNT_PATH || '/tmp',
+    envVarsForFlows: ['FQDN', 'LOG_LEVEL', 'MONGO_APPCENTER_URL', 'MONGO_AUTHOR_DBNAME', 'MONGO_AUTHOR_URL', 'MONGO_LOGS_DBNAME', 'MONGO_LOGS_URL', 'MONGO_RECONN_TIME', 'MONGO_RECONN_TRIES', 'STREAMING_CHANNEL', 'STREAMING_HOST', 'STREAMING_PASS', 'STREAMING_RECONN_ATTEMPTS', 'STREAMING_RECONN_TIMEWAIT', 'STREAMING_USER', 'DATA_STACK_NAMESPACE', 'CACHE_CLUSTER', 'CACHE_HOST', 'CACHE_PORT', 'CACHE_RECONN_ATTEMPTS', 'CACHE_RECONN_TIMEWAIT_MILLI', 'RELEASE', 'TLS_REJECT_UNAUTHORIZED', 'API_REQUEST_TIMEOUT']
 };
+
+function getFileSize(size) {
+    let factor = 1;
+    let unit = size.substr(size.length - 1);
+    let s = parseInt(size.substr(0, size.length - 1));
+    if (unit.toLowerCase() == 'k') factor *= 1024;
+    if (unit.toLowerCase() == 'm') factor *= (1024 * 1024);
+    return s * factor;
+}

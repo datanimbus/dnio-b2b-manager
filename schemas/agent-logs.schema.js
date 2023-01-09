@@ -2,35 +2,20 @@ const definition = {
 	'agentId': {
 		'type': 'String'
 	},
-	'responseAgentID': {
-		'type': 'String'
-	},
-	'heartBeatFrequency': {
-		'type': 'String'
-	},
-	'status': {
-		'type': 'String'
-	},
-	'ipAddress': {
-		'type': 'String'
-	},
-	'macAddress': {
-		'type': 'String'
-	},
-	'appName': {
-		'type': 'String'
-	},
-	'partnerName': {
+	'app': {
 		'type': 'String'
 	},
 	'timestamp': {
 		'type': 'Date',
 		'default': Date.now
 	},
-	'agentType': {
+	'agentName': {
 		'type': 'String'
 	},
-	'agentName': {
+	'ipAddress': {
+		'type': 'String'
+	},
+	'macAddress': {
 		'type': 'String'
 	},
 	'pendingFiles': {
@@ -45,6 +30,12 @@ const definition = {
 				'release': { 'type': 'Number' }
 			}
 		}
+	},
+	'logLevel': {
+		'type': 'String'
+	},
+	'message': {
+		'type': 'String'
 	}
 };
 

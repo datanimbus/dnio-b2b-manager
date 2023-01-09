@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: bm
-  namespace: __namespace__
+  namespace: appveen
 spec:
   type: ClusterIP
   selector:
@@ -21,7 +21,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: bm
-  namespace: __namespace__
+  namespace: appveen
 spec:
   replicas: 1
   selector:
@@ -32,10 +32,10 @@ spec:
       labels:
         app: bm
     spec:
-      serviceAccountName: ds-admin-appveen
+      serviceAccountName: ds-admin
       containers:
         - name: bm
-          image: '__docker_registry_server__/data.stack:bm.__release__'
+          image: 'appveen/data.stack.bm:2.3.0'
           ports:
             - containerPort: 10011
             - containerPort: 10443

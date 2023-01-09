@@ -12,13 +12,11 @@ const client = queue.getClient();
 dataStackUtils.eventsUtil.setNatsClient(client);
 
 
-const schema = new mongoose.Schema(definition, {
-	usePushEach: true
-});
+const schema = mongooseUtils.MakeSchema(definition);
 
 schema.plugin(mongooseUtils.metadataPlugin());
 
-schema.index({ name: 1, app: 1 }, { unique: '__CUSTOM_NAME_DUPLICATE_ERROR__', sparse: true, collation: { locale: 'en_US', strength: 2 } });
+schema.index({ name: 1, app: 1 }, { unique: true, sparse: true, collation: { locale: 'en_US', strength: 2 } });
 
 schema.post('save', function (error, doc, next) {
 	if ((error.errors && error.errors.name) || error.name === 'ValidationError' || error.message.indexOf('E11000') > -1
@@ -72,8 +70,15 @@ schema.pre('save', function (next) {
 		return next(new Error('App Value is Mandatory'));
 	}
 	if (!this.definition) return next();
-	let def = typeof this.definition === 'string' ? JSON.parse(this.definition)[0].definition : this.definition[0].definition;
-	this.attributeCount = commonUtils.countAttr(def);
+	let temp;
+	if (typeof this.definition === 'string') {
+		temp = JSON.parse(this.definition);
+	} else {
+		temp = this.definition;
+	}
+	if (temp && temp.length > 0) {
+		this.attributeCount = commonUtils.countAttr(temp);
+	}
 	next();
 });
 

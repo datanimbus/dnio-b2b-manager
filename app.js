@@ -3,18 +3,18 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 const socket = require('socket.io');
-const fs = require('fs');
-const path = require('path');
-const https = require('https');
+// const fs = require('fs');
+// const path = require('path');
+// const https = require('https');
 const express = require('express');
-const log4js = require('log4js');
 const { AuthCacheMW } = require('@appveen/ds-auth-cache');
+const fileUpload = require('express-fileupload');
+const cookieParser = require('cookie-parser');
 
 const config = require('./config');
 require('./db-factory');
 
-const logger = log4js.getLogger(global.loggerName);
-logger.level = process.env.LOG_LEVEL || 'info';
+const logger = global.logger;
 global.activeRequest = 0;
 
 function initSocket(server) {
@@ -40,9 +40,6 @@ let permittedUrls = [
 
 const app = express();
 
-app.use(express.json({ inflate: true, limit: config.MAX_JSON_SIZE }));
-app.use(express.urlencoded({ extended: true }));
-
 app.use((req, res, next) => {
 	if (req.path.split('/').indexOf('live') == -1 && req.path.split('/').indexOf('ready') == -1) {
 		logger.info(req.method, req.path, req.query);
@@ -61,19 +58,29 @@ app.use((req, res, next) => {
 
 //testing comment
 
-app.use('/b2b', require('./router'));
-app.use('/bm', AuthCacheMW({ permittedUrls: permittedUrls, secret: config.RBAC_JWT_KEY, decodeOnly: true }), require('./controllers'));
+app.use(['/b2b/pipes'], require('./router'));
+
+app.use(express.json({ inflate: true, limit: config.MAX_JSON_SIZE }));
+app.use(express.urlencoded({ extended: true }));
+app.use(express.raw({ type: ['application/xml', 'text/xml', 'application/octet-stream'] }));
+app.use(cookieParser());
+
+app.use(fileUpload({
+	useTempFiles: true,
+	tempFileDir: './uploads'
+}));
+app.use(['/bm', '/b2b/bm'], AuthCacheMW({ permittedUrls: permittedUrls, secret: config.RBAC_JWT_KEY, decodeOnly: true }), require('./controllers'));
 
 const server = app.listen(config.port, () => {
 	logger.info('HTTP Server is listening on:', config.port);
 });
 
-const httpsServer = https.createServer({
-	cert: fs.readFileSync(path.join(__dirname, 'keys', 'b2b-manager.crt')),
-	key: fs.readFileSync(path.join(__dirname, 'keys', 'b2b-manager.key')),
-}, app).listen(config.httpsPort, () => {
-	logger.info('HTTPs Server is listening on:', config.httpsPort);
-});
+// const httpsServer = https.createServer({
+// 	cert: fs.readFileSync(path.join(__dirname, 'keys', 'b2b-manager.crt')),
+// 	key: fs.readFileSync(path.join(__dirname, 'keys', 'b2b-manager.key')),
+// }, app).listen(config.httpsPort, () => {
+// 	logger.info('HTTPs Server is listening on:', config.httpsPort);
+// });
 
 initSocket(server);
 
@@ -88,9 +95,9 @@ process.on('SIGTERM', () => {
 			// Waiting For all pending requests to finish;
 			if (global.activeRequest === 0) {
 				// Closing Express Server;
-				httpsServer.close(() => {
-					logger.info('HTTPs Server Stopped.');
-				});
+				// httpsServer.close(() => {
+				// 	logger.info('HTTPs Server Stopped.');
+				// });
 				server.close(() => {
 					logger.info('HTTP Server Stopped.');
 					process.exit(0);

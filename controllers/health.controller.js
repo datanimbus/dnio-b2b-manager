@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 
 const client = require('../queue').getClient();
 
-const logger = log4js.getLogger('health.controller');
+const logger = log4js.getLogger(global.loggerName);
 
 
 router.get('/live', async (req, res) => {

@@ -1,10 +1,10 @@
-const router = require('express').Router();
+const router = require('express').Router({ mergeParams: true });
 const log4js = require('log4js');
 const mongoose = require('mongoose');
 
 const queryUtils = require('../utils/query.utils');
 
-const logger = log4js.getLogger('index.controller');
+const logger = log4js.getLogger(global.loggerName);
 const faasModel = mongoose.model('faas');
 
 router.get('/faas/fetchAll', async (req, res) => {

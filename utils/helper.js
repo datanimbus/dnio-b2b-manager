@@ -2,115 +2,149 @@ const logger = global.logger;
 const _ = require('lodash');
 const envConfig = require('../config');
 
-let e = {};
 
-e.constructEvent = function (doc, flow, action, req) {
-	logger.debug('Constructing event - ', doc.name, flow.name, action);
-	let obj = null;
-	let inputObj = null;
-	let outputObj = null;
-	let inputType = null;
-	let outputType = null;
-	let promise = Promise.resolve();
+function constructFlowEvent(req, doc, flow, action) {
+	try {
+		logger.debug('Constructing event - ', doc.name, flow.name, action);
 
-	obj = {
-		'appName': flow.app,
-		'agentName': doc.name,
-		'flowName': flow.name,
-		'agentID': doc.agentId,
-		'flowID': flow._id,
-		'deploymentName': flow.deploymentName,
-		'timestamp': new Date(),
-		'entryType': 'IN',
-		'sentOrRead': false
-	};
-	inputObj = flow.inputStage;
-	outputObj = flow.stages[0];
-	inputType = inputObj.type;
-	outputType = outputObj.type;
+		const obj = {
+			'appName': flow.app,
+			'agentName': doc.name,
+			'flowName': flow.name,
+			'agentID': doc.agentId,
+			'flowID': flow._id,
+			'deploymentName': flow.deploymentName,
+			'timestamp': new Date(),
+			'entryType': 'IN',
+			'sentOrRead': false
+		};
+		const inputObj = flow.inputNode;
+		const outputObj = flow.nodes[0];
+		const inputType = inputObj.type;
+		const outputType = outputObj.type;
+		let inputContentType = 'BINARY';
+		let outputContentType = 'BINARY';
 
-	let agentList = [];
-	if (inputType === 'FILE') {
-		agentList.push({ agentID: inputObj.options.agentId, type: 'FILE', blockType: 'input' });
-	}
-	if (outputType === 'FILE') {
-		agentList.push({ agentID: outputObj.options.agentId, type: 'FILE', blockType: 'output' });
-	}
-	promise = Promise.resolve(agentList);
+		if (inputObj.options.contentType === 'application/json') {
+			inputContentType = 'JSON';
+		}
 
-	return promise.then(agentObjs => {
-		logger.debug(`${JSON.stringify({ action, agentObjsLen: agentObjs.length })}`);
-		let eventPromise = agentObjs.map(_agentObj => {
-			let agentType = _agentObj.type;
-			let newObj = JSON.parse(JSON.stringify(obj));
+		if (inputObj.dataStructure && inputObj.dataStructure.outgoing && inputObj.dataStructure.outgoing._id) {
+			inputContentType = flow.dataStructures[inputObj.dataStructure.outgoing._id].formatType || 'JSON';
+		}
+		if (outputObj.dataStructure && outputObj.dataStructure.outgoing && outputObj.dataStructure.outgoing._id) {
+			outputContentType = flow.dataStructures[outputObj.dataStructure.outgoing._id].formatType || 'JSON';
+		}
+
+		let agentList = [];
+		if (inputType === 'FILE') {
+			inputObj.options.agents.forEach(agent => {
+				agentList.push({ agentID: agent.agentId, type: 'FILE', blockType: 'input' });
+			});
+		}
+		if (outputType === 'FILE') {
+			outputObj.options.agents.forEach(agent => {
+				agentList.push({ agentID: agent.agentId, type: 'FILE', blockType: 'output' });
+			});
+		}
+		logger.debug(`${JSON.stringify({ action, agentListLen: agentList.length })}`);
+		let agentActionList = agentList.map((agent) => {
+			let agentType = agent.type;
+			let agentActionObject = JSON.parse(JSON.stringify(obj));
 			if (action === 'create') {
-				newObj['action'] = agentType === 'FILE' ? 'FLOW_CREATE_REQUEST' : 'CREATE_API_FLOW_REQUEST';
+				agentActionObject['action'] = agentType === 'FILE' ? 'FLOW_CREATE_REQUEST' : 'CREATE_API_FLOW_REQUEST';
 			}
 			else if (action === 'deploy') {
-				newObj['action'] = agentType === 'FILE' ? 'FLOW_CREATE_REQUEST' : 'CREATE_API_FLOW_REQUEST';
+				agentActionObject['action'] = agentType === 'FILE' ? 'FLOW_CREATE_REQUEST' : 'CREATE_API_FLOW_REQUEST';
 			}
 			else if (action === 'start') {
-				newObj['action'] = agentType === 'FILE' ? 'FLOW_START_REQUEST' : 'START_API_FLOW_REQUEST';
+				agentActionObject['action'] = agentType === 'FILE' ? 'FLOW_START_REQUEST' : 'START_API_FLOW_REQUEST';
 			}
 			else if (action === 'stop') {
-				newObj['action'] = agentType === 'FILE' ? 'FLOW_STOP_REQUEST' : 'STOP_API_FLOW_REQUEST';
+				agentActionObject['action'] = agentType === 'FILE' ? 'FLOW_STOP_REQUEST' : 'STOP_API_FLOW_REQUEST';
 			}
 			else if (action === 'update') {
-				newObj['action'] = agentType === 'FILE' ? 'FLOW_UPDATE_REQUEST' : 'UPDATE_API_FLOW_REQUEST';
+				agentActionObject['action'] = agentType === 'FILE' ? 'FLOW_UPDATE_REQUEST' : 'UPDATE_API_FLOW_REQUEST';
 			}
 			else if (action === 'delete') {
-				newObj['action'] = agentType === 'FILE' ? 'DELETE_FLOW_REQUEST' : 'DELETE_API_FLOW_REQUEST';
+				agentActionObject['action'] = agentType === 'FILE' ? 'DELETE_FLOW_REQUEST' : 'DELETE_API_FLOW_REQUEST';
 			}
 			else if (action === 'kill') {
-				newObj['action'] = 'STOP_AGENT';
+				agentActionObject['action'] = 'STOP_AGENT';
 			}
 
 			let metaData = {};
 
 			if (action === 'kill') {
 				//do nothing
-			}
-			else if (agentType === 'FILE' && _agentObj.blockType === 'input') {
-				let fileSuffix = inputObj.options.contentType;
+			} else if (agentType === 'FILE' && agent.blockType === 'input') {
+				let fileSuffix = inputContentType;
+				if (inputContentType === 'EXCEL') {
+					fileSuffix = flow.dataStructures[inputObj.dataStructure.outgoing._id].excelType;
+				}
 				metaData = {
-					'fileSuffix': String(fileSuffix).toLowerCase(),
-					'fileMaxSize': envConfig.B2B_AGENT_MAX_FILE_SIZE
+					'fileSuffix': _.lowerCase(fileSuffix),
+					'fileMaxSize': envConfig.maxFileSize
 				};
-				if (['BINARY', 'DELIMITER', 'FLATFILE'].indexOf(inputObj.options.contentType) > -1) {
+				if (['BINARY', 'DELIMITER', 'FLATFILE'].indexOf(inputContentType) > -1) {
+					metaData.fileSuffix = '.';
+				}
+			} else if (agentType === 'FILE' && agent.blockType === 'output') {
+				let fileSuffix = outputContentType;
+				if (outputContentType === 'EXCEL') {
+					fileSuffix = flow.dataStructures[outputObj.dataStructure.outgoing._id].excelType;
+				}
+				metaData = {
+					'fileSuffix': _.lowerCase(fileSuffix)
+				};
+				if (['BINARY', 'DELIMITER', 'FLATFILE'].indexOf(outputContentType) > -1) {
 					metaData.fileSuffix = '.';
 				}
 			}
-			else if (agentType === 'FILE' && _agentObj.blockType === 'output') {
-				let fileSuffix = outputObj.options.contentType;
-				metaData = {
-					'fileSuffix': String(fileSuffix).toLowerCase()
-				};
-				if (['BINARY', 'DELIMITER', 'FLATFILE'].indexOf(outputObj.options.contentType) > -1) {
-					metaData.fileSuffix = '.';
-				}
-			}
-            
-			if (inputObj && inputType === 'FILE' && agentType === 'FILE' && _agentObj.blockType === 'input') {
+
+			/*if (inputObj && inputType === 'FILE' && agentType === 'FILE' && agent.blockType === 'input') {
 				if (outputObj && outputType === 'FILE') {
 					metaData.targetAgentID = outputObj.options.agentId;
 				}
 			}
-			if (outputObj && outputType === 'FILE' && agentType === 'FILE' && _agentObj.blockType === 'output') {
+			if (outputObj && outputType === 'FILE' && agentType === 'FILE' && agent.blockType === 'output') {
 				if (inputObj && inputType === 'FILE') {
 					metaData.targetAgentID = inputObj.options.agentId;
 				}
-			}
-            
-			let metaDataPromise = Promise.resolve(metaData);
-			return metaDataPromise
-				.then(_md => {
-					newObj['metaData'] = JSON.stringify(_md);
-					newObj['agentID'] = _agentObj.agentID;
-					return newObj;
-				});
-		});
-		return Promise.all(eventPromise);
-	});
-};
+			}*/
 
-module.exports = e;
+			agentActionObject['metaData'] = JSON.stringify(metaData);
+			agentActionObject['agentID'] = agent.agentID;
+			return agentActionObject;
+		});
+		logger.trace({ agentActionList });
+		return agentActionList;
+	} catch (err) {
+		logger.error(err);
+	}
+}
+
+function constructAgentEvent(req, agentId, eventDetails, agentAction, metaData) {
+	try {
+		const obj = {
+			'agentId': agentId,
+			'appName': eventDetails.app,
+			'agentName': eventDetails.agentName,
+			'flowName': eventDetails.flowName,
+			'flowId': eventDetails.flowId,
+			'deploymentName': eventDetails.deploymentName,
+			'timestamp': new Date(),
+			'sentOrRead': false
+		};
+
+		let agentActionObject = JSON.parse(JSON.stringify(obj));
+		agentActionObject['action'] = agentAction;
+		agentActionObject['metaData'] = JSON.stringify(metaData);
+		return agentActionObject;
+	} catch (err) {
+		logger.error(err);
+	}
+}
+
+module.exports.constructFlowEvent = constructFlowEvent;
+module.exports.constructAgentEvent = constructAgentEvent;

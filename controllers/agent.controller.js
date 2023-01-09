@@ -1,11 +1,11 @@
-const router = require('express').Router();
+const router = require('express').Router({ mergeParams: true });
 const log4js = require('log4js');
 const mongoose = require('mongoose');
 
 // const config = require('../config');
 const queryUtils = require('../utils/query.utils');
 
-const logger = log4js.getLogger('agent.controller');
+const logger = log4js.getLogger(global.loggerName);
 const agentModel = mongoose.model('agent');
 const agentActionModel = mongoose.model('agent-action');
 

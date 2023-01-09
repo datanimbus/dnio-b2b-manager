@@ -15,13 +15,11 @@ const client = queue.getClient();
 dataStackUtils.eventsUtil.setNatsClient(client);
 
 
-const schema = new mongoose.Schema(definition, {
-	usePushEach: true
-});
+const schema = mongooseUtils.MakeSchema(definition);
 
 schema.plugin(mongooseUtils.metadataPlugin());
 
-schema.index({ name: 1, app: 1 }, { unique: '__CUSTOM_NAME_DUPLICATE_ERROR__', sparse: true, collation: { locale: 'en_US', strength: 2 } });
+schema.index({ name: 1, app: 1 }, { unique: true, sparse: true, collation: { locale: 'en_US', strength: 2 } });
 
 schema.post('save', function (error, doc, next) {
 	if ((error.code === 11000

@@ -1,4 +1,4 @@
-const router = require('express').Router();
+const router = require('express').Router({ mergeParams: true });
 const log4js = require('log4js');
 const mongoose = require('mongoose');
 const _ = require('lodash');
@@ -6,7 +6,7 @@ const _ = require('lodash');
 const queryUtils = require('../utils/query.utils');
 const commonUtils = require('../utils/common.utils');
 
-const logger = log4js.getLogger('dataFormat.controller');
+const logger = log4js.getLogger(global.loggerName);
 const dataFormatModel = mongoose.model('dataFormat');
 
 
@@ -54,7 +54,7 @@ router.post('/', async (req, res) => {
 		const payload = req.body;
 		payload.app = req.locals.app;
 		if (payload.definition && payload.definition.length > 0) {
-			const errors = commonUtils.validateDefinition(payload.definition[0].definition);
+			const errors = commonUtils.validateDefinition(payload.definition);
 			if (errors) {
 				return res.status(400).json({ message: 'Validation Failed', errors: errors });
 			}
@@ -75,7 +75,7 @@ router.put('/:id', async (req, res) => {
 	try {
 		const payload = req.body;
 		if (payload.definition && payload.definition.length > 0) {
-			const errors = commonUtils.validateDefinition(payload.definition[0].definition);
+			const errors = commonUtils.validateDefinition(payload.definition);
 			if (errors) {
 				return res.status(400).json({ message: 'Validation Failed', errors: errors });
 			}
@@ -88,10 +88,11 @@ router.put('/:id', async (req, res) => {
 		}
 		delete payload._metadata;
 		delete payload.__v;
-		// Object.keys(payload).forEach(key => {
-		// 	doc[key] = payload[key];
-		// });
-		_.merge(doc, payload);
+		delete payload.version;
+		Object.keys(payload).forEach(key => {
+			doc[key] = payload[key];
+		});
+		// _.merge(doc, payload);
 		doc._req = req;
 		const status = await doc.save();
 		res.status(200).json(status);

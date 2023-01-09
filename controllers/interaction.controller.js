@@ -1,17 +1,21 @@
-const router = require('express').Router();
+const router = require('express').Router({ mergeParams: true });
 const log4js = require('log4js');
 const mongoose = require('mongoose');
+const _ = require('lodash');
 
+const config = require('../config');
 const queryUtils = require('../utils/query.utils');
 
-const logger = log4js.getLogger('interaction.controller');
+const logger = log4js.getLogger(global.loggerName);
 const interactionModel = mongoose.model('interaction');
+const flowModel = mongoose.model('flow');
 
 
 
-router.get('/', async (req, res) => {
+router.get('/:flowId', async (req, res) => {
 	try {
 		const filter = queryUtils.parseFilter(req.query.filter);
+		filter.flowId = req.params.flowId;
 		if (req.query.countOnly) {
 			const count = await interactionModel.countDocuments(filter);
 			return res.status(200).json(count);
@@ -27,7 +31,7 @@ router.get('/', async (req, res) => {
 	}
 });
 
-router.get('/:id', async (req, res) => {
+router.get('/:flowId/:id', async (req, res) => {
 	try {
 		let doc = await interactionModel.findById(req.params.id).lean();
 		if (!doc) {
@@ -44,19 +48,18 @@ router.get('/:id', async (req, res) => {
 	}
 });
 
-router.post('/', async (req, res) => {
+
+router.post('/utils/update', async (req, res) => {
 	try {
+		const filter = req.query.filter;
 		const payload = req.body;
-		const key = payload.jsonSchema.title.toCamelCase();
-		logger.info(key);
-		let doc = await interactionModel.findOne({ key });
-		if (doc) {
-			return res.status(400).json({
-				message: 'Data Model with Same Key Exist'
+		const doc = interactionModel.findOne(filter);
+		if (!doc) {
+			return res.status(404).json({
+				message: 'Data Model Not Found'
 			});
 		}
-		payload.key = key;
-		doc = new interactionModel(payload);
+		_.merge(doc, payload);
 		const status = await doc.save(req);
 		res.status(200).json(status);
 	} catch (err) {
@@ -67,7 +70,7 @@ router.post('/', async (req, res) => {
 	}
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:flowId/:id', async (req, res) => {
 	try {
 		const payload = req.body;
 		let doc = await interactionModel.findById(req.params.id);
@@ -76,9 +79,7 @@ router.put('/:id', async (req, res) => {
 				message: 'Data Model Not Found'
 			});
 		}
-		Object.keys(payload).forEach(key => {
-			doc[key] = payload[key];
-		});
+		_.merge(doc, payload);
 		const status = await doc.save(req);
 		res.status(200).json(status);
 	} catch (err) {
@@ -89,18 +90,42 @@ router.put('/:id', async (req, res) => {
 	}
 });
 
-router.delete('/:id', async (req, res) => {
+router.get('/:flowId/:id/state', async (req, res) => {
 	try {
-		let doc = await interactionModel.findById(req.params.id);
+		let doc = await flowModel.findById(req.params.flowId).lean();
 		if (!doc) {
 			return res.status(404).json({
 				message: 'Data Model Not Found'
 			});
 		}
-		await doc.remove(req);
-		res.status(200).json({
-			message: 'Document Deleted'
+		const appcenterCon = mongoose.connections[1];
+		const dbname = config.DATA_STACK_NAMESPACE + '-' + doc.app;
+		const dataDB = appcenterCon.useDb(dbname);
+		const stateCollection = dataDB.collection('b2b.node.state');
+		const records = await stateCollection.find({ interactionId: req.params.id }).toArray();
+		res.status(200).json(records);
+	} catch (err) {
+		logger.error(err);
+		res.status(500).json({
+			message: err.message
 		});
+	}
+});
+
+router.get('/:flowId/:id/state/:stateId/data', async (req, res) => {
+	try {
+		let doc = await flowModel.findById(req.params.flowId).lean();
+		if (!doc) {
+			return res.status(404).json({
+				message: 'Data Model Not Found'
+			});
+		}
+		const appcenterCon = mongoose.connections[1];
+		const dbname = config.DATA_STACK_NAMESPACE + '-' + doc.app;
+		const dataDB = appcenterCon.useDb(dbname);
+		const stateDataCollection = dataDB.collection('b2b.node.state.data');
+		const record = await stateDataCollection.findOne({ interactionId: req.params.id, nodeId: req.params.stateId });
+		res.status(200).json(record);
 	} catch (err) {
 		logger.error(err);
 		res.status(500).json({

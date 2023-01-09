@@ -1,4 +1,4 @@
-const router = require('express').Router();
+const router = require('express').Router({ mergeParams: true });
 const log4js = require('log4js');
 const mongoose = require('mongoose');
 const _ = require('lodash');
@@ -8,7 +8,7 @@ const deployUtils = require('../utils/deploy.utils');
 const flowUtils = require('../utils/flow.utils');
 const config = require('../config');
 
-const logger = log4js.getLogger('flow.controller');
+const logger = log4js.getLogger(global.loggerName);
 const flowModel = mongoose.model('flow');
 
 
@@ -102,8 +102,8 @@ router.put('/:id', async (req, res) => {
 		// 	doc[key] = payload[key];
 		// });
 		doc._req = req;
-		doc.markModified('inputStage');
-		doc.markModified('stages');
+		doc.markModified('inputNode');
+		doc.markModified('nodes');
 		doc.markModified('dataStructures');
 		const status = await doc.save();
 		res.status(200).json(status);

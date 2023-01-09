@@ -6,10 +6,7 @@ const models = require('./models');
 const queue = require('./queue');
 const init = require('./init');
 
-const LOGGER_NAME = config.isK8sEnv() ? `[${config.hostname}] [B2B-MANAGER v${config.imageTag}]` : `[B2B-MANAGER v${config.imageTag}]`;
-const logger = log4js.getLogger(LOGGER_NAME);
-logger.level = process.env.LOG_LEVEL || 'info';
-global.loggerName = LOGGER_NAME;
+let logger = global.logger;
 
 // let baseImageVersion = require('./package.json').version;
 // const LOGGER_NAME = config.isK8sEnv() ? `[${config.appNamespace}] [${config.hostname}] [${config.serviceName} v${config.serviceVersion}]` : `[${config.serviceName} v${config.serviceVersion}]`
@@ -25,17 +22,15 @@ const appcenterCon = mongoose.createConnection(config.mongoUrl, config.mongoAppC
 appcenterCon.on('connecting', () => { logger.info(' *** Appcenter DB CONNECTING *** '); });
 appcenterCon.on('disconnected', () => { logger.error(' *** Appcenter DB LOST CONNECTION *** '); });
 appcenterCon.on('reconnect', () => { logger.info(' *** Appcenter DB RECONNECTED *** '); });
-appcenterCon.on('connected', () => { logger.info('Connected to Appcenter DB DB'); });
+appcenterCon.on('connected', () => { logger.info('Connected to Appcenter DB DB'); global.appcenterCon = appcenterCon; });
 appcenterCon.on('reconnectFailed', () => { logger.error(' *** Appcenter DB FAILED TO RECONNECT *** '); });
-global.appcenterCon = appcenterCon;
 
 const logsDB = mongoose.createConnection(config.mongoLogUrl, config.mongoLogsOptions);
 logsDB.on('connecting', () => { logger.info(` *** ${config.logsDB} CONNECTING *** `); });
 logsDB.on('disconnected', () => { logger.error(` *** ${config.logsDB} LOST CONNECTION *** `); });
 logsDB.on('reconnect', () => { logger.info(` *** ${config.logsDB} RECONNECTED *** `); });
-logsDB.on('connected', () => { logger.info(`Connected to ${config.logsDB} DB`); });
+logsDB.on('connected', () => { logger.info(`Connected to ${config.logsDB} DB`); global.logsDB = logsDB; });
 logsDB.on('reconnectFailed', () => { logger.error(` *** ${config.logsDB} FAILED TO RECONNECT *** `); });
-global.logsDB = logsDB;
 
 mongoose.connect(config.mongoAuthorUrl, config.mongoAuthorOptions).then(() => {
 	global.authorDB = mongoose.connection.db;

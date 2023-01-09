@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 
 const queryUtils = require('../utils/query.utils');
 
-const logger = log4js.getLogger('partner.controller');
+const logger = log4js.getLogger(global.loggerName);
 const partnerModel = mongoose.model('partner');
 
 

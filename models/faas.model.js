@@ -15,15 +15,15 @@ dataStackUtils.eventsUtil.setNatsClient(client);
 
 const draftDefinition = JSON.parse(JSON.stringify(definition));
 
-const schema = new mongoose.Schema(definition);
-const draftSchema = new mongoose.Schema(draftDefinition);
+const schema = mongooseUtils.MakeSchema(definition);
+const draftSchema = mongooseUtils.MakeSchema(draftDefinition);
 
 schema.plugin(mongooseUtils.metadataPlugin());
 draftSchema.plugin(mongooseUtils.metadataPlugin());
 
 
-schema.index({ name: 1, app: 1 }, { unique: '__CUSTOM_NAME_DUPLICATE_ERROR__', sparse: true, collation: { locale: 'en_US', strength: 2 } });
-schema.index({ url: 1, app: 1 }, { unique: '__CUSTOM_API_DUPLICATE_ERROR__', sparse: true, collation: { locale: 'en_US', strength: 2 } });
+schema.index({ name: 1, app: 1 }, { unique: true, name: "name", sparse: true, collation: { locale: 'en_US', strength: 2 } });
+schema.index({ url: 1, app: 1 }, { unique: true, name: "url", sparse: true, collation: { locale: 'en_US', strength: 2 } });
 
 
 schema.pre('validate', function (next) {
@@ -159,7 +159,7 @@ schema.pre('save', async function (next) {
 	if (!this.status) {
 		this.status = 'STOPPED';
 	}
-	if (!this.code) {
+	if (!this.code || this._isNew) {
 		this.code =
 			`router.get('/${this.app}/${_.camelCase(this.name)}', async (req, res)=>{
 

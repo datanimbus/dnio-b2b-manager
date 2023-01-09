@@ -8,7 +8,25 @@ const definition = {
 	},
 	'description': { 'type': 'String' },
 	'definition': {
-		'type': 'Object',
+		'type': [
+			{
+				'key': {
+					'type': 'String',
+					'required': false
+				},
+				'type': {
+					'type': 'String',
+					'required': true
+				},
+				'definition': {
+					'type': 'Object',
+					'required': false
+				},
+				'properties': {
+					'type': 'Object'
+				}
+			}
+		]
 	},
 	'app': {
 		'type': 'String',

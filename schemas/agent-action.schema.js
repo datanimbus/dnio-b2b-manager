@@ -5,6 +5,18 @@ const definition = {
     'agentId': {
         'type': 'String'
     },
+    'agentName': {
+        'type': 'String'
+    },
+    'appName': {
+        'type': 'String'
+    },
+    'flowId': {
+        'type': 'String'
+    },
+    'flowName': {
+        'type': 'String'
+    },
     'action': {
         'type': 'String'
     },

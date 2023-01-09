@@ -1,4 +1,4 @@
-const router = require('express').Router();
+const router = require('express').Router({ mergeParams: true });
 const log4js = require('log4js');
 const mongoose = require('mongoose');
 // const _ = require('lodash');
@@ -11,7 +11,7 @@ const queryUtils = require('../utils/query.utils');
 const faasModel = mongoose.model('faas');
 const faasDraftModel = mongoose.model('faas.draft');
 
-const logger = log4js.getLogger('faas.controller');
+const logger = log4js.getLogger(global.loggerName);
 const kubeutil = dataStackUtils.kubeutil;
 
 router.get('/', async (req, res) => {

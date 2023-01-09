@@ -14,34 +14,33 @@ const client = queue.getClient();
 dataStackUtils.eventsUtil.setNatsClient(client);
 
 
-const schema = new mongoose.Schema(definition, {
-	usePushEach: true,
+const schema = mongooseUtils.MakeSchema(definition, {
 	versionKey: 'version'
 });
 
-schema.index({ name: 1, app: 1 }, { unique: '__CUSTOM_NAME_DUPLICATE_ERROR__', sparse: true, collation: { locale: 'en_US', strength: 2 } });
-schema.index({ 'inputStage.options.path': 1, app: 1 }, { unique: '__CUSTOM_API_DUPLICATE_ERROR__', sparse: true, collation: { locale: 'en_US', strength: 2 } });
+schema.index({ name: 1, app: 1 }, { unique: true, sparse: true, collation: { locale: 'en_US', strength: 2 } });
+schema.index({ 'inputNode.options.path': 1, app: 1 }, { unique: true, sparse: true, collation: { locale: 'en_US', strength: 2 } });
 
 schema.plugin(mongooseUtils.metadataPlugin());
 
 schema.pre('save', function (next) {
-	if (!this.inputStage || !this.inputStage.type) {
-		return next(new Error('Input Stage is Mandatory'));
+	if (!this.inputNode || !this.inputNode.type) {
+		return next(new Error('Input Node is Mandatory'));
 	}
 	if (this.isNew) {
-		if (!this.inputStage || !this.inputStage.options) {
-			this.inputStage.options = {};
+		if (!this.inputNode || !this.inputNode.options) {
+			this.inputNode.options = {};
 		}
-		if (this.inputStage && this.inputStage.options && this.inputStage.options.path && this.inputStage.options.path.trim()) {
-			this.inputStage.options.path = this.inputStage.options.path.trim();
-			if (this.inputStage.options.path.trim().charAt(0) != '/') {
-				this.inputStage.options.path = '/' + this.inputStage.options.path;
+		if (this.inputNode && this.inputNode.options && this.inputNode.options.path && this.inputNode.options.path.trim()) {
+			this.inputNode.options.path = this.inputNode.options.path.trim();
+			if (this.inputNode.options.path.trim().charAt(0) != '/') {
+				this.inputNode.options.path = '/' + this.inputNode.options.path;
 			}
 		}
-		if (!this.inputStage.options.path || !this.inputStage.options.path.trim()) {
-			this.inputStage.options.path = '/' + _.camelCase(this.name);
+		if (!this.inputNode.options.path || !this.inputNode.options.path.trim()) {
+			this.inputNode.options.path = '/' + _.camelCase(this.name);
 		}
-		if (this.stages && this.stages.length == 1 && this.inputStage.options.contentType == 'BINARY' && this.stages[0].options.contentType == 'BINARY') {
+		if (this.nodes && this.nodes.length == 1 && this.inputNode.type == 'FILE' && this.nodes[0].type == 'FILE') {
 			this.isBinary = true;
 		}
 		if (!this.deploymentName) {
@@ -60,6 +59,7 @@ schema.post('save', function (error, doc, next) {
 	if ((error.errors && error.errors.name) || error.name === 'ValidationError' ||
 		error.message.indexOf('E11000') > -1 || error.message.indexOf('__CUSTOM_NAME_DUPLICATE_ERROR__') > -1) {
 		logger.error('flow - Flow name is already in use, not saving doc - ' + doc._id);
+		logger.error(error);
 		next(new Error('Flow name is already in use'));
 	} else {
 		next(error);
