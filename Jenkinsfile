@@ -3,7 +3,7 @@ pipeline {
 
 
     parameters{
-        string(name: 'tag', defaultValue: 'vNext', description: 'Image Tag')
+        string(name: 'tag', defaultValue: 'main', description: 'Image Tag')
         booleanParam(name: 'buildAgent', defaultValue: false, description: 'Build B2B Agents')
         booleanParam(name: 'buildAgentWatcher', defaultValue: false, description: 'Build B2B Agent Watcher')
         booleanParam(name: 'cleanBuild', defaultValue: false, description: 'Clean Build')
