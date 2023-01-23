@@ -401,7 +401,7 @@ router.post('/:id/upload', async (req, res) => {
 				let flowUrl;
 				if (config.isK8sEnv()) {
 					const flowBaseUrl = 'http://' + doc.deploymentName + '.' + doc.namespace;
-					flowUrl = flowBaseUrl + '/api/b2b' + doc.app + doc.inputNode.options.path;
+					flowUrl = flowBaseUrl + '/api/b2b/' + doc.app + doc.inputNode.options.path;
 				} else {
 					flowUrl = 'http://localhost:8080/api/b2b/' + doc.app + doc.inputNode.options.path;
 				}
