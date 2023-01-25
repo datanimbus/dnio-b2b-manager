@@ -1,15 +1,13 @@
 const log4js = require('log4js');
-// const mongoose = require('mongoose');
+const mongoose = require('mongoose');
 const { v4: uuid } = require('uuid');
 // const config = require('../config');
-
-global.authorDB.collection('av-cache').createIndex({ timestamp: 1 }, { expireAfterSeconds: 10 });
 
 const logger = log4js.getLogger(global.loggerName);
 
 async function listData(filter) {
 	try {
-		const doc = await global.authorDB.collection('av-cache').find(filter).toArray();
+		const doc = await mongoose.connection.db.collection('av-cache').find(filter).toArray();
 		return doc;
 	} catch (err) {
 		logger.error(err);
@@ -19,7 +17,7 @@ async function listData(filter) {
 
 async function getData(key) {
 	try {
-		const doc = await global.authorDB.collection('av-cache').findOne({ key });
+		const doc = await mongoose.connection.db.collection('av-cache').findOne({ key });
 		return doc;
 	} catch (err) {
 		logger.error(err);
@@ -40,7 +38,7 @@ async function setData(key, data, expireAfter) {
 			status: 'Enabled',
 			timestamp: tempTimestamp
 		};
-		const doc = await global.authorDB.collection('av-cache').findOneAndUpdate({ key }, { $set: payload }, { upsert: true });
+		const doc = await mongoose.connection.db.collection('av-cache').findOneAndUpdate({ key }, { $set: payload }, { upsert: true });
 		return doc;
 	} catch (err) {
 		logger.error(err);
@@ -53,7 +51,7 @@ async function patchData(key, data) {
 		const payload = {
 			data
 		};
-		const doc = await global.authorDB.collection('av-cache').findOneAndUpdate({ key }, { $set: payload });
+		const doc = await mongoose.connection.db.collection('av-cache').findOneAndUpdate({ key }, { $set: payload });
 		return doc;
 	} catch (err) {
 		logger.error(err);
@@ -63,7 +61,7 @@ async function patchData(key, data) {
 
 async function setStatus(key, status) {
 	try {
-		const doc = await global.authorDB.collection('av-cache').findOneAndUpdate({ key }, { status });
+		const doc = await mongoose.connection.db.collection('av-cache').findOneAndUpdate({ key }, { status });
 		return doc;
 	} catch (err) {
 		logger.error(err);
@@ -73,7 +71,7 @@ async function setStatus(key, status) {
 
 async function deleteData(key) {
 	try {
-		const status = await global.authorDB.collection('av-cache').deleteMany({ key });
+		const status = await mongoose.connection.db.collection('av-cache').deleteMany({ key });
 		return status;
 	} catch (err) {
 		logger.error(err);
