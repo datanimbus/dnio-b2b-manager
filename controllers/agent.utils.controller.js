@@ -631,7 +631,7 @@ router.post('/logs', async (req, res) => {
 			agentLogObject['macAddress'] = macAddress;
 			const agentLogDoc = new agentLogModel(agentLogObject);
 			agentLogDoc._req = req;
-			let status = agentLogDoc.save();
+			let status = await agentLogDoc.save();
 			logger.trace('Agent Action Create Status: ', status);
 			logger.trace('Agent Log Doc - ', agentLogDoc);
 		}
