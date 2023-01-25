@@ -6,6 +6,7 @@ const JWT = require('jsonwebtoken');
 const config = require('../config');
 const securityUtils = require('../utils/security.utils');
 const cacheUtils = require('../utils/cache.utils');
+const mongoCache = require('../utils/mongo.cache.utils');
 
 const logger = log4js.getLogger(global.loggerName);
 const agentModel = mongoose.model('agent');
@@ -65,6 +66,16 @@ router.post('/login', async (req, res) => {
 		temp.maxConcurrentUploads = config.maxConcurrentUploads;
 		temp.maxConcurrentDownloads = config.maxConcurrentDownloads;
 		logger.debug('Agent auth response :', temp);
+
+		/** Setting Token in Mongo DB Cache with TTL for Blacklisting 
+		 * ---START---
+		*/
+		const key = securityUtils.md5(token);
+		const expireAfter = new Date();
+		expireAfter.setHours(expireAfter.getHours() + 2);
+		mongoCache.setData(key, temp, expireAfter);
+		/** ---END--- */
+
 		res.status(200).json(temp);
 	} catch (err) {
 		logger.error(err);

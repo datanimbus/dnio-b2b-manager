@@ -34,6 +34,7 @@ logsDB.on('reconnectFailed', () => { logger.error(` *** ${config.logsDB} FAILED 
 
 mongoose.connect(config.mongoAuthorUrl, config.mongoAuthorOptions).then(() => {
 	global.authorDB = mongoose.connection.db;
+	mongoose.connection.db.collection('av-cache').createIndex({ timestamp: 1 }, { expireAfterSeconds: 10 });
 }).catch(err => {
 	logger.error(err);
 	process.exit(0);

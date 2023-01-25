@@ -3,13 +3,11 @@ const log4js = require('log4js');
 const mongoose = require('mongoose');
 const JWT = require('jsonwebtoken');
 const fs = require('fs');
-const path = require('path');
 const crypto = require('crypto');
 const FormData = require('form-data');
 const { v4: uuid } = require('uuid');
 const { zip } = require('zip-a-folder');
 const { exec } = require('child_process');
-const _ = require('lodash');
 
 const config = require('../config');
 const queryUtils = require('../utils/query.utils');
@@ -375,7 +373,7 @@ router.post('/:id/upload', async (req, res) => {
 					});
 					downloadStream.on('error', (err) => {
 						logger.error(`[${txnId}] Error streaming file - ${err}`);
-						reject(error);
+						reject(err);
 					});
 					downloadStream.on('end', () => {
 						buf = Buffer.concat(bufs);
@@ -420,7 +418,7 @@ router.post('/:id/upload', async (req, res) => {
 				});
 				if (!flowRes) {
 					logger.error(`Flow ${doc.name} is down`);
-					generateFileProcessedErrorActionForAgent(req, uploadHeaders, "Flow is not reachable");
+					generateFileProcessedErrorActionForAgent(req, uploadHeaders, 'Flow is not reachable');
 					throw new Error(`Flow ${doc.name} is down`);
 				} else if (flowRes.statusCode === 200 || flowRes.statusCode === 202) {
 					logger.info(`[${txnId}] Adding FileProcessedSuccess Request to Agent ${agentId} for the file ${uploadHeaders.originalFileName}, for the Flow ${uploadHeaders.flowName}`);
@@ -596,6 +594,30 @@ router.get('/:id/download/exec', async (req, res) => {
 	}
 });
 
+router.get('/:id/logs', async (req, res) => {
+	try {
+		const agentId = req.params.id;
+		const app = req.locals.app;
+		logger.info('Received request for fetching agent log - ', agentId, app);
+
+		const filter = queryUtils.parseFilter(req.query.filter);
+		filter.agentId = agentId;
+		filter.app = app;
+		if (req.query.countOnly) {
+			const count = await agentLogModel.countDocuments(filter);
+			return res.status(200).json(count);
+		}
+		const data = queryUtils.getPaginationData(req);
+		const docs = await agentLogModel.find(filter).select(data.select).sort(data.sort).skip(data.skip).limit(data.count).lean();
+		res.status(200).json(docs);
+	} catch (err) {
+		logger.error(err);
+		res.status(500).json({
+			message: err.message
+		});
+	}
+});
+
 router.post('/logs', async (req, res) => {
 	try {
 		const agentId = req.header('DATA-STACK-Agent-Id');
@@ -604,10 +626,10 @@ router.post('/logs', async (req, res) => {
 		const macAddress = req.header('DATA-STACK-Mac-Address');
 		const app = req.locals.app;
 		const payload = req.body;
-		logger.info(`Received request to upload agent log - `, agentId, app);
-		logger.trace(`Agent Log payload -`, JSON.stringify(payload));
+		logger.info('Received request to upload agent log - ', agentId, app);
+		logger.trace('Agent Log payload -', JSON.stringify(payload));
 		let agentLogObjectArray = JSON.parse(JSON.stringify(payload));
-		logger.trace(`Agent Log parsed payload - `, agentLogObjectArray);
+		logger.trace('Agent Log parsed payload - ', agentLogObjectArray);
 		for (let i in agentLogObjectArray) {
 			let agentLogObject = agentLogObjectArray[i];
 			agentLogObject['agentId'] = agentId;
@@ -615,13 +637,14 @@ router.post('/logs', async (req, res) => {
 			agentLogObject['app'] = app;
 			agentLogObject['ipAddress'] = ipAddress;
 			agentLogObject['macAddress'] = macAddress;
+			agentLogObject['timestamp'] = new Date(agentLogObject['timestamp']);
 			const agentLogDoc = new agentLogModel(agentLogObject);
 			agentLogDoc._req = req;
-			let status = agentLogDoc.save();
+			let status = await agentLogDoc.save();
 			logger.trace('Agent Action Create Status: ', status);
 			logger.trace('Agent Log Doc - ', agentLogDoc);
 		}
-		return res.status(200).json({ message: "Agent Log Successfully Uploaded" });
+		return res.status(200).json({ message: 'Agent Log Successfully Uploaded' });
 	} catch (err) {
 		logger.error(err);
 		res.status(500).json({
@@ -630,28 +653,7 @@ router.post('/logs', async (req, res) => {
 	}
 });
 
-router.get('/:id/logs', async (req, res) => {
-	try {
-		const agentId = req.params.id;
-		const app = req.locals.app;
-		logger.info(`Received request for fetching agent log - `, agentId, app);
-		let agentLogs = [];
-		const logs = await agentLogModel.find({ agentId: agentId, app: app });
-		if (logs.length > 0) {
-			await Promise.all(logs.map(async (doc) => {
-				agentLogs.push(doc.toObject());
-				doc._req = req;
-				await doc.save();
-			}));
-		}
-		return res.status(200).json({ agentLogs: agentLogs });
-	} catch (err) {
-		logger.error(err);
-		res.status(500).json({
-			message: err.message
-		});
-	}
-});
+
 
 router.post('/:id/agentAction', async (req, res) => {
 	try {
@@ -660,9 +662,9 @@ router.post('/:id/agentAction', async (req, res) => {
 		const action = req.header('action');
 		logger.info(`[${txnId}] Received request for adding ${action} action to TargentAgent ${targentAgentId}`);
 		let payload = JSON.parse(JSON.stringify(req.body));
-		logger.trace(`Agent Action payload -`, payload);
-		logger.trace(`Agent Action payload.metaDataInfo -`, payload.metaDataInfo);
-		logger.trace(`Agent Action payload.eventDetails -`, payload.eventDetails);
+		logger.trace('Agent Action payload -', payload);
+		logger.trace('Agent Action payload.metaDataInfo -', payload.metaDataInfo);
+		logger.trace('Agent Action payload.eventDetails -', payload.eventDetails);
 
 		if (action === 'download') {
 			let downloadMetaDataObj = generateFileDownloadMetaData(payload.metaDataInfo, payload.metaDataInfo.fileID, '', targentAgentId);
