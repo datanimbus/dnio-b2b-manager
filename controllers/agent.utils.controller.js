@@ -600,8 +600,17 @@ router.get('/:id/logs', async (req, res) => {
 		const agentId = req.params.id;
 		const app = req.locals.app;
 		logger.info(`Received request for fetching agent log - `, agentId, app);
-		const logs = await agentLogModel.find({ agentId: agentId, app: app }).lean();
-		return res.status(200).json(logs);
+
+		const filter = queryUtils.parseFilter(req.query.filter);
+		filter.agentId = agentId;
+		filter.app = app;
+		if (req.query.countOnly) {
+			const count = await agentModel.countDocuments(filter);
+			return res.status(200).json(count);
+		}
+		const data = queryUtils.getPaginationData(req);
+		const docs = await agentModel.find(filter).select(data.select).sort(data.sort).skip(data.skip).limit(data.count).lean();
+		res.status(200).json(docs);
 	} catch (err) {
 		logger.error(err);
 		res.status(500).json({
