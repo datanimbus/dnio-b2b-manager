@@ -9,7 +9,7 @@ const logger = log4js.getLogger(global.loggerName);
 router.get('/:agentId/sessions', async (req, res) => {
 	try {
 		const agentId = req.params.agentId;
-		const docs = await mongoCache.listData({ 'data._id': agentId });
+		const docs = await mongoCache.listData({ 'data.agentId': agentId });
 		return res.status(200).json(docs);
 	} catch (err) {
 		logger.error(err);

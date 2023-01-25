@@ -70,10 +70,17 @@ router.post('/login', async (req, res) => {
 		/** Setting Token in Mongo DB Cache with TTL for Blacklisting 
 		 * ---START---
 		*/
+		const tokenData = {};
+		tokenData._id = temp._id;
+		tokenData.app = temp.app;
+		tokenData.agentId = temp.agentId;
+		tokenData.name = temp.name;
+		tokenData.lastLoggedIn = temp.lastLoggedIn;
+		tokenData.token = temp.token.substr(temp.token.length - 6);
 		const key = securityUtils.md5(token);
 		const expireAfter = new Date();
 		expireAfter.setHours(expireAfter.getHours() + 2);
-		mongoCache.setData(key, temp, expireAfter);
+		mongoCache.setData(key, tokenData, expireAfter);
 		/** ---END--- */
 
 		res.status(200).json(temp);
