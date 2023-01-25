@@ -605,11 +605,11 @@ router.get('/:id/logs', async (req, res) => {
 		filter.agentId = agentId;
 		filter.app = app;
 		if (req.query.countOnly) {
-			const count = await agentModel.countDocuments(filter);
+			const count = await agentLogModel.countDocuments(filter);
 			return res.status(200).json(count);
 		}
 		const data = queryUtils.getPaginationData(req);
-		const docs = await agentModel.find(filter).select(data.select).sort(data.sort).skip(data.skip).limit(data.count).lean();
+		const docs = await agentLogModel.find(filter).select(data.select).sort(data.sort).skip(data.skip).limit(data.count).lean();
 		res.status(200).json(docs);
 	} catch (err) {
 		logger.error(err);
