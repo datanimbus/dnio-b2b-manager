@@ -413,7 +413,6 @@ router.post('/:id/upload', async (req, res) => {
 					url: flowUrl + '?interactionId=' + result._id,
 					method: 'POST',
 					headers: {
-						'Authorization': req.header('authorization'),
 						'DATA-STACK-Txn-Id': req.header('DATA-STACK-Txn-Id'),
 						'DATA-STACK-Remote-Txn-Id': req.header('DATA-STACK-Remote-Txn-Id')
 					},
