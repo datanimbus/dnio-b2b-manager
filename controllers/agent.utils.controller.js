@@ -595,6 +595,21 @@ router.get('/:id/download/exec', async (req, res) => {
 	}
 });
 
+router.get('/:id/logs', async (req, res) => {
+	try {
+		const agentId = req.params.id;
+		const app = req.locals.app;
+		logger.info(`Received request for fetching agent log - `, agentId, app);
+		const logs = await agentLogModel.find({ agentId: agentId, app: app }).lean();
+		return res.status(200).json(logs);
+	} catch (err) {
+		logger.error(err);
+		res.status(500).json({
+			message: err.message
+		});
+	}
+});
+
 router.post('/logs', async (req, res) => {
 	try {
 		const agentId = req.header('DATA-STACK-Agent-Id');
@@ -629,28 +644,7 @@ router.post('/logs', async (req, res) => {
 	}
 });
 
-router.get('/:id/logs', async (req, res) => {
-	try {
-		const agentId = req.params.id;
-		const app = req.locals.app;
-		logger.info(`Received request for fetching agent log - `, agentId, app);
-		let agentLogs = [];
-		const logs = await agentLogModel.find({ agentId: agentId, app: app });
-		if (logs.length > 0) {
-			await Promise.all(logs.map(async (doc) => {
-				agentLogs.push(doc.toObject());
-				doc._req = req;
-				await doc.save();
-			}));
-		}
-		return res.status(200).json({ agentLogs: agentLogs });
-	} catch (err) {
-		logger.error(err);
-		res.status(500).json({
-			message: err.message
-		});
-	}
-});
+
 
 router.post('/:id/agentAction', async (req, res) => {
 	try {
