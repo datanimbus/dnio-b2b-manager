@@ -24,7 +24,7 @@ router.put('/:agentId/sessions/:id/:action', async (req, res) => {
 		// const agentId = req.params.agentId;
 		const sessionId = req.params.id;
 		const action = req.params.action;
-		if (action !== 'Enabled' || action !== 'Disabled') {
+		if (action !== 'Enabled' && action !== 'Disabled') {
 			return res.status(400).json({ message: 'Invalid Action' });
 		}
 		const status = await mongoCache.setStatus(sessionId, action);
