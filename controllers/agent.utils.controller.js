@@ -3,13 +3,11 @@ const log4js = require('log4js');
 const mongoose = require('mongoose');
 const JWT = require('jsonwebtoken');
 const fs = require('fs');
-const path = require('path');
 const crypto = require('crypto');
 const FormData = require('form-data');
 const { v4: uuid } = require('uuid');
 const { zip } = require('zip-a-folder');
 const { exec } = require('child_process');
-const _ = require('lodash');
 
 const config = require('../config');
 const queryUtils = require('../utils/query.utils');
