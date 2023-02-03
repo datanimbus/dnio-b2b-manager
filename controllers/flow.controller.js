@@ -97,11 +97,10 @@ router.put('/:id', async (req, res) => {
 		delete payload.version;
 		delete payload.deploymentName;
 		delete payload.namespace;
-		delete payload.nodes;
 		_.merge(doc, payload);
-		// Object.keys(payload).forEach(key => {
-		// 	doc[key] = payload[key];
-		// });
+		if (payload.nodes && !_.isEmpty(payload.nodes)) {
+			doc.nodes = payload.nodes;
+		}
 		doc._req = req;
 		doc.markModified('inputNode');
 		doc.markModified('nodes');
