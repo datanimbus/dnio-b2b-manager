@@ -103,9 +103,9 @@ router.put('/:id', async (req, res) => {
 		delete payload.deploymentName;
 		delete payload.namespace;
 		_.merge(doc, payload, mergeCustomizer);
-		// if (payload.nodes && !_.isEmpty(payload.nodes)) {
-		// 	doc.nodes = payload.nodes;
-		// }
+		if (payload.inputNode && !_.isEmpty(payload.inputNode)) {
+			doc.inputNode = payload.inputNode;
+		}
 		doc._req = req;
 		doc.markModified('inputNode');
 		doc.markModified('nodes');
