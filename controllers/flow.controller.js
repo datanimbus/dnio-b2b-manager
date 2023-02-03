@@ -11,6 +11,11 @@ const config = require('../config');
 const logger = log4js.getLogger(global.loggerName);
 const flowModel = mongoose.model('flow');
 
+function mergeCustomizer(objValue, srcValue) {
+	if (_.isArray(objValue)) {
+		return srcValue;
+	}
+}
 
 router.get('/', async (req, res) => {
 	try {
@@ -97,10 +102,10 @@ router.put('/:id', async (req, res) => {
 		delete payload.version;
 		delete payload.deploymentName;
 		delete payload.namespace;
-		_.merge(doc, payload);
-		if (payload.nodes && !_.isEmpty(payload.nodes)) {
-			doc.nodes = payload.nodes;
-		}
+		_.merge(doc, payload, mergeCustomizer);
+		// if (payload.nodes && !_.isEmpty(payload.nodes)) {
+		// 	doc.nodes = payload.nodes;
+		// }
 		doc._req = req;
 		doc.markModified('inputNode');
 		doc.markModified('nodes');
