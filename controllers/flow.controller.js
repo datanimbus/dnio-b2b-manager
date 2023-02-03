@@ -106,6 +106,9 @@ router.put('/:id', async (req, res) => {
 		if (payload.inputNode && !_.isEmpty(payload.inputNode)) {
 			doc.inputNode = payload.inputNode;
 		}
+		if (payload.nodes && !_.isEmpty(payload.nodes)) {
+			doc.nodes = payload.nodes;
+		}
 		doc._req = req;
 		doc.markModified('inputNode');
 		doc.markModified('nodes');
