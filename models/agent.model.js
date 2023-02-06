@@ -25,9 +25,10 @@ schema.index({ name: 1, app: 1 }, { unique: true, sparse: true, collation: { loc
 schema.index({ agentId: 1 });
 
 schema.post('save', function (error, doc, next) {
+	logger.error(error);
 	if ((error.code === 11000
-		|| error.message.indexOf('__CUSTOM_NAME_DUPLICATE_ERROR__') > -1
-		|| error.message.indexOf('E11000') > -1
+		|| error?.message?.indexOf('__CUSTOM_NAME_DUPLICATE_ERROR__') > -1
+		|| error?.message?.indexOf('E11000') > -1
 	)) {
 		next(new Error('Agent name is already in use'));
 	} else {
