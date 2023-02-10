@@ -57,6 +57,7 @@ router.post('/:id/init', async (req, res) => {
 			});
 		}
 		// const flows = await flowModel.find({ app: req.locals.app, $or: [{ 'inputNode.options.agentId': agentId }, { 'nodes.options.agentId': agentId }] }).select('_id inputNode nodes').lean();
+		logger.info('filter - ',{ app: req.params.app, $or: [{ 'inputNode.options.agents.agentId': agentId }, { 'nodes.options.agents.agentId': agentId }] });
 		const flows = await flowModel.find({ app: req.params.app, $or: [{ 'inputNode.options.agents.agentId': agentId }, { 'nodes.options.agents.agentId': agentId }] }).lean();
 		logger.trace(`[${txnId}] Flows found - ${flows.map(_d => _d._id)}`);
 		// const allFlows = [];
