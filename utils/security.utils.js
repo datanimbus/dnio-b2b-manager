@@ -32,8 +32,8 @@ async function executeCipher(txnId, action, app, text) {
 	logger.debug(`[${txnId}] Exec. thread :: cipher`);
 	const data = await getKeys(app);
 	return await new Promise((resolve, reject) => {
-		const baseKey = data.baseKey;
-		const baseCert = data.baseCert;
+		const appEncryptionKey = data.appEncryptionKey;
+		// const baseCert = data.baseCert;
 		const encryptionKey = data.encryptionKey;
 		let responseSent = false;
 		const filePath = path.join(process.cwd(), 'threads', 'cipher.js');
@@ -44,8 +44,8 @@ async function executeCipher(txnId, action, app, text) {
 		const worker = new Worker(filePath, {
 			workerData: {
 				text,
-				baseKey,
-				baseCert,
+				appEncryptionKey,
+				// baseCert,
 				encryptionKey,
 				action
 			}

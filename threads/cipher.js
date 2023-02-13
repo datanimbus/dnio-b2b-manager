@@ -5,21 +5,21 @@ const IV_LENGTH = 16;
 const action = workerData.action;
 const text = workerData.text;
 const encryptionKey = workerData.encryptionKey;
-const baseKey = workerData.baseKey;
-const baseCert = workerData.baseCert;
+const appEncryptionKey = workerData.appEncryptionKey;
+
 const SECRET = '34857057658800771270426551038148';
 
 let resultData;
 try {
 	switch (action) {
 	case 'encrypt': {
-		const cert = decrypt(baseCert, encryptionKey);
-		resultData = encryptUsingPublicKey(text, cert);
+		const cert = decrypt(appEncryptionKey, encryptionKey);
+		resultData = encrypt(text, cert);
 		break;
 	}
 	case 'decrypt': {
-		const key = decrypt(baseKey, encryptionKey);
-		resultData = decryptUsingPrivateKey(text, key);
+		const key = decrypt(appEncryptionKey, encryptionKey);
+		resultData = decrypt(text, key);
 		break;
 	}
 	}
@@ -49,20 +49,20 @@ function decryptUsingPrivateKey(text, key) {
 	return decrypted.toString();
 }
 
-// function encrypt(plainText, secret) {
-// 	const key = crypto.createHash('sha256').update(secret).digest('base64').substring(0, 32);
-// 	const iv = crypto.randomBytes(IV_LENGTH);
-// 	const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
-// 	let cipherText;
-// 	try {
-// 		cipherText = cipher.update(plainText, 'utf8', 'hex');
-// 		cipherText += cipher.final('hex');
-// 		cipherText = iv.toString('hex') + ':' + cipherText;
-// 	} catch (e) {
-// 		cipherText = null;
-// 	}
-// 	return cipherText;
-// }
+function encrypt(plainText, secret) {
+	const key = crypto.createHash('sha256').update(secret).digest('base64').substring(0, 32);
+	const iv = crypto.randomBytes(IV_LENGTH);
+	const cipher = crypto.createCipheriv('aes-256-cbc', key, iv);
+	let cipherText;
+	try {
+		cipherText = cipher.update(plainText, 'utf8', 'hex');
+		cipherText += cipher.final('hex');
+		cipherText = iv.toString('hex') + ':' + cipherText;
+	} catch (e) {
+		cipherText = null;
+	}
+	return cipherText;
+}
 
 
 function decrypt(cipherText, secret) {
