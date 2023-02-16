@@ -184,8 +184,6 @@ function getUrlParams(tempUrl, url) {
 	const values = {};
 	let tempUrlSegment = tempUrl.split('/').filter(_d => _d != '');
 	let urlSegment = url.split('/').filter(_d => _d != '');
-	tempUrlSegment.shift();
-	urlSegment.shift();
 	tempUrlSegment.forEach((_k, i) => {
 		if (_k.startsWith('{') && _k.endsWith('}') && urlSegment[i] != '') {
 			values[_k] = urlSegment[i];
