@@ -18,7 +18,7 @@ const definition = {
 		'type': 'Number',
 		'default': 1
 	},
-	'runningVersion': {
+	'draftVersion': {
 		'type': 'Number'
 	},
 	'runningFlow': {					 //Internal
@@ -37,6 +37,9 @@ const definition = {
 		'type': 'String',
 		'enum': ['Pending', 'Stopped', 'Error', 'Active', 'Draft'],
 		'default': 'Draft'
+	},
+	"lastInvoked": {
+		'type': 'Date'
 	},
 	'inputNode': { 'type': 'Object' },
 	'nodes': { 'type': 'Object' },

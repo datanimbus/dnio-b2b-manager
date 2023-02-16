@@ -1,20 +1,25 @@
+const _ = require('lodash');
 const log4js = require('log4js');
 const mongoose = require('mongoose');
-const dataStackUtils = require('@appveen/data.stack-utils');
-// const utils = require('@appveen/utils');
-const _ = require('lodash');
 
-const config = require('../config');
+const dataStackUtils = require('@appveen/data.stack-utils');
+
 const queue = require('../queue');
-const definition = require('../schemas/flow.schema').definition;
+const config = require('../config');
 const mongooseUtils = require('../utils/mongoose.utils');
+const definition = require('../schemas/flow.schema').definition;
 
 const logger = log4js.getLogger(global.loggerName);
+
 const client = queue.getClient();
 dataStackUtils.eventsUtil.setNatsClient(client);
 
+const draftDefinition = JSON.parse(JSON.stringify(definition));
 
 const schema = mongooseUtils.MakeSchema(definition, {
+	versionKey: 'version'
+});
+const draftSchema = mongooseUtils.MakeSchema(draftDefinition, {
 	versionKey: 'version'
 });
 
@@ -22,6 +27,8 @@ schema.index({ name: 1, app: 1 }, { unique: true, sparse: true, collation: { loc
 schema.index({ 'inputNode.options.path': 1, app: 1 }, { unique: true, sparse: true, collation: { locale: 'en_US', strength: 2 } });
 
 schema.plugin(mongooseUtils.metadataPlugin());
+draftSchema.plugin(mongooseUtils.metadataPlugin());
+
 
 schema.pre('save', function (next) {
 	if (!this.inputNode || !this.inputNode.type) {
@@ -54,6 +61,44 @@ schema.pre('save', function (next) {
 	next();
 });
 
+draftSchema.pre('save', function (next) {
+	if (!this.inputNode || !this.inputNode.type) {
+		return next(new Error('Input Node is Mandatory'));
+	}
+	if (this.isNew) {
+		if (!this.inputNode || !this.inputNode.options) {
+			this.inputNode.options = {};
+		}
+		if (this.inputNode && this.inputNode.options && this.inputNode.options.path && this.inputNode.options.path.trim()) {
+			this.inputNode.options.path = this.inputNode.options.path.trim();
+			if (this.inputNode.options.path.trim().charAt(0) != '/') {
+				this.inputNode.options.path = '/' + this.inputNode.options.path;
+			}
+		}
+		if (!this.inputNode.options.path || !this.inputNode.options.path.trim()) {
+			this.inputNode.options.path = '/' + _.camelCase(this.name);
+		}
+		if (this.nodes && this.nodes.length == 1 && this.inputNode.type == 'FILE' && this.nodes[0].type == 'FILE') {
+			this.isBinary = true;
+		}
+		if (!this.deploymentName) {
+			this.deploymentName = 'b2b-' + _.camelCase(this.name).toLowerCase();
+		}
+		if (!this.namespace) {
+			this.namespace = (config.DATA_STACK_NAMESPACE + '-' + this.app).toLowerCase();
+		}
+	}
+	this.increment();
+	next();
+});
+
+
+schema.pre('save', mongooseUtils.generateId('FLOW', 'b2b.flow', null, 4, 2000));
+
+
+schema.pre('save', dataStackUtils.auditTrail.getAuditPreSaveHook('b2b.flow'));
+
+
 
 schema.post('save', function (error, doc, next) {
 	if ((error.errors && error.errors.name) || error.name === 'ValidationError' ||
@@ -67,15 +112,7 @@ schema.post('save', function (error, doc, next) {
 });
 
 
-schema.pre('save', mongooseUtils.generateId('FLOW', 'b2b.flow', null, 4, 2000));
-
-schema.pre('save', dataStackUtils.auditTrail.getAuditPreSaveHook('b2b.flow'));
-
 schema.post('save', dataStackUtils.auditTrail.getAuditPostSaveHook('b2b.flow.audit', client, 'auditQueue'));
-
-schema.pre('remove', dataStackUtils.auditTrail.getAuditPreRemoveHook());
-
-schema.post('remove', dataStackUtils.auditTrail.getAuditPostRemoveHook('b2b.flow.audit', client, 'auditQueue'));
 
 
 schema.post('save', function (doc) {
@@ -89,6 +126,14 @@ schema.post('save', function (doc) {
 	}
 });
 
+
+
+schema.pre('remove', dataStackUtils.auditTrail.getAuditPreRemoveHook());
+
+
+schema.post('remove', dataStackUtils.auditTrail.getAuditPostRemoveHook('b2b.flow.audit', client, 'auditQueue'));
+
+
 schema.post('remove', function (doc) {
 	if (!doc._req) {
 		doc._req = {};
@@ -98,3 +143,4 @@ schema.post('remove', function (doc) {
 
 
 mongoose.model('flow', schema, 'b2b.flows');
+mongoose.model('flow.draft', schema, 'b2b.flows.draft');
