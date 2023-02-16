@@ -29,6 +29,7 @@ const README_FILE = './generatedAgent/scriptFiles/README.md';
 
 let fileIDDownloadingList = {};
 
+
 router.get('/count', async (req, res) => {
 	try {
 		const filter = queryUtils.parseFilter(req.query.filter);
@@ -654,8 +655,6 @@ router.post('/logs', async (req, res) => {
 	}
 });
 
-
-
 router.post('/:id/agentAction', async (req, res) => {
 	try {
 		const targentAgentId = req.params.id;
@@ -685,6 +684,8 @@ router.post('/:id/agentAction', async (req, res) => {
 	}
 });
 
+
+
 function createConf(config) {
 	let str = '';
 	Object.keys(config).forEach(_k => {
@@ -693,7 +694,6 @@ function createConf(config) {
 	});
 	return str;
 }
-
 
 function zipAFolder(src, dest) {
 	return zip(src, dest);

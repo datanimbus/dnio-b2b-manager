@@ -21,6 +21,7 @@ if (dockerReg.length > 0 && !dockerReg.endsWith('/') && dockerRegistryType != 'E
 let flowBaseImage = `${dockerReg}data.stack.b2b.base:${config.imageTag}`;
 if (dockerRegistryType == 'ECR') flowBaseImage = `${dockerReg}:data.stack.b2b.base:${config.imageTag}`;
 
+
 router.get('/count', async (req, res) => {
 	try {
 		const filter = queryUtils.parseFilter(req.query.filter);
@@ -41,7 +42,6 @@ router.get('/count', async (req, res) => {
 		});
 	}
 });
-
 
 router.put('/:id/init', async (req, res) => {
 	try {
@@ -92,6 +92,10 @@ router.put('/:id/deploy', async (req, res) => {
 			doc.status = 'Active';
 			doc.isNew = false;
 			res.status(200).json({ message: 'Flow Deployed' });
+		} else {
+			doc.status = 'Pending';
+			doc.isNew = false;
+			res.status(201).json({ message: 'Flow Deployment Started' });
 		}
 	} catch (err) {
 		logger.error(err);
