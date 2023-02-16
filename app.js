@@ -58,7 +58,7 @@ app.use((req, res, next) => {
 
 //testing comment
 
-app.use(['/b2b/pipes'], require('./router'));
+app.use(['/b2b/pipes'], require('./utils/flow.auth'), require('./router'));
 
 app.use(express.json({ inflate: true, limit: config.MAX_JSON_SIZE }));
 app.use(express.urlencoded({ extended: true }));
@@ -69,7 +69,7 @@ app.use(fileUpload({
 	useTempFiles: true,
 	tempFileDir: './uploads'
 }));
-app.use(['/bm', '/b2b/bm'], AuthCacheMW({ permittedUrls: permittedUrls, secret: config.RBAC_JWT_KEY, decodeOnly: true }), require('./controllers'));
+app.use(['/bm', '/b2b/bm'], require('./utils/auth'), require('./controllers'));
 
 const server = app.listen(config.port, () => {
 	logger.info('HTTP Server is listening on:', config.port);

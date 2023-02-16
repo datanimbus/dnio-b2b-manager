@@ -49,26 +49,25 @@ router.get('/:flowId/:id', async (req, res) => {
 });
 
 
-router.post('/utils/update', async (req, res) => {
-	try {
-		const filter = req.query.filter;
-		const payload = req.body;
-		const doc = interactionModel.findOne(filter);
-		if (!doc) {
-			return res.status(404).json({
-				message: 'Data Model Not Found'
-			});
-		}
-		_.merge(doc, payload);
-		const status = await doc.save(req);
-		res.status(200).json(status);
-	} catch (err) {
-		logger.error(err);
-		res.status(500).json({
-			message: err.message
-		});
-	}
-});
+// router.post('/:flowId/utils/update', async (req, res) => {
+// 	try {
+// 		const payload = req.body;
+// 		let doc = await interactionModel.findById(req.params.id);
+// 		if (!doc) {
+// 			return res.status(404).json({
+// 				message: 'Data Model Not Found'
+// 			});
+// 		}
+// 		_.merge(doc, payload);
+// 		const status = await doc.save(req);
+// 		res.status(200).json(status);
+// 	} catch (err) {
+// 		logger.error(err);
+// 		res.status(500).json({
+// 			message: err.message
+// 		});
+// 	}
+// });
 
 router.put('/:flowId/:id', async (req, res) => {
 	try {
