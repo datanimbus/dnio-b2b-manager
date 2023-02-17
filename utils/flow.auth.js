@@ -62,9 +62,6 @@ function compareURL(tempUrl, url) {
 	let urlSegment = url.split('/').filter(_d => _d != '');
 	if (tempUrlSegment.length != urlSegment.length) return false;
 
-	tempUrlSegment.shift();
-	urlSegment.shift();
-
 	let flag = tempUrlSegment.every((_k, i) => {
 		if (_k.startsWith('{') && _k.endsWith('}') && urlSegment[i] != '') return true;
 		return _k === urlSegment[i];

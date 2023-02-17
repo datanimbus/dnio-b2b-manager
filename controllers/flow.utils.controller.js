@@ -1,23 +1,28 @@
-const router = require('express').Router({ mergeParams: true });
 const log4js = require('log4js');
 const mongoose = require('mongoose');
+const yamljs = require('json-to-pretty-yaml');
+const router = require('express').Router({ mergeParams: true });
 
-// const codeGen = require('../code-gen/flows');
-// const deployUtils = require('../utils/deploy.utils');
+const dataStackUtils = require('@appveen/data.stack-utils');
+
+const config = require('../config');
 const k8sUtils = require('../utils/k8s.utils');
 const queryUtils = require('../utils/query.utils');
 const routerUtils = require('../utils/router.utils');
-const config = require('../config');
-const yamljs = require('json-to-pretty-yaml');
+
 
 const logger = log4js.getLogger(global.loggerName);
+
 const flowModel = mongoose.model('flow');
+const draftFlowModel = mongoose.model('flow.draft');
+
 
 let dockerRegistryType = process.env.DOCKER_REGISTRY_TYPE ? process.env.DOCKER_REGISTRY_TYPE : '';
 if (dockerRegistryType.length > 0) dockerRegistryType = dockerRegistryType.toUpperCase();
 
 let dockerReg = process.env.DOCKER_REGISTRY_SERVER ? process.env.DOCKER_REGISTRY_SERVER : '';
 if (dockerReg.length > 0 && !dockerReg.endsWith('/') && dockerRegistryType != 'ECR') dockerReg += '/';
+
 let flowBaseImage = `${dockerReg}data.stack.b2b.base:${config.imageTag}`;
 if (dockerRegistryType == 'ECR') flowBaseImage = `${dockerReg}:data.stack.b2b.base:${config.imageTag}`;
 
@@ -70,33 +75,119 @@ router.put('/:id/init', async (req, res) => {
 
 router.put('/:id/deploy', async (req, res) => {
 	try {
-		const doc = await flowModel.findById(req.params.id).lean();
+		let id = req.params.id;
+		let txnId = req.header('txnId');
+		let socket = req.app.get('socket');
+
+		logger.info(`[${txnId}] Flow deployment request received :: ${id}`);
+
+
+		let user = req.user;
+		let isSuperAdmin = user.isSuperAdmin;
+		let verifyDeploymentUser = config.verifyDeploymentUser;
+
+		logger.debug(`[${txnId}] User details - ${JSON.stringify({ user, isSuperAdmin, verifyDeploymentUser })}`);
+
+
+		const doc = await flowModel.findById(id);
 		if (!doc) {
+			logger.error(`[${txnId}] Flow data not found for id :: ${id}`);
 			return res.status(400).json({ message: 'Invalid Flow' });
 		}
-		// await codeGen.createProject(doc);
+
+		const oldFlowObj = JSON.parse(JSON.stringify(doc));
+		logger.debug(`[${txnId}] Flow data found`);
+		logger.trace(`[${txnId}] Flow data found :: ${JSON.stringify(doc)}`);
+
+
+		if (doc.status === 'Active' && !doc.draftVersion) {
+			logger.error(`[${txnId}] Flow is already running, cannot deploy again`);
+			return res.status(400).json({ message: 'No changes to redeploy' });
+		} else if (doc.status != 'Draft' && !doc.draftVersion) {
+			logger.error(`[${txnId}] Flow has no draft version for deployment`);
+			return res.status(400).json({ message: 'No changes to redeploy' });
+		} else if (doc.status === 'Draft') {
+			logger.debug(`[${txnId}] Flow is in Draft status`);
+			if (verifyDeploymentUser && !isSuperAdmin && doc._metadata && doc._metadata.lastUpdatedBy == user) {
+				logger.error(`[${txnId}] Self deployment not allowed ::  ${{ lastUpdatedBy: doc._metadata.lastUpdatedBy, currentUser: user }}`);
+				return res.status(403).json({ message: 'You cannot deploy your own changes' });
+			}
+		} else {
+			logger.debug(`[${txnId}] Flow is not in draft status, checking in draft collection :: ${doc.status}`);
+
+			const draftDoc = await draftFlowModel.findOne({ _id: id, '_metadata.deleted': false });
+
+			if (!draftDoc) {
+				logger.error(`[${txnId}] Flow has no draft version for deployment`);
+				return res.status(400).json({ message: 'No changes to redeploy' });
+			}
+			logger.debug(`[${txnId}] Flow data found in draft collection`);
+			logger.trace(`[${txnId}] Flow draft data :: ${JSON.stringify(draftDoc)}`);
+
+			if (verifyDeploymentUser && !isSuperAdmin && draftDoc._metadata && draftDoc._metadata.lastUpdatedBy == user) {
+				logger.error(`[${txnId}] Self deployment not allowed :: ${{ lastUpdatedBy: draftDoc._metadata.lastUpdatedBy, currentUser: user }}`);
+				return res.status(400).json({ message: 'You cannot deploy your own changes' });
+			}
+
+			if (draftDoc && draftDoc.app != doc.app) {
+				logger.error(`[${txnId}] App change not permitted`);
+				return res.status(400).json({ message: 'App change not permitted' });
+			}
+
+			const newFlowObj = draftDoc.toObject();
+			delete newFlowObj.__v;
+			delete newFlowObj._metadata;
+			Object.assign(doc, newFlowObj);
+			draftDoc._req = req;
+			await draftDoc.remove();
+		}
+
+		doc.version = oldFlowObj.version;
+		doc.draftVersion = null;
+		doc.status = 'Pending';
+		doc._req = req;
+		doc._oldData = oldFlowObj;
+		
+
 		if (config.isK8sEnv() && !doc.isBinary) {
-			// const status = await deployUtils.deploy(doc, 'flow');
 			doc.image = flowBaseImage;
+
 			let status = await k8sUtils.upsertService(doc);
 			status = await k8sUtils.upsertDeployment(doc);
+			
 			logger.info('Deploy API called');
 			logger.debug(status);
+
 			if (status.statusCode != 200 && status.statusCode != 202) {
 				return res.status(status.statusCode).json({ message: 'Unable to deploy Flow' });
 			}
 			doc.status = 'Pending';
 			doc.isNew = false;
-			res.status(200).json({ message: 'Flow Deployed' });
+			
 		} else if (doc.isBinary) {
 			doc.status = 'Active';
 			doc.isNew = false;
-			res.status(200).json({ message: 'Flow Deployed' });
+
 		} else {
 			doc.status = 'Pending';
 			doc.isNew = false;
-			res.status(201).json({ message: 'Flow Deployment Started' });
 		}
+
+
+		await doc.save();
+
+
+		socket.emit('flowStatus', {
+			_id: id,
+			app: doc.app,
+			url: doc.url,
+			port: doc.port,
+			deploymentName: doc.deploymentName,
+			namespace: doc.namespace,
+			message: 'Deployed'
+		});
+
+		res.status(200).json({ message: 'Flow Deployed' });
 	} catch (err) {
 		logger.error(err);
 		if (typeof err === 'string') {
@@ -112,27 +203,33 @@ router.put('/:id/deploy', async (req, res) => {
 
 router.put('/:id/repair', async (req, res) => {
 	try {
+		logger.info('Flow repair API called');
+
 		const doc = await flowModel.findById(req.params.id).lean();
 		if (!doc) {
 			return res.status(400).json({ message: 'Invalid Flow' });
 		}
-		// await codeGen.createProject(doc, req.header('txnId'));
+		
 		if (config.isK8sEnv()) {
-			// const status = await deployUtils.repair(doc, 'flow');
 			doc.image = flowBaseImage;
 			let status = await k8sUtils.deleteDeployment(doc);
 			status = await k8sUtils.deleteService(doc);
 			status = await k8sUtils.upsertService(doc);
 			status = await k8sUtils.upsertDeployment(doc);
-			logger.info('Repair API called');
+
 			logger.debug(status);
+			
 			if (status.statusCode !== 200 && status.statusCode !== 202) {
 				return res.status(status.statusCode).json({ message: 'Unable to repair Flow' });
 			}
 		}
+
 		doc.status = 'Pending';
 		doc.isNew = false;
 		doc._req = req;
+
+		await doc.save();
+		
 		res.status(200).json({ message: 'Flow Repaired' });
 	} catch (err) {
 		logger.error(err);
@@ -149,22 +246,57 @@ router.put('/:id/repair', async (req, res) => {
 
 router.put('/:id/start', async (req, res) => {
 	try {
-		const doc = await flowModel.findById(req.params.id).lean();
+		let id = req.params.id;
+		let txnId = req.get('TxnId');
+		let socket = req.app.get('socket');
+		logger.info(`[${txnId}] Flow start request received :: ${id}`);
+
+		const doc = await flowModel.findById(req.params.id);
 		if (!doc) {
 			return res.status(400).json({ message: 'Invalid Flow' });
 		}
+
+		logger.debug(`[${txnId}] Flow data found for id :: ${id}`);
+		logger.trace(`[${txnId}] Flow data :: ${JSON.stringify(doc)}`);
+
+
+		if (doc.status === 'Active') {
+			logger.error(`[${txnId}] Flow is already running, cant start again`);
+			return res.status(400).json({ message: 'Can\'t restart a running flow' });
+		}
+
+
+		logger.info(`[${txnId}] Scaling up deployment :: ${doc.deploymentName}`);
+
 		if (config.isK8sEnv() && !doc.isBinary) {
-			// const status = await deployUtils.start(doc);
 			const status = await k8sUtils.scaleDeployment(doc, 1);
-			logger.info('Start API called');
-			logger.debug(status);
+
+			logger.trace(`[${txnId}] Deployment Scaled status :: ${JSON.stringify(status)}`);
+
 			if (status.statusCode !== 200 && status.statusCode !== 202) {
 				return res.status(status.statusCode).json({ message: 'Unable to start Flow' });
 			}
 		}
+
 		doc.status = 'Pending';
 		doc.isNew = false;
 		doc._req = req;
+		await doc.save();
+
+		let eventId = 'EVENT_FLOW_START';
+		logger.debug(`[${txnId}] Publishing Event :: ${eventId}`);
+		dataStackUtils.eventsUtil.publishEvent(eventId, 'flow', req, doc, null);
+
+		socket.emit('flowStatus', {
+			_id: id,
+			app: doc.app,
+			url: doc.url,
+			port: doc.port,
+			deploymentName: doc.deploymentName,
+			namespace: doc.namespace,
+			message: 'Started'
+		});
+
 		res.status(200).json({ message: 'Flow Started' });
 	} catch (err) {
 		logger.error(err);
@@ -180,14 +312,28 @@ router.put('/:id/start', async (req, res) => {
 });
 
 router.put('/:id/stop', async (req, res) => {
-	logger.info(`Flow stop request :: ${req.params.id}`);
 	try {
-		const doc = await flowModel.findById(req.params.id);
+		let id = req.params.id;
+		let txnId = req.get('TxnId');
+		let socket = req.app.get('socket');
+		logger.info(`[${txnId}] Flow stop request received :: ${id}`);
+
+		const doc = await flowModel.findById(id);
 		if (!doc) {
 			return res.status(400).json({ message: 'Invalid Flow' });
 		}
+
+		logger.debug(`[${txnId}] Flow data found for id :: ${id}`);
+		logger.trace(`[${txnId}] Flow data :: ${JSON.stringify(doc)}`);
+
+		if (doc.status !== 'Active') {
+			logger.debug(`[${txnId}] Flow is not running, can't stop again`);
+			return res.status(400).json({ message: 'Can\'t stop an inactive flow' });
+		}
+
+		logger.info(`[${txnId}] Scaling down deployment :: ${JSON.stringify({ namespace: doc.namespace, deploymentName: doc.deploymentName })}`);
+
 		if (config.isK8sEnv() && !doc.isBinary) {
-			// const status = await deployUtils.stop(doc);
 			const status = await k8sUtils.scaleDeployment(doc, 0);
 			logger.info('Stop API called');
 			logger.debug(status);
@@ -196,11 +342,74 @@ router.put('/:id/stop', async (req, res) => {
 				return res.status(status.statusCode).json({ message: 'Unable to stop Flow' });
 			}
 		}
+
+		let eventId = 'EVENT_FLOW_STOP';
+		logger.debug(`[${txnId}] Publishing Event - ${eventId}`);
+		dataStackUtils.eventsUtil.publishEvent(eventId, 'flow', req, doc, null);
+
+		socket.emit('flowStatus', {
+			_id: id,
+			app: doc.app,
+			url: doc.url,
+			port: doc.port,
+			deploymentName: doc.deploymentName,
+			namespace: doc.namespace,
+			message: 'Stopped'
+		});
+
 		doc.status = 'Stopped';
 		doc.isNew = false;
 		doc._req = req;
 		await doc.save();
+
 		res.status(200).json({ message: 'Flow Stopped' });
+	} catch (err) {
+		logger.error(err);
+		if (typeof err === 'string') {
+			return res.status(500).json({
+				message: err
+			});
+		}
+		res.status(500).json({
+			message: err.message
+		});
+	}
+});
+
+router.put('/:id/draftDelete', async (req, res) => {
+	try {
+		let id = req.params.id;
+		let txnId = req.get('TxnId');
+		logger.info(`[${txnId}] Flow draft delete request received :: ${id}`);
+
+		let doc = await flowModel.findById(id);
+		if (!doc) {
+			logger.error(`[${txnId}] Flow data not found for id :: ${id}`);
+			return res.status(404).json({ message: 'Invalid Flow' });
+		}
+
+		let draftDoc = await draftFlowModel.findById(id);
+		if (!draftDoc) {
+			logger.debug(`[${txnId}] Flow draft data not found for id :: ${id}`);
+			return res.status(404).json({ message: 'Draft not found for ' + id });
+		}
+
+		logger.debug(`[${txnId}] Flow draft data found for id :: ${id}`);
+		logger.trace(`[${txnId}] Flow draft data :: ${JSON.stringify(draftDoc)}`);
+
+		draftDoc._req = req;
+		await draftDoc.remove();
+
+		logger.debug(`[${txnId}] Flow data found for id :: ${id}`);
+		logger.trace(`[${txnId}] Flow data :: ${JSON.stringify(doc)}`);
+
+		doc.draftVersion = null;
+		doc._req = req;
+		await doc.remove();
+
+		dataStackUtils.eventsUtil.publishEvent('EVENT_FLOW_DISCARD_DRAFT', 'flow', req, doc);
+
+		res.status(200).json({ message: 'Draft deleted for ' + id });
 	} catch (err) {
 		logger.error(err);
 		if (typeof err === 'string') {
