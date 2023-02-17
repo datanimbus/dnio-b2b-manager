@@ -5,6 +5,7 @@ const _ = require('lodash');
 
 const logger = log4js.getLogger(global.loggerName);
 const interactionModal = mongoose.model('interaction');
+const flowModal = mongoose.model('flow');
 
 function validatePayload(payload) {
 	if (!payload.name) {
@@ -35,6 +36,13 @@ async function createInteraction(req, options) {
 		interactionData.status = 'PENDING';
 
 		const doc = new interactionModal(interactionData);
+
+
+		let flowDoc = await flowModal.findById(flowId);
+		flowDoc.lastInvoked = doc._metadata.createdAt;
+		flowDoc.save();
+		
+
 		doc._req = req;
 		const status = await doc.save();
 		logger.info(`Interaction Created for [${req.headers['data-stack-txn-id']}] [${req.headers['data-stack-remote-txn-id']}]`);
