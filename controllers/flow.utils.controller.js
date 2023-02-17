@@ -405,7 +405,7 @@ router.put('/:id/draftDelete', async (req, res) => {
 
 		doc.draftVersion = null;
 		doc._req = req;
-		await doc.remove();
+		await doc.save();
 
 		dataStackUtils.eventsUtil.publishEvent('EVENT_FLOW_DISCARD_DRAFT', 'flow', req, doc);
 
