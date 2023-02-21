@@ -58,7 +58,7 @@ router.post('/:id/init', async (req, res) => {
 			});
 		}
 		// const flows = await flowModel.find({ app: req.locals.app, $or: [{ 'inputNode.options.agentId': agentId }, { 'nodes.options.agentId': agentId }] }).select('_id inputNode nodes').lean();
-		logger.info('filter - ',{ app: req.params.app, $or: [{ 'inputNode.options.agents.agentId': agentId }, { 'nodes.options.agents.agentId': agentId }] });
+		// logger.info('filter - ', { app: req.params.app, $or: [{ 'inputNode.options.agents.agentId': agentId }, { 'nodes.options.agents.agentId': agentId }] });
 		const flows = await flowModel.find({ app: req.params.app, $or: [{ 'inputNode.options.agents.agentId': agentId }, { 'nodes.options.agents.agentId': agentId }] }).lean();
 		logger.trace(`[${txnId}] Flows found - ${flows.map(_d => _d._id)}`);
 		// const allFlows = [];
@@ -94,7 +94,7 @@ router.post('/:id/heartbeat', async (req, res) => {
 	try {
 		const txnId = req.header('txnId');
 		const agentId = req.params.id;
-		logger.info(`[${txnId}] [${agentId}] Processing Agent Init Action`);
+		logger.info(`[${txnId}] [${agentId}] Processing Agent Hearbeat Action`);
 		logger.trace(`[${txnId}] [${agentId}] Agent Init Action Body -`, JSON.stringify(req.body));
 
 		let doc = await agentModel.findOne({ agentId: agentId }).lean();
@@ -128,7 +128,9 @@ router.post('/:id/heartbeat', async (req, res) => {
 
 router.get('/:id/password', async (req, res) => {
 	try {
+		const txnId = req.header('txnId');
 		const agentId = req.params.id;
+		logger.info(`[${txnId}] Processing Get Agent Password Action of - `, agentId);
 		let doc = await agentModel.findById({ _id: agentId }).lean();
 		if (!doc) {
 			return res.status(404).json({
@@ -152,14 +154,30 @@ router.get('/:id/password', async (req, res) => {
 
 router.put('/:id/password', async (req, res) => {
 	try {
+		const txnId = req.header('txnId');
 		const agentId = req.params.id;
-		let doc = await agentModel.findById({ agentId: agentId });
+		const payload = req.body;
+		logger.info(`[${txnId}] Processing Update Agent Password Action of - `, agentId);
+		logger.trace(`[${txnId}] Req payload -`, JSON.stringify(payload));
+		let doc = await agentModel.findById({ _id: agentId });
 		if (!doc) {
 			return res.status(404).json({
 				message: 'Agent Not Found'
 			});
 		}
-		doc.password = null;
+
+		const pwdResp = await securityUtils.encryptText(doc.app, payload.password);
+		if (!pwdResp || pwdResp.statusCode != 200) {
+			return next(new Error('Unable to encrypt data'));
+		}
+		doc.password = pwdResp.body.data;
+
+		const text = securityUtils.md5(payload.password);
+		const secResp = await securityUtils.encryptText(doc.app, text);
+		if (!secResp || secResp.statusCode != 200) {
+			return next(new Error('Unable to encrypt data'));
+		}
+		doc.secret = secResp.body.data;
 		doc._req = req;
 		let status = await doc.save();
 		const actionDoc = new agentActionModel({
