@@ -145,7 +145,7 @@ router.put('/:id/deploy', async (req, res) => {
 
 		if (config.isK8sEnv()) {
 			doc.image = faasBaseImage;
-			const service =  await k8sUtils.upsertService(doc);
+			const service = await k8sUtils.upsertService(doc);
 			const status = await k8sUtils.upsertFaasDeployment(doc);
 			if ((status.statusCode !== 200 && status.statusCode !== 202) || (service.statusCode !== 200 && service.statusCode !== 202)) {
 				return res.status(status.statusCode).json({ message: 'Unable to deploy function' });
@@ -288,7 +288,7 @@ router.put('/:id/stop', async (req, res) => {
 				const status = await k8sUtils.scaleDeployment(doc, 0);
 
 				logger.trace(`[${txnId}] Deployment Scaled status :: ${JSON.stringify(status)}`);
-	
+
 				if (status.statusCode != 200 && status.statusCode != 202) {
 					return res.status(status.statusCode).json({ message: 'Unable to stop Function' });
 				}
@@ -326,6 +326,144 @@ router.put('/:id/stop', async (req, res) => {
 		res.status(500).json({
 			message: err.message
 		});
+	}
+});
+
+router.put('/startAll', async (req, res) => {
+	try {
+		let app = req.params.app;
+		let txnId = req.get('TxnId');
+		let socket = req.app.get('socket');
+		logger.info(`[${txnId}] Start all functions request received for app :: ${app}`);
+
+		const docs = await faasModel.find({ 'app': app, 'status': 'Stopped' });
+		if (!docs) {
+			return res.status(200).json({ message: 'No Functions to Start' });
+		}
+
+		logger.debug(`[${txnId}] Functions found for app :: ${app} :: ${docs.length}`);
+		logger.trace(`[${txnId}] Functions data :: ${JSON.stringify(docs)}`);
+
+		let promises = docs.map(async doc => {
+			logger.info(`[${txnId}] Scaling up deployment :: ${doc.deploymentName}`);
+
+			if (config.isK8sEnv()) {
+				const status = await k8sUtils.scaleDeployment(doc, 1);
+
+				logger.trace(`[${txnId}] Deployment Scaled status :: ${JSON.stringify(status)}`);
+
+				if (status.statusCode !== 200 && status.statusCode !== 202) {
+					logger.error(`Unable to start function :: ${doc._id} :: ${JSON.stringify(status)}`);
+					return;
+				}
+			}
+
+			doc.status = 'Pending';
+			doc._req = req;
+			await doc.save();
+
+			let eventId = 'EVENT_FAAS_START';
+			logger.debug(`[${txnId}] Publishing Event :: ${eventId}`);
+			dataStackUtils.eventsUtil.publishEvent(eventId, 'faas', req, doc, null);
+
+			socket.emit('faasStatus', {
+				_id: id,
+				app: doc.app,
+				url: doc.url,
+				port: doc.port,
+				deploymentName: doc.deploymentName,
+				namespace: doc.namespace,
+				message: 'Started'
+			});
+		});
+
+		res.status(202).json({
+			message: 'Request to start all functions has been received'
+		});
+		return Promise.all(promises);
+
+	} catch (err) {
+		logger.error(err);
+		if (!res.headersSent) {
+			if (typeof err === 'string') {
+				return res.status(500).json({ message: err });
+			}
+			res.status(500).json({ message: err.message });
+		}
+	}
+});
+
+router.put('/stopAll', async (req, res) => {
+	try {
+		let app = req.params.app;
+		let txnId = req.get('TxnId');
+		let socket = req.app.get('socket');
+		logger.info(`[${txnId}] Start all functions request received for app :: ${app}`);
+
+		const docs = await faasModel.find({ 'app': app, 'status': 'Stopped' });
+		if (!docs) {
+			return res.status(200).json({ message: 'No Functions to Start' });
+		}
+
+		logger.debug(`[${txnId}] Functions found for app :: ${app} :: ${docs.length}`);
+		logger.trace(`[${txnId}] Functions data :: ${JSON.stringify(docs)}`);
+
+		let promises = docs.map(async doc => {
+			logger.info(`[${txnId}] Scaling down deployment :: ${JSON.stringify({ namespace: doc.namespace, deploymentName: doc.deploymentName })}`);
+
+			if (config.isK8sEnv()) {
+				const deployment = await k8sUtils.getDeployment(doc);
+				if (deployment.statusCode == 200) {
+					const status = await k8sUtils.scaleDeployment(doc, 0);
+
+					logger.trace(`[${txnId}] Deployment Scaled status :: ${JSON.stringify(status)}`);
+
+					if (status.statusCode != 200 && status.statusCode != 202) {
+						logger.error(`Unable to stop function :: ${doc._id} :: ${JSON.stringify(status)}`);
+						return;
+					}
+					logger.debug(`[${txnId}] Deployment Scaled`);
+				} else {
+					logger.debug(`[${txnId}] Deployment does not exist`);
+				}
+			}
+
+			doc.status = 'Undeployed';
+			doc._req = req;
+			await doc.save();
+
+			let eventId = 'EVENT_FAAS_STOP';
+			logger.debug(`[${txnId}] Publishing Event - ${eventId}`);
+			dataStackUtils.eventsUtil.publishEvent(eventId, 'faas', req, doc, null);
+
+			socket.emit('faasStatus', {
+				_id: id,
+				app: doc.app,
+				url: doc.url,
+				port: doc.port,
+				deploymentName: doc.deploymentName,
+				namespace: doc.namespace,
+				message: 'Stopped'
+			});
+		});
+
+		res.status(202).json({
+			message: 'Request to start all functions has been received'
+		});
+		return Promise.all(promises);
+
+	} catch (err) {
+		logger.error(err);
+		if (!res.headersSent) {
+			if (typeof err === 'string') {
+				return res.status(500).json({
+					message: err
+				});
+			}
+			res.status(500).json({
+				message: err.message
+			});
+		}
 	}
 });
 

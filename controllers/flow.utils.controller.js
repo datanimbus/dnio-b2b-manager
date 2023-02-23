@@ -147,14 +147,14 @@ router.put('/:id/deploy', async (req, res) => {
 		doc.status = 'Pending';
 		doc._req = req;
 		doc._oldData = oldFlowObj;
-		
+
 
 		if (config.isK8sEnv() && !doc.isBinary) {
 			doc.image = flowBaseImage;
 
 			let status = await k8sUtils.upsertService(doc);
 			status = await k8sUtils.upsertDeployment(doc);
-			
+
 			logger.info('Deploy API called');
 			logger.debug(status);
 
@@ -163,7 +163,7 @@ router.put('/:id/deploy', async (req, res) => {
 			}
 			doc.status = 'Pending';
 			doc.isNew = false;
-			
+
 		} else if (doc.isBinary) {
 			doc.status = 'Active';
 			doc.isNew = false;
@@ -209,7 +209,7 @@ router.put('/:id/repair', async (req, res) => {
 		if (!doc) {
 			return res.status(400).json({ message: 'Invalid Flow' });
 		}
-		
+
 		if (config.isK8sEnv()) {
 			doc.image = flowBaseImage;
 			let status = await k8sUtils.deleteDeployment(doc);
@@ -218,7 +218,7 @@ router.put('/:id/repair', async (req, res) => {
 			status = await k8sUtils.upsertDeployment(doc);
 
 			logger.debug(status);
-			
+
 			if (status.statusCode !== 200 && status.statusCode !== 202) {
 				return res.status(status.statusCode).json({ message: 'Unable to repair Flow' });
 			}
@@ -229,7 +229,7 @@ router.put('/:id/repair', async (req, res) => {
 		doc._req = req;
 
 		await doc.save();
-		
+
 		res.status(200).json({ message: 'Flow Repaired' });
 	} catch (err) {
 		logger.error(err);
@@ -373,6 +373,144 @@ router.put('/:id/stop', async (req, res) => {
 		res.status(500).json({
 			message: err.message
 		});
+	}
+});
+
+router.put('/startAll', async (req, res) => {
+	try {
+		let app = req.params.app;
+		let txnId = req.get('TxnId');
+		let socket = req.app.get('socket');
+		logger.info(`[${txnId}] Start all flows request received for app :: ${app}`);
+
+		const docs = await flowModel.find({ 'app': app, 'status': 'Stopped' });
+		if (!docs) {
+			return res.status(200).json({ message: 'No Flows to Start' });
+		}
+
+		logger.debug(`[${txnId}] Flows found for app :: ${app} :: ${docs.length}`);
+		logger.trace(`[${txnId}] Flows data :: ${JSON.stringify(docs)}`);
+
+		let promises = docs.map(async doc => {
+			logger.info(`[${txnId}] Scaling up deployment :: ${doc.deploymentName}`);
+
+			if (config.isK8sEnv() && !doc.isBinary) {
+				const status = await k8sUtils.scaleDeployment(doc, 1);
+
+				logger.trace(`[${txnId}] Deployment Scaled status :: ${JSON.stringify(status)}`);
+
+				if (status.statusCode !== 200 && status.statusCode !== 202) {
+					logger.error(`Unable to start Flow :: ${doc._id} :: ${JSON.stringify(status)}`);
+					return;
+				}
+			}
+
+			doc.status = 'Pending';
+			doc.isNew = false;
+			doc._req = req;
+			await doc.save();
+
+			let eventId = 'EVENT_FLOW_START';
+			logger.debug(`[${txnId}] Publishing Event :: ${eventId}`);
+			dataStackUtils.eventsUtil.publishEvent(eventId, 'flow', req, doc, null);
+
+			socket.emit('flowStatus', {
+				_id: doc._id,
+				app: app,
+				url: doc.url,
+				port: doc.port,
+				deploymentName: doc.deploymentName,
+				namespace: doc.namespace,
+				message: 'Started'
+			});
+		});
+
+		res.status(202).json({
+			message: 'Request to start all flows has been received'
+		});
+		return Promise.all(promises);
+
+	} catch (err) {
+		logger.error(err);
+		if (!res.headersSent) {
+			if (typeof err === 'string') {
+				return res.status(500).json({
+					message: err
+				});
+			}
+			res.status(500).json({
+				message: err.message
+			});
+		}
+	}
+});
+
+router.put('/stopAll', async (req, res) => {
+	try {
+		let app = req.params.app;
+		let txnId = req.get('TxnId');
+		let socket = req.app.get('socket');
+		logger.info(`[${txnId}] Stop all flows request received for app :: ${app}`);
+
+		const docs = await flowModel.find({ 'app': app, 'status': 'Active' });
+		if (!docs) {
+			return res.status(200).json({ message: 'No Flows to Stop' });
+		}
+
+		logger.debug(`[${txnId}] Flows found for app :: ${app} :: ${docs.length}`);
+		logger.trace(`[${txnId}] Flows data :: ${JSON.stringify(docs)}`);
+
+		let promises = docs.map(async doc => {
+			logger.info(`[${txnId}] Scaling down deployment :: ${JSON.stringify({ namespace: doc.namespace, deploymentName: doc.deploymentName })}`);
+
+			if (config.isK8sEnv() && !doc.isBinary) {
+				const status = await k8sUtils.scaleDeployment(doc, 0);
+				
+				logger.debug(status);
+				
+				if (status.statusCode !== 200 && status.statusCode !== 202) {
+					logger.error('K8S :: Error stopping flow');
+					logger.error(`Unable to stop Flow :: ${doc._id} :: ${status}`);
+				}
+			}
+	
+			let eventId = 'EVENT_FLOW_STOP';
+			logger.debug(`[${txnId}] Publishing Event - ${eventId}`);
+			dataStackUtils.eventsUtil.publishEvent(eventId, 'flow', req, doc, null);
+	
+			socket.emit('flowStatus', {
+				_id: doc._id,
+				app: app,
+				url: doc.url,
+				port: doc.port,
+				deploymentName: doc.deploymentName,
+				namespace: doc.namespace,
+				message: 'Stopped'
+			});
+	
+			doc.status = 'Stopped';
+			doc.isNew = false;
+			doc._req = req;
+			await doc.save();
+		});
+
+		res.status(202).json({
+			message: 'Request to stop all flows has been received'
+		});
+		return Promise.all(promises);
+
+	} catch (err) {
+		logger.error(err);
+		if (!res.headersSent) {
+			if (typeof err === 'string') {
+				return res.status(500).json({
+					message: err
+				});
+			}
+			res.status(500).json({
+				message: err.message
+			});
+		}
 	}
 });
 

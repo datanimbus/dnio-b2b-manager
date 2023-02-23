@@ -60,6 +60,8 @@ const commonUrls = [
 	'/{app}/faas/utils/{id}/repair',
 	'/{app}/faas/utils/{id}/start',
 	'/{app}/faas/utils/{id}/stop',
+	'/{app}/faas/utils/startAll',
+	'/{app}/faas/utils/stopAll',
 	'/{app}/faas/utils/{id}/draftDelete',
 
 	'/{app}/flow/',
@@ -70,6 +72,8 @@ const commonUrls = [
 	'/{app}/flow/utils/{id}/repair',
 	'/{app}/flow/utils/{id}/start',
 	'/{app}/flow/utils/{id}/stop',
+	'/{app}/flow/utils/startAll',
+	'/{app}/flow/utils/stopAll',
 	'/{app}/flow/utils/{id}/draftDelete',
 	'/{app}/flow/utils/{id}/yamls',
 
@@ -257,6 +261,14 @@ function canAccessPath(req) {
 		return true;
 	}
 
+	if (compareURL('/{app}/faas/utils/startAll', req.path) && _.intersectionWith(req.user.appPermissions, ['PMFPS'], comparator).length > 0) {
+		return true;
+	}
+
+	if (compareURL('/{app}/faas/utils/stopAll', req.path) && _.intersectionWith(req.user.appPermissions, ['PMFPS'], comparator).length > 0) {
+		return true;
+	}
+
 	if (compareURL('/{app}/faas/utils/{id}/draftDelete', req.path) && _.intersectionWith(req.user.appPermissions, ['PMF'], comparator).length > 0) {
 		return true;
 	}
@@ -300,6 +312,14 @@ function canAccessPath(req) {
 	}
 
 	if (compareURL('/{app}/flow/utils/{id}/stop', req.path) && _.intersectionWith(req.user.appPermissions, ['PMIFPS'], comparator).length > 0) {
+		return true;
+	}
+
+	if (compareURL('/{app}/flow/utils/startAll', req.path) && _.intersectionWith(req.user.appPermissions, ['PMIFPS'], comparator).length > 0) {
+		return true;
+	}
+
+	if (compareURL('/{app}/flow/utils/stopAll', req.path) && _.intersectionWith(req.user.appPermissions, ['PMIFPS'], comparator).length > 0) {
 		return true;
 	}
 

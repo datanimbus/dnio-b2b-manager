@@ -7,7 +7,6 @@ const socket = require('socket.io');
 // const path = require('path');
 // const https = require('https');
 const express = require('express');
-const { AuthCacheMW } = require('@appveen/ds-auth-cache');
 const fileUpload = require('express-fileupload');
 const cookieParser = require('cookie-parser');
 
@@ -26,17 +25,6 @@ function initSocket(server) {
 		logger.info('Connection accepted from : ' + socket.id);
 	});
 }
-
-let permittedUrls = [
-	'/{app}/flow/utils/{id}/init',
-	'/{app}/faas/utils/{id}/init',
-	'/auth/login',
-	'/faas/fetchAll',
-	'/{app}/faas/utils/{id}/statusChange',
-	'/internal/app/{id}',
-	'/internal/health/live',
-	'/internal/health/ready'
-];
 
 const app = express();
 
