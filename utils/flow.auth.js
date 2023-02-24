@@ -38,6 +38,7 @@ router.use((req, res, next) => {
 			req.locals.skipPermissionCheck = true;
 		}
 	}
+	logger.trace(`User app permissions :: ${JSON.stringify(req.user.appPermissions)}`);
 	next();
 });
 
@@ -54,12 +55,16 @@ router.use((req, res, next) => {
 			return res.status(400).json({ message: 'App value needed for this API' });
 		}
 
+		if (!global.activeFlows[req.path]) {
+			return res.status(404).json({ message: 'Flow is not running' });
+		}
+
 		// Check if user has permission for the path.
 		if (canAccessPath(req)) {
 			return next();
 		}
 	}
-	return res.status(403).json({ message: 'You don\'t have access for this API' });
+	return res.status(403).json({ message: 'You don\'t have access for this flow' });
 });
 
 

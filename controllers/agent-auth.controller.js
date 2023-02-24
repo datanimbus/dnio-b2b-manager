@@ -23,8 +23,13 @@ router.post('/login', async (req, res) => {
 			});
 		}
 		if (doc && !doc.active) {
-			return res.status(400).json({
-				message: 'Agent is marked disabled'
+			return res.status(403).json({
+				status: 'DISABLED'
+			});
+		}
+		if (doc.status === 'RUNNING') {
+			return res.status(403).json({
+				status: 'ALREADY_RUNNING'
 			});
 		}
 		let result = await securityUtils.decryptText(doc.app, doc.password);
