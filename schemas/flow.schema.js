@@ -33,6 +33,10 @@ const definition = {
 	'namespace': {					 //Internal
 		'type': 'String'
 	},
+	'skipAuth': {
+		'type': 'Boolean',
+		'default': false
+	},
 	'status': {                          //Internal
 		'type': 'String',
 		'enum': ['Pending', 'Stopped', 'Error', 'Active', 'Draft'],
