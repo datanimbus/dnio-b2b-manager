@@ -56,9 +56,13 @@ app.use((req, res, next) => {
 	next();
 });
 
-//testing comment
-
-app.use(['/b2b/pipes'], require('./utils/flow.auth'), require('./router'));
+app.use(['/b2b/pipes'], (req, res, next) => {
+	let skipAuth = global.activeFlows[req.path].skipAuth;
+	if (!skipAuth) {
+		return require('./utils/flow.auth')(req, res, next);
+	}
+	next();
+}, require('./router'));
 
 app.use(express.json({ inflate: true, limit: config.MAX_JSON_SIZE }));
 app.use(express.urlencoded({ extended: true }));

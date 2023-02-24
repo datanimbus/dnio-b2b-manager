@@ -5,20 +5,12 @@ const config = require('../config');
 
 const logger = global.logger;
 
-let skipAuth = false;
-
 const commonUrls = [
 	'/{app}/{api}'
 ];
 
-router.use((req, res, next) => {
-	skipAuth = global.activeFlows[req.path].skipAuth;
-	if (skipAuth) {
-		next();
-	} else {
-		AuthCacheMW({ secret: config.RBAC_JWT_KEY, decodeOnly: true })(req, res, next);
-	}
-});
+
+router.use(AuthCacheMW({ secret: config.RBAC_JWT_KEY, decodeOnly: true }));
 
 router.use((req, res, next) => {
 	if (!req.locals) {
@@ -27,50 +19,44 @@ router.use((req, res, next) => {
 		};
 	}
 
-	if (!skipAuth) {
-		// Check if user is an app admin or super admin.
-		if (req.user) {
-			if (req.locals.app) {
-				const temp = (req.user.allPermissions || []).find(e => e.app === req.locals.app);
-				req.user.appPermissions = temp ? temp.permissions : [];
-			} else {
-				req.user.appPermissions = [];
-			}
-			if (req.user.isSuperAdmin || (req.user.apps && req.user.apps.indexOf(req.locals.app) > -1)) {
-				req.locals.skipPermissionCheck = true;
-			}
+	// Check if user is an app admin or super admin.
+	if (req.user) {
+		if (req.locals.app) {
+			const temp = (req.user.allPermissions || []).find(e => e.app === req.locals.app);
+			req.user.appPermissions = temp ? temp.permissions : [];
+		} else {
+			req.user.appPermissions = [];
 		}
-		logger.trace(`User app permissions :: ${JSON.stringify(req.user.appPermissions)}`);
+		if (req.user.isSuperAdmin || (req.user.apps && req.user.apps.indexOf(req.locals.app) > -1)) {
+			req.locals.skipPermissionCheck = true;
+		}
 	}
+	logger.trace(`User app permissions :: ${JSON.stringify(req.user.appPermissions)}`);
 	next();
 });
 
 router.use((req, res, next) => {
-	if (!skipAuth) {
-		// All these paths required permissions check.
-		if (commonUrls.some(e => compareURL(e, req.path))) {
-			// Pass if user is admin or super admin.
-			if (req.locals.skipPermissionCheck) {
-				return next();
-			}
-
-			if (!req.locals.app) {
-				return res.status(400).json({ message: 'App value needed for this API' });
-			}
-
-			if (!global.activeFlows[req.path]) {
-				return res.status(404).json({ message: 'Flow is not running' });
-			}
-
-			// Check if user has permission for the path.
-			if (canAccessPath(req)) {
-				return next();
-			}
+	// All these paths required permissions check.
+	if (commonUrls.some(e => compareURL(e, req.path))) {
+		// Pass if user is admin or super admin.
+		if (req.locals.skipPermissionCheck) {
+			return next();
 		}
-		return res.status(403).json({ message: 'You don\'t have access for this flow' });
-	} else {
-		next();
+
+		if (!req.locals.app) {
+			return res.status(400).json({ message: 'App value needed for this API' });
+		}
+
+		if (!global.activeFlows[req.path]) {
+			return res.status(404).json({ message: 'Flow is not running' });
+		}
+
+		// Check if user has permission for the path.
+		if (canAccessPath(req)) {
+			return next();
+		}
 	}
+	return res.status(403).json({ message: 'You don\'t have access for this flow' });
 });
 
 

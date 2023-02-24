@@ -16,14 +16,14 @@ async function initRouterMap() {
 					proxyHost: `http://${item.deploymentName}.${item.namespace}`,
 					proxyPath: '/api/b2b/' + item.app + item.inputNode.options.path,
 					flowId: item._id,
-					skipAuth: item.skipAuth
+					skipAuth: item.skipAuth || false
 				};
 			} else {
 				global.activeFlows['/' + item.app + item.inputNode.options.path] = {
 					proxyHost: 'http://localhost:8080',
 					proxyPath: '/api/b2b/' + item.app + item.inputNode.options.path,
 					flowId: item._id,
-					skipAuth: item.skipAuth
+					skipAuth: item.skipAuth || false
 				};
 			}
 		});
