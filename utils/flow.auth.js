@@ -5,19 +5,12 @@ const config = require('../config');
 
 const logger = global.logger;
 
-
 const commonUrls = [
 	'/{app}/{api}'
 ];
 
-router.use((req, res, next) => {
-	const routeData = global.activeFlows[req.path];
-	if (routeData.skipAuth) {
-		next();
-	} else {
-		AuthCacheMW({ secret: config.RBAC_JWT_KEY, decodeOnly: true })(req, res, next);
-	}
-});
+
+router.use(AuthCacheMW({ secret: config.RBAC_JWT_KEY, decodeOnly: true }));
 
 router.use((req, res, next) => {
 	if (!req.locals) {
@@ -43,7 +36,6 @@ router.use((req, res, next) => {
 });
 
 router.use((req, res, next) => {
-
 	// All these paths required permissions check.
 	if (commonUrls.some(e => compareURL(e, req.path))) {
 		// Pass if user is admin or super admin.

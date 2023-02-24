@@ -41,6 +41,47 @@ router.get('/count', async (req, res) => {
 	}
 });
 
+router.get('/status/count', async (req, res) => {
+	try {
+		let filter = queryUtils.parseFilter(req.query.filter);
+		if (filter) {
+			filter.app = req.locals.app;
+			filter['_metadata.deleted'] = false;
+		}
+		
+		let aggregateQuery = [
+			{ $match: filter },
+			{
+				$group: {
+					_id: '$status',
+					count: { $sum: 1 }
+				}
+			}
+		];
+		let result = await faasModel.aggregate(aggregateQuery);
+		
+		let response = {};
+		let total = 0;
+		result.forEach(rs => {
+			response[rs._id] = rs.count;
+			total += rs.count;
+		});
+		response['Total'] = total;
+		
+		return res.json(response);
+	} catch (err) {
+		logger.error(err);
+		if (typeof err === 'string') {
+			return res.status(500).json({
+				message: err
+			});
+		}
+		res.status(500).json({
+			message: err.message
+		});
+	}
+});
+
 router.put('/:id/init', async (req, res) => {
 	try {
 		const doc = await faasModel.findById(req.params.id);
