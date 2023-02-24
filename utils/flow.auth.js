@@ -10,8 +10,14 @@ const commonUrls = [
 	'/{app}/{api}'
 ];
 
-
-router.use(AuthCacheMW({ secret: config.RBAC_JWT_KEY, decodeOnly: true }));
+router.use((req, res, next) => {
+	const routeData = global.activeFlows[req.path];
+	if (routeData.skipAuth) {
+		next();
+	} else {
+		AuthCacheMW({ secret: config.RBAC_JWT_KEY, decodeOnly: true })(req, res, next);
+	}
+});
 
 router.use((req, res, next) => {
 	if (!req.locals) {
@@ -19,7 +25,7 @@ router.use((req, res, next) => {
 			app: req.path.split('/')[1]
 		};
 	}
-	
+
 	// Check if user is an app admin or super admin.
 	if (req.user) {
 		if (req.locals.app) {
