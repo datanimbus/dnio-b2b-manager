@@ -56,6 +56,7 @@ const commonUrls = [
 	'/{app}/faas/',
 	'/{app}/faas/{id}',
 	'/{app}/faas/utils/count',
+	'/{app}/faas/utils/status/count',
 	'/{app}/faas/utils/{id}/deploy',
 	'/{app}/faas/utils/{id}/repair',
 	'/{app}/faas/utils/{id}/start',
@@ -65,6 +66,7 @@ const commonUrls = [
 	'/{app}/flow/',
 	'/{app}/flow/{id}',
 	'/{app}/flow/utils/count',
+	'/{app}/flow/utils/status/count',
 	'/{app}/flow/utils/{id}/init',
 	'/{app}/flow/utils/{id}/deploy',
 	'/{app}/flow/utils/{id}/repair',
@@ -241,6 +243,10 @@ function canAccessPath(req) {
 		return true;
 	}
 
+	if (compareURL('/{app}/faas/utils/status/count', req.path) && _.intersectionWith(req.user.appPermissions, ['PVF', 'PMF'], comparator).length > 0) {
+		return true;
+	}
+
 	if (compareURL('/{app}/faas/utils/{id}/deploy', req.path) && _.intersectionWith(req.user.appPermissions, ['PMFPD'], comparator).length > 0) {
 		return true;
 	}
@@ -284,6 +290,10 @@ function canAccessPath(req) {
 	}
 
 	if (compareURL('/{app}/flow/utils/count', req.path) && _.intersectionWith(req.user.appPermissions, ['PVIF', 'PMIF'], comparator).length > 0) {
+		return true;
+	}
+
+	if (compareURL('/{app}/flow/utils/status/count', req.path) && _.intersectionWith(req.user.appPermissions, ['PVIF', 'PMIF'], comparator).length > 0) {
 		return true;
 	}
 

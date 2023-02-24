@@ -48,6 +48,47 @@ router.get('/count', async (req, res) => {
 	}
 });
 
+router.get('/status/count', async (req, res) => {
+	try {
+		let filter = queryUtils.parseFilter(req.query.filter);
+		if (filter) {
+			filter.app = req.locals.app;
+			filter['_metadata.deleted'] = false;
+		}
+		
+		let aggregateQuery = [
+			{ $match: filter },
+			{
+				$group: {
+					_id: '$status',
+					count: { $sum: 1 }
+				}
+			}
+		];
+		let result = await flowModel.aggregate(aggregateQuery);
+		
+		let response = {};
+		let total = 0;
+		result.forEach(rs => {
+			response[rs._id] = rs.count;
+			total += rs.count;
+		});
+		response['Total'] = total;
+
+		return res.json(response);
+	} catch (err) {
+		logger.error(err);
+		if (typeof err === 'string') {
+			return res.status(500).json({
+				message: err
+			});
+		}
+		res.status(500).json({
+			message: err.message
+		});
+	}
+});
+
 router.put('/:id/init', async (req, res) => {
 	try {
 		const doc = await flowModel.findById(req.params.id);
@@ -147,14 +188,14 @@ router.put('/:id/deploy', async (req, res) => {
 		doc.status = 'Pending';
 		doc._req = req;
 		doc._oldData = oldFlowObj;
-		
+
 
 		if (config.isK8sEnv() && !doc.isBinary) {
 			doc.image = flowBaseImage;
 
 			let status = await k8sUtils.upsertService(doc);
 			status = await k8sUtils.upsertDeployment(doc);
-			
+
 			logger.info('Deploy API called');
 			logger.debug(status);
 
@@ -163,7 +204,7 @@ router.put('/:id/deploy', async (req, res) => {
 			}
 			doc.status = 'Pending';
 			doc.isNew = false;
-			
+
 		} else if (doc.isBinary) {
 			doc.status = 'Active';
 			doc.isNew = false;
@@ -209,7 +250,7 @@ router.put('/:id/repair', async (req, res) => {
 		if (!doc) {
 			return res.status(400).json({ message: 'Invalid Flow' });
 		}
-		
+
 		if (config.isK8sEnv()) {
 			doc.image = flowBaseImage;
 			let status = await k8sUtils.deleteDeployment(doc);
@@ -218,7 +259,7 @@ router.put('/:id/repair', async (req, res) => {
 			status = await k8sUtils.upsertDeployment(doc);
 
 			logger.debug(status);
-			
+
 			if (status.statusCode !== 200 && status.statusCode !== 202) {
 				return res.status(status.statusCode).json({ message: 'Unable to repair Flow' });
 			}
@@ -229,7 +270,7 @@ router.put('/:id/repair', async (req, res) => {
 		doc._req = req;
 
 		await doc.save();
-		
+
 		res.status(200).json({ message: 'Flow Repaired' });
 	} catch (err) {
 		logger.error(err);
