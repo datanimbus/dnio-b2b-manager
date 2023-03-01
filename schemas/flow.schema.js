@@ -42,11 +42,12 @@ const definition = {
 		'enum': ['Pending', 'Stopped', 'Error', 'Active', 'Draft'],
 		'default': 'Draft'
 	},
-	"lastInvoked": {
+	'lastInvoked': {
 		'type': 'Date'
 	},
 	'inputNode': { 'type': 'Object' },
 	'nodes': { 'type': 'Object' },
+	'errorNode': { 'type': 'Object' },
 	'dataStructures': { 'type': 'Object' },
 	'port': { 'type': 'String' },
 	'description': { 'type': 'String' },
