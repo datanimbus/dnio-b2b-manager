@@ -1,4 +1,4 @@
-const router = require('express').Router();
+const router = require('express').Router({ mergeParams: true });
 const log4js = require('log4js');
 const mongoose = require('mongoose');
 const dataStackUtils = require('@appveen/data.stack-utils');
@@ -104,7 +104,6 @@ router.put('/:id/init', async (req, res) => {
 		});
 	}
 });
-
 
 router.put('/:id/deploy', async (req, res) => {
 	try {
@@ -377,7 +376,7 @@ router.put('/startAll', async (req, res) => {
 		let socket = req.app.get('socket');
 		logger.info(`[${txnId}] Start all functions request received for app :: ${app}`);
 
-		const docs = await faasModel.find({ 'app': app, 'status': 'Stopped' });
+		const docs = await faasModel.find({ 'app': app, 'status': 'Undeployed' });
 		if (!docs) {
 			return res.status(200).json({ message: 'No Functions to Start' });
 		}
@@ -408,8 +407,8 @@ router.put('/startAll', async (req, res) => {
 			dataStackUtils.eventsUtil.publishEvent(eventId, 'faas', req, doc, null);
 
 			socket.emit('faasStatus', {
-				_id: id,
-				app: doc.app,
+				_id: doc._id,
+				app: app,
 				url: doc.url,
 				port: doc.port,
 				deploymentName: doc.deploymentName,
@@ -439,11 +438,11 @@ router.put('/stopAll', async (req, res) => {
 		let app = req.params.app;
 		let txnId = req.get('TxnId');
 		let socket = req.app.get('socket');
-		logger.info(`[${txnId}] Start all functions request received for app :: ${app}`);
+		logger.info(`[${txnId}] Stop all functions request received for app :: ${app}`);
 
-		const docs = await faasModel.find({ 'app': app, 'status': 'Stopped' });
+		const docs = await faasModel.find({ 'app': app, 'status': 'Active' });
 		if (!docs) {
-			return res.status(200).json({ message: 'No Functions to Start' });
+			return res.status(200).json({ message: 'No Functions to Stop' });
 		}
 
 		logger.debug(`[${txnId}] Functions found for app :: ${app} :: ${docs.length}`);
@@ -478,8 +477,8 @@ router.put('/stopAll', async (req, res) => {
 			dataStackUtils.eventsUtil.publishEvent(eventId, 'faas', req, doc, null);
 
 			socket.emit('faasStatus', {
-				_id: id,
-				app: doc.app,
+				_id: doc._id,
+				app: app,
 				url: doc.url,
 				port: doc.port,
 				deploymentName: doc.deploymentName,
@@ -489,7 +488,7 @@ router.put('/stopAll', async (req, res) => {
 		});
 
 		res.status(202).json({
-			message: 'Request to start all functions has been received'
+			message: 'Request to stop all functions has been received'
 		});
 		return Promise.all(promises);
 
