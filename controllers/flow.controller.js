@@ -101,8 +101,13 @@ router.post('/', async (req, res) => {
 		}
 		delete payload.__v;
 		delete payload.version;
+		delete payload.draftVersion;
+		delete payload.status;
+		delete payload.port;
 		delete payload.deploymentName;
 		delete payload.namespace;
+
+		payload.version = 1;
 
 		logger.trace(`[${txnId}] Flow create data :: ${JSON.stringify(payload)}`);
 
@@ -164,6 +169,9 @@ router.put('/:id', async (req, res) => {
 		delete payload._id;
 		delete payload.__v;
 		delete payload.version;
+		delete payload.draftVersion;
+		delete payload.status;
+		delete payload.port;
 		delete payload.deploymentName;
 		delete payload.namespace;
 		payload._id = id;
