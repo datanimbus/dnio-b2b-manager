@@ -9,13 +9,13 @@ const config = require('../config');
 const flowUtils = require('../utils/flow.utils');
 const queryUtils = require('../utils/query.utils');
 const deployUtils = require('../utils/deploy.utils');
-
+const helpers = require('../utils/helper');
 
 const logger = log4js.getLogger(global.loggerName);
 
 const flowModel = mongoose.model('flow');
 const draftFlowModel = mongoose.model('flow.draft');
-
+const agentActionModel = mongoose.model('agent-action');
 
 function mergeCustomizer(objValue, srcValue) {
 	if (_.isArray(objValue)) {
@@ -298,6 +298,18 @@ router.delete('/:id', async (req, res) => {
 		let eventId = 'EVENT_FLOW_DELETE';
 		logger.debug(`[${txnId}] Publishing Event :: ${eventId}`);
 		dataStackUtils.eventsUtil.publishEvent(eventId, 'flow', req, doc, null);
+
+		if (doc.status != 'Draft' && doc.inputNode.type === 'FILE' || doc.nodes.some(node => node.type === 'FILE')) {
+			let action = 'delete';
+			let flowActionList = helpers.constructFlowEvent(req, '', doc, action);
+			flowActionList.forEach(action => {
+				const actionDoc = new agentActionModel(action);
+				actionDoc._req = req;
+				let status = actionDoc.save();
+				logger.trace(`[${txnId}] Flow Action Create Status - `, status);
+				logger.trace(`[${txnId}] Flow Action Doc - `, actionDoc);
+			});
+		}
 
 		socket.emit('flowDeleted', {
 			_id: id,

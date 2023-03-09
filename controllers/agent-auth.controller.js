@@ -24,12 +24,12 @@ router.post('/login', async (req, res) => {
 		}
 		if (doc && !doc.active) {
 			return res.status(403).json({
-				status: 'DISABLED'
+				message: 'Agent is Disabled, please contact Administrator'
 			});
 		}
 		if (doc.status === 'RUNNING') {
 			return res.status(403).json({
-				status: 'ALREADY_RUNNING'
+				message: 'Agent is Already Running on '+doc.ipAddress
 			});
 		}
 		let result = await securityUtils.decryptText(doc.app, doc.password);
@@ -62,6 +62,8 @@ router.post('/login', async (req, res) => {
 		temp.secret = result.body.data;
 		doc.lastLoggedIn = new Date();
 		doc.status = 'RUNNING';
+		doc.ipAddress = req.body.ipAddress;
+		doc.macAddress = req.body.macAddress;
 		doc._req = req;
 		result = await doc.save();
 		logger.debug('Agent Logged In :', doc.lastLoggedIn);

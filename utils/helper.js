@@ -5,23 +5,17 @@ const envConfig = require('../config');
 
 function constructFlowEvent(req, doc, flow, action) {
 	try {
-		logger.debug('Constructing event - ', doc.name, flow.name, action);
+		if (doc != '') {
+			logger.debug('Constructing Flow Events for - ', doc.name, flow.name, action);
+		} else {
+			logger.debug('Constructing Flow Events for - ', flow.name, action);
+		}
 
-		const obj = {
-			'appName': flow.app,
-			'agentName': doc.name,
-			'flowName': flow.name,
-			'agentID': doc.agentId,
-			'flowID': flow._id,
-			'deploymentName': flow.deploymentName,
-			'timestamp': new Date(),
-			'entryType': 'IN',
-			'sentOrRead': false
-		};
 		const inputObj = flow.inputNode;
-		const outputObj = flow.nodes[0];
+		const index = flow.nodes.findIndex(node => node.type === 'FILE');
+		let outputObj = index > 0 ? flow.nodes[index] : null;
 		const inputType = inputObj.type;
-		const outputType = outputObj.type;
+		const outputType = outputObj != null ? outputObj.type : null;
 		let inputContentType = 'BINARY';
 		let outputContentType = 'BINARY';
 
@@ -32,23 +26,33 @@ function constructFlowEvent(req, doc, flow, action) {
 		if (inputObj.dataStructure && inputObj.dataStructure.outgoing && inputObj.dataStructure.outgoing._id) {
 			inputContentType = flow.dataStructures[inputObj.dataStructure.outgoing._id].formatType || 'JSON';
 		}
-		if (outputObj.dataStructure && outputObj.dataStructure.outgoing && outputObj.dataStructure.outgoing._id) {
+		if (outputObj && outputObj.dataStructure && outputObj.dataStructure.outgoing && outputObj.dataStructure.outgoing._id) {
 			outputContentType = flow.dataStructures[outputObj.dataStructure.outgoing._id].formatType || 'JSON';
 		}
 
 		let agentList = [];
 		if (inputType === 'FILE') {
 			inputObj.options.agents.forEach(agent => {
-				agentList.push({ agentID: agent.agentId, type: 'FILE', blockType: 'input' });
+				agentList.push({ agentName: agent.name, agentId: agent.agentId, type: 'FILE', blockType: 'input' });
 			});
 		}
-		if (outputType === 'FILE') {
+		if (outputType && outputType === 'FILE') {
 			outputObj.options.agents.forEach(agent => {
-				agentList.push({ agentID: agent.agentId, type: 'FILE', blockType: 'output' });
+				agentList.push({ agentName: agent.name, agentId: agent.agentId, type: 'FILE', blockType: 'output' });
 			});
 		}
 		logger.debug(`${JSON.stringify({ action, agentListLen: agentList.length })}`);
 		let agentActionList = agentList.map((agent) => {
+			const obj = {
+				'appName': flow.app,
+				'agentName': agent.agentName,
+				'flowName': flow.name,
+				'agentId': agent.agentId,
+				'flowID': flow._id,
+				'deploymentName': flow.deploymentName,
+				'timestamp': new Date(),
+				'sentOrRead': false
+			};
 			let agentType = agent.type;
 			let agentActionObject = JSON.parse(JSON.stringify(obj));
 			if (action === 'create') {

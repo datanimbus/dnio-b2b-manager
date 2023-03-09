@@ -9,13 +9,13 @@ const config = require('../config');
 const k8sUtils = require('../utils/k8s.utils');
 const queryUtils = require('../utils/query.utils');
 const routerUtils = require('../utils/router.utils');
-
+const helpers = require('../utils/helper');
 
 const logger = log4js.getLogger(global.loggerName);
 
 const flowModel = mongoose.model('flow');
 const draftFlowModel = mongoose.model('flow.draft');
-
+const agentActionModel = mongoose.model('agent-action');
 
 let dockerRegistryType = process.env.DOCKER_REGISTRY_TYPE ? process.env.DOCKER_REGISTRY_TYPE : '';
 if (dockerRegistryType.length > 0) dockerRegistryType = dockerRegistryType.toUpperCase();
@@ -217,6 +217,23 @@ router.put('/:id/deploy', async (req, res) => {
 
 		await doc.save();
 
+		if (doc.inputNode.type === 'FILE' || doc.nodes.some(node => node.type === 'FILE')) {
+			let action;
+			if (oldFlowObj.status === 'Active') {
+				action = 'update';
+			} else {
+				action = 'create';
+			}
+			
+			let flowActionList = helpers.constructFlowEvent(req, '', doc, action);
+			flowActionList.forEach(action => {
+				const actionDoc = new agentActionModel(action);
+				actionDoc._req = req;
+				let status = actionDoc.save();
+				logger.trace(`[${txnId}] Flow Action Create Status - `, status);
+				logger.trace(`[${txnId}] Flow Action Doc - `, actionDoc);
+			});
+		}
 
 		socket.emit('flowStatus', {
 			_id: id,
@@ -328,6 +345,18 @@ router.put('/:id/start', async (req, res) => {
 		logger.debug(`[${txnId}] Publishing Event :: ${eventId}`);
 		dataStackUtils.eventsUtil.publishEvent(eventId, 'flow', req, doc, null);
 
+		if (doc.inputNode.type === 'FILE' || doc.nodes.some(node => node.type === 'FILE')) {
+			let action = 'start';
+			let flowActionList = helpers.constructFlowEvent(req, '', doc, action);
+			flowActionList.forEach(action => {
+				const actionDoc = new agentActionModel(action);
+				actionDoc._req = req;
+				let status = actionDoc.save();
+				logger.trace(`[${txnId}] Flow Action Create Status - `, status);
+				logger.trace(`[${txnId}] Flow Action Doc - `, actionDoc);
+			});
+		}
+
 		socket.emit('flowStatus', {
 			_id: id,
 			app: doc.app,
@@ -387,6 +416,18 @@ router.put('/:id/stop', async (req, res) => {
 		let eventId = 'EVENT_FLOW_STOP';
 		logger.debug(`[${txnId}] Publishing Event - ${eventId}`);
 		dataStackUtils.eventsUtil.publishEvent(eventId, 'flow', req, doc, null);
+
+		if (doc.inputNode.type === 'FILE' || doc.nodes.some(node => node.type === 'FILE')) {
+			let action = 'stop';
+			let flowActionList = helpers.constructFlowEvent(req, '', doc, action);
+			flowActionList.forEach(action => {
+				const actionDoc = new agentActionModel(action);
+				actionDoc._req = req;
+				let status = actionDoc.save();
+				logger.trace(`[${txnId}] Flow Action Create Status - `, status);
+				logger.trace(`[${txnId}] Flow Action Doc - `, actionDoc);
+			});
+		}
 
 		socket.emit('flowStatus', {
 			_id: id,
