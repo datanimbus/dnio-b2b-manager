@@ -26,7 +26,8 @@ const definition = {
         'type': 'String'
     },
     'pendingFiles': {
-        'type': 'Object'
+        'type': 'Number',
+        'default': 0
     },
     'name': {
         'type': 'String'

@@ -97,12 +97,18 @@ router.post('/:id/heartbeat', async (req, res) => {
 		logger.info(`[${txnId}] [${agentId}] Processing Agent Hearbeat Action`);
 		logger.trace(`[${txnId}] [${agentId}] Agent Init Action Body -`, JSON.stringify(req.body));
 
-		let doc = await agentModel.findOne({ agentId: agentId }).lean();
+		let doc = await agentModel.findOne({ agentId: agentId });
 		if (!doc) {
 			logger.error(`[${txnId}] [${agentId}] Agent Not Found`);
 			return res.status(404).json({
 				message: 'Agent Not Found'
 			});
+		}
+
+		if (doc.status != 'RUNNING') {
+			doc.status = 'RUNNING';
+			doc._req = req;
+			await doc.save();
 		}
 
 		const actions = [];
