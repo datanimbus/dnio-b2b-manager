@@ -37,11 +37,11 @@ async function createInteraction(req, options) {
 
 		const doc = new interactionModal(interactionData);
 
-
-		let flowDoc = await flowModal.findById(flowId);
-		flowDoc.lastInvoked = doc._metadata.createdAt;
-		flowDoc.save();
-		
+		// let flowDoc = await flowModal.findById(flowId);
+		// flowDoc.lastInvoked = doc._metadata.createdAt;
+		// delete flowDoc.version;
+		// await flowDoc.save();
+		await flowModal.findOneAndUpdate({_id: flowId},{$set:{lastInvoked: doc._metadata.createdAt}})
 
 		doc._req = req;
 		const status = await doc.save();
