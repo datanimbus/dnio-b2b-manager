@@ -178,6 +178,7 @@ router.put('/:id/deploy', async (req, res) => {
 			const newFlowObj = draftDoc.toObject();
 			delete newFlowObj.__v;
 			delete newFlowObj._metadata;
+			delete newFlowObj.version;
 			Object.assign(doc, newFlowObj);
 			draftDoc._req = req;
 			await draftDoc.remove();
