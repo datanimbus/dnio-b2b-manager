@@ -78,7 +78,7 @@ router.post('/:id/init', async (req, res) => {
 		await Promise.all(promises).then((_d) => {
 			newRes = [].concat.apply([], _d);
 			logger.debug(`[${txnId}]`, JSON.stringify({ newRes }));
-			newRes = newRes.filter(_k => _k && _k.agentID == agentId);
+			newRes = newRes.filter(_k => _k && _k.agentId == agentId);
 			logger.trace(`[${txnId}] Transfer Ledger Enteries - ${JSON.stringify({ transferLedgerEntries: newRes })}`);
 			res.status(200).json({ transferLedgerEntries: newRes, mode: process.env.MODE ? process.env.MODE.toUpperCase() : 'PROD' });
 		});
