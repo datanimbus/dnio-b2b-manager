@@ -73,6 +73,7 @@ router.put('/:id', async (req, res) => {
 				message: 'Agent Not Found'
 			});
 		}
+		payload.version = doc.version + 1;
 		Object.keys(payload).forEach(key => {
 			doc[key] = payload[key];
 		});

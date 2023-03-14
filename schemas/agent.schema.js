@@ -2,6 +2,10 @@ const definition = {
     '_id': {
         'type': 'String'
     },
+    'version': {
+        'type': 'Number',
+        'default': 1
+    },
     'app': {
         'type': 'String'
     },
