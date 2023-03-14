@@ -328,7 +328,7 @@ router.delete('/:id', async (req, res) => {
 		logger.info(`[${txnId}] Destroyed flow data :: ${id}`);
 
 		res.status(200).json({
-			message: 'Document Deleted'
+			message: 'Data Pipe Deleted'
 		});
 	} catch (err) {
 		logger.error(err);
