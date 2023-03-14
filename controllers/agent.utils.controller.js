@@ -184,6 +184,7 @@ router.put('/:id/password', async (req, res) => {
 			return next(new Error('Unable to encrypt data'));
 		}
 		doc.secret = secResp.body.data;
+		doc.version = doc.version + 1;
 		doc._req = req;
 		let status = await doc.save();
 		const actionDoc = new agentActionModel({
