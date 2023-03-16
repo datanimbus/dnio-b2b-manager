@@ -9,7 +9,7 @@ const flowUtils = require('./utils/flow.utils');
 const logger = log4js.getLogger(global.loggerName);
 routerUtils.initRouterMap();
 
-router.use('/:app/:api*', async (req, res, next) => {
+router.use('/:app/:api(*)?', async (req, res, next) => {
 	try {
 		const path = '/' + req.params.app + '/' + req.params.api;
 		logger.debug('Looking for path in map:', path, global.activeFlows[path]);
