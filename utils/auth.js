@@ -33,7 +33,11 @@ const internalUrls = [
 	'/{app}/flow/utils/{id}/init'
 ];
 
-const adminOnlyUrls = [];
+const adminOnlyUrls = [
+	'/{app}/node/',
+	'/{app}/node/{id}',
+	'/{app}/node/utils/count',
+];
 
 const superAdminOnlyUrls = [];
 
@@ -408,24 +412,24 @@ function canAccessPath(req) {
 		return true;
 	}
 
-	
+
 	// Interactions	
-	if (compareURL('/{app}/interaction/{flowId}/', req.path) && _.intersectionWith(req.user.appPermissions, ['INTR_'+req.path.split('/')[3]], comparator).length > 0) {
+	if (compareURL('/{app}/interaction/{flowId}/', req.path) && _.intersectionWith(req.user.appPermissions, ['INTR_' + req.path.split('/')[3]], comparator).length > 0) {
 		return true;
 	}
 
-	if (compareURL('/{app}/interaction/{flowId}/{id}', req.path) && _.intersectionWith(req.user.appPermissions, ['INTR_'+req.path.split('/')[3]], comparator).length > 0) {
+	if (compareURL('/{app}/interaction/{flowId}/{id}', req.path) && _.intersectionWith(req.user.appPermissions, ['INTR_' + req.path.split('/')[3]], comparator).length > 0) {
 		return true;
 	}
 
-	if (compareURL('/{app}/interaction/{flowId}/{id}/state', req.path) && _.intersectionWith(req.user.appPermissions, ['INTR_'+req.path.split('/')[3]], comparator).length > 0) {
+	if (compareURL('/{app}/interaction/{flowId}/{id}/state', req.path) && _.intersectionWith(req.user.appPermissions, ['INTR_' + req.path.split('/')[3]], comparator).length > 0) {
 		return true;
 	}
 
-	if (compareURL('/{app}/interaction/{flowId}/{id}/state/{stateId}/data', req.path) && _.intersectionWith(req.user.appPermissions, ['INTR_'+req.path.split('/')[3]], comparator).length > 0) {
+	if (compareURL('/{app}/interaction/{flowId}/{id}/state/{stateId}/data', req.path) && _.intersectionWith(req.user.appPermissions, ['INTR_' + req.path.split('/')[3]], comparator).length > 0) {
 		return true;
 	}
-	
+
 
 	return false;
 }

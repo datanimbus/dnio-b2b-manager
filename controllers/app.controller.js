@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const log4js = require('log4js');
-const mongoose = require('mongoose');
+// const mongoose = require('mongoose');
 
 const logger = log4js.getLogger(global.loggerName);
 

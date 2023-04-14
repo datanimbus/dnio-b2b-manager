@@ -6,6 +6,6 @@ function init(){
 	require('./faas.model');
 	require('./flow.model');
 	require('./interaction.model');
-	// require('./partner.model');
+	require('./custom-node.model');
 }
 module.exports.init = init;
