@@ -18,6 +18,9 @@ const definition = {
 	'type': {
 		'type': 'String'
 	},
+	'category': {
+		'type': 'String'
+	},
 	'code': {
 		'type': 'String'
 	},
