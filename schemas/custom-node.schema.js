@@ -2,6 +2,9 @@ const definition = {
 	'_id': {
 		'type': 'String'
 	},
+	'name': {
+		'type': 'String'
+	},
 	'app': {
 		'type': 'String'
 	},
