@@ -48,7 +48,7 @@ schema.pre('remove', dataStackUtils.auditTrail.getAuditPreRemoveHook());
 schema.post('remove', dataStackUtils.auditTrail.getAuditPostRemoveHook('b2b.agents.audit', client, 'auditQueue'));
 
 schema.pre('save', function (next) {
-	let regex = /^[a-zA-Z0-9_ -]*$/;
+	let regex = /^[a-zA-Z0-9_\s\-\\.]*$/;
 	this._isNew = this.isNew;
 	if (this.name && this.name.length > 24) return next(new Error('Agent name cannot be more than 24 characters'));
 	if (this.name && regex.test(this.name)) return next();
