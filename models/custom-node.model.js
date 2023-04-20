@@ -17,7 +17,7 @@ schema.plugin(mongooseUtils.metadataPlugin());
 
 
 schema.index({ name: 1, app: 1 }, { unique: true, sparse: true, collation: { locale: 'en_US', strength: 2 } });
-schema.index({ nodeId: 1, nodeType: 1 });
+schema.index({ type: 1, category: 1 });
 
 schema.pre('save', function (next) {
 	let regex = /^[a-zA-Z0-9_\s\-\\.]*$/;
