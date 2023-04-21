@@ -22,6 +22,7 @@ schema.index({ type: 1, category: 1 });
 schema.pre('save', function (next) {
 	let regex = /^[a-zA-Z0-9_\s\-\\.]*$/;
 	this._isNew = this.isNew;
+	this.app = 'admin';
 	if (this.name && this.name.length > 24) return next(new Error('Node name cannot be more than 24 characters'));
 	if (this.name && regex.test(this.name)) return next();
 	return next(new Error('Node name can contain alphanumeric characters with spaces, dashes and underscores only'));
