@@ -17,12 +17,18 @@ schema.plugin(mongooseUtils.metadataPlugin());
 
 
 schema.index({ name: 1, app: 1 }, { unique: true, sparse: true, collation: { locale: 'en_US', strength: 2 } });
-schema.index({ type: 1, category: 1 });
+schema.index({ type: 1, category: 1 }, { unique: true, sparse: true });
 
 schema.pre('save', function (next) {
 	let regex = /^[a-zA-Z0-9_\s\-\\.]*$/;
 	this._isNew = this.isNew;
 	this.app = 'admin';
+	if (!this.params) {
+		this.params = [];
+	}
+	if (!this.name) return next(new Error('Node name is required'));
+	if (!this.type) return next(new Error('Node Type is required'));
+	if (!this.category) return next(new Error('Node Category is required'));
 	if (this.name && this.name.length > 24) return next(new Error('Node name cannot be more than 24 characters'));
 	if (this.name && regex.test(this.name)) return next();
 	return next(new Error('Node name can contain alphanumeric characters with spaces, dashes and underscores only'));
@@ -31,10 +37,15 @@ schema.pre('save', function (next) {
 schema.post('save', function (error, doc, next) {
 	logger.error(error);
 	if (error && error.message && (error.code === 11000
-		|| error.message.indexOf('__CUSTOM_NAME_DUPLICATE_ERROR__') > -1
 		|| error.message.indexOf('E11000') > -1
 	)) {
-		next(new Error('Node name is already in use'));
+		if (error.message.indexOf('type') > -1) {
+			return next(new Error('Node Type is already in use'));
+		}
+		if (error.message.indexOf('category') > -1) {
+			return next(new Error('Node Category is already in use'));
+		}
+		return next(new Error('Node name is already in use'));
 	} else {
 		next(error);
 	}
