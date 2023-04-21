@@ -27,7 +27,7 @@ const definition = {
 	'code': {
 		'type': 'String'
 	},
-	'fields': [
+	'params': [
 		{
 			'dataType': {
 				'type': 'String'
