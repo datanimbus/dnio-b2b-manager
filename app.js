@@ -63,6 +63,23 @@ app.use(fileUpload({
 }));
 app.use(['/bm', '/b2b/bm'], require('./utils/auth'), require('./controllers'));
 
+app.use(function (error, req, res, next) {
+	if (error) {
+		logger.error(error);
+		if (!res.headersSent) {
+			let statusCode = error.statusCode || 500;
+			if (error.message.includes('APP_NAME_ERROR')) {
+				statusCode = 400;
+			} 
+			res.status(statusCode).json({
+				message: error.message
+			});
+		}
+	} else {
+		next();
+	}
+});
+
 const server = app.listen(config.port, () => {
 	logger.info('HTTP Server is listening on:', config.port);
 });
