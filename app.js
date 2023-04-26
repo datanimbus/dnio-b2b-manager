@@ -45,6 +45,15 @@ app.use((req, res, next) => {
 });
 
 app.use(['/b2b/pipes'], (req, res, next) => {
+	let urlSplit = req.path.split('/');
+
+	if (urlSplit[3] && !urlSplit[3].match(/^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]+$/)) {
+		return next(new Error('APP_NAME_ERROR :: App name must consist of alphanumeric characters or \'-\' , and must start and end with an alphanumeric character.'));
+	}
+	if (urlSplit[4] && !urlSplit[4].match(/^[a-zA-Z][a-zA-Z0-9]*$/)) {
+		return next(new Error('FLOW_NAME_ERROR :: Flow name must consist of alphanumeric characters, and must start with an alphabet.'));
+	}
+
 	let skipAuth = global.activeFlows[req.path].skipAuth;
 	if (!skipAuth) {
 		return require('./utils/flow.auth')(req, res, next);
@@ -68,7 +77,7 @@ app.use(function (error, req, res, next) {
 		logger.error(error);
 		if (!res.headersSent) {
 			let statusCode = error.statusCode || 500;
-			if (error.message.includes('APP_NAME_ERROR')) {
+			if (error?.message?.includes('APP_NAME_ERROR') || error?.message?.includes('FLOW_NAME_ERROR')) {
 				statusCode = 400;
 			} 
 			res.status(statusCode).json({
