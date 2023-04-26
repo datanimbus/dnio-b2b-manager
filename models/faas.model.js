@@ -51,6 +51,31 @@ draftSchema.pre('validate', function (next) {
 });
 
 
+schema.pre('save', function (next) {
+	// One extra character for / in api
+	var apiregx = /^\/[a-zA-Z]+[a-zA-Z0-9]*$/;
+
+	if (this.url?.match(apiregx)) {
+		next();
+	} else {
+		next(new Error('API Endpoint must consist of alphanumeric characters and must start with \'/\' and followed by an alphabet.'));
+	}
+	next();
+});
+
+draftSchema.pre('save', function (next) {
+	// One extra character for / in api
+	var apiregx = /^\/[a-zA-Z]+[a-zA-Z0-9]*$/;
+	
+	if (this.url?.match(apiregx)) {
+		next();
+	} else {
+		next(new Error('API Endpoint must consist of alphanumeric characters and must start with \'/\' and followed by an alphabet.'));
+	}
+	next();
+});
+
+
 schema.pre('validate', async function (next) {
 	const req = this._req;
 	let txnId = req && req.headers['TxnId'];

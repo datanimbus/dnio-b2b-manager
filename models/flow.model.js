@@ -93,6 +93,39 @@ draftSchema.pre('save', function (next) {
 });
 
 
+schema.pre('save', function (next) {
+	// One extra character for / in api
+	var apiregx = /^\/[a-zA-Z]+[a-zA-Z0-9]*$/;
+	
+	if (this.inputNode?.options?.path?.length > 40) {
+		return next(new Error('API endpoint length cannot be greater than 40'));
+	}
+
+	if (this.inputNode?.options?.path?.match(apiregx)) {
+		next();
+	} else {
+		next(new Error('API Endpoint must consist of alphanumeric characters and must start with \'/\' and followed by an alphabet.'));
+	}
+	next();
+});
+
+draftSchema.pre('save', function (next) {
+	// One extra character for / in api
+	var apiregx = /^\/[a-zA-Z]+[a-zA-Z0-9]*$/;
+	
+	if (this.inputNode?.options?.path?.length > 40) {
+		return next(new Error('API endpoint length cannot be greater than 40'));
+	}
+
+	if (this.inputNode?.options?.path?.match(apiregx)) {
+		next();
+	} else {
+		next(new Error('API Endpoint must consist of alphanumeric characters and must start with \'/\' and followed by an alphabet.'));
+	}
+	next();
+});
+
+
 schema.pre('save', mongooseUtils.generateId('FLOW', 'b2b.flow', null, 4, 2000));
 
 
