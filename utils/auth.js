@@ -110,9 +110,14 @@ router.use((req, res, next) => {
 		req.locals.app = req.body.app;
 	}
 	const matchingPath = commonUrls.find(e => compareURL(e, req.path));
-	if (!req.locals.app && matchingPath) {
+	if (matchingPath) {
 		const params = getUrlParams(matchingPath, req.path);
-		if (params && params['{app}']) req.locals.app = params['{app}'];
+		
+		if (params && params['{app}'] && !params['{app}'].match(/^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]+$/)) {
+			return next(new Error('APP_NAME_ERROR :: App name must consist of alphanumeric characters or \'-\' , and must start and end with an alphanumeric character.'));
+		} 
+
+		if (!req.locals.app && params && params['{app}']) req.locals.app = params['{app}'];
 	}
 
 	// Check if user is an app admin or super admin.

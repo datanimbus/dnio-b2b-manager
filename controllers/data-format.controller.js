@@ -52,7 +52,7 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
 	try {
 		const payload = req.body;
-		payload.app = req.locals.app;
+		payload.app = payload.app || req.locals.app;
 		if (payload.definition && payload.definition.length > 0) {
 			const errors = commonUtils.validateDefinition(payload.definition);
 			if (errors) {

@@ -28,7 +28,7 @@ router.get('/', async (req, res) => {
 	try {
 		const filter = queryUtils.parseFilter(req.query.filter);
 		if (filter) {
-			filter.app = req.locals.app;
+			filter.app = filter.app || req.locals.app;
 		}
 		if (req.query.countOnly) {
 			const count = await flowModel.countDocuments(filter);
@@ -94,7 +94,7 @@ router.post('/', async (req, res) => {
 		logger.info(`[${txnId}] Flow create request received`);
 		logger.trace(`[${txnId}] Flow details :: ${JSON.stringify(payload)}`);
 
-		payload.app = req.locals.app;
+		payload.app = payload.app || req.locals.app;
 		const errorMsg = flowUtils.validatePayload(payload);
 		if (errorMsg) {
 			return res.status(400).json({ message: errorMsg });
@@ -144,7 +144,7 @@ router.put('/:id', async (req, res) => {
 		logger.trace(`[${txnId}] Flow update data received :: ${JSON.stringify(payload)}`);
 
 
-		payload.app = req.locals.app;
+		payload.app = payload.app || req.locals.app;
 		const errorMsg = flowUtils.validatePayload(payload);
 		if (errorMsg) {
 			return res.status(400).json({ message: errorMsg });
