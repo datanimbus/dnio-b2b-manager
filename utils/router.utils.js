@@ -8,7 +8,7 @@ const flowModal = mongoose.model('flow');
 
 async function initRouterMap() {
 	try {
-		const flows = await flowModal.find({}).lean();
+		const flows = await flowModal.find({status: 'Active'}).lean();
 		global.activeFlows = {};
 		flows.forEach(item => {
 			if (config.isK8sEnv()) {
