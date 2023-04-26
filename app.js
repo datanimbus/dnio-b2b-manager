@@ -47,13 +47,17 @@ app.use((req, res, next) => {
 app.use(['/b2b/pipes'], (req, res, next) => {
 	let urlSplit = req.path.split('/');
 
-	if (urlSplit[3] && !urlSplit[3].match(/^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]+$/)) {
+	if (urlSplit[1] && !urlSplit[1].match(/^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]+$/)) {
 		return next(new Error('APP_NAME_ERROR :: App name must consist of alphanumeric characters or \'-\' , and must start and end with an alphanumeric character.'));
 	}
-	if (urlSplit[4] && !urlSplit[4].match(/^[a-zA-Z][a-zA-Z0-9]*$/)) {
+	if (urlSplit[2] && !urlSplit[2].match(/^[a-zA-Z][a-zA-Z0-9]*$/)) {
 		return next(new Error('FLOW_NAME_ERROR :: Flow name must consist of alphanumeric characters, and must start with an alphabet.'));
 	}
 
+	if (!global.activeFlows[req.path]) {
+		return res.status(404).json({ message: 'Flow is not running' });
+	}
+	
 	let skipAuth = global.activeFlows[req.path].skipAuth;
 	if (!skipAuth) {
 		return require('./utils/flow.auth')(req, res, next);
