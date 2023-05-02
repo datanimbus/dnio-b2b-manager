@@ -95,16 +95,17 @@ draftSchema.pre('save', function (next) {
 
 schema.pre('save', function (next) {
 	// One extra character for / in api
-	var apiregx = /^\/[a-zA-Z]+[a-zA-Z0-9]*$/;
+	// var apiregx = /^\/[a-zA-Z]+[a-zA-Z0-9]*$/;
+	var apiregx = /^[a-zA-Z][a-zA-Z0-9]*$/;
 	
 	if (this.inputNode?.options?.path?.length > 40) {
 		return next(new Error('API endpoint length cannot be greater than 40'));
 	}
 
-	if (this.inputNode?.options?.path?.match(apiregx)) {
+	if (this.inputNode?.options?.path?.split('/')[1].match(apiregx) && this.name?.match(apiregx)) {
 		next();
 	} else {
-		next(new Error('API Endpoint must consist of alphanumeric characters and must start with \'/\' and followed by an alphabet.'));
+		next(new Error('FLOW_NAME_ERROR :: API Endpoint and name must consist of alphanumeric characters and must start with an alphabet.'));
 	}
 	next();
 });
