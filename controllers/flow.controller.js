@@ -246,9 +246,15 @@ router.put('/:id', async (req, res) => {
 		});
 	} catch (err) {
 		logger.error(err);
-		res.status(500).json({
-			message: err.message
-		});
+		if (err.message.includes('FLOW_NAME_ERROR')) {
+			res.status(400).json({
+				message: err.message
+			});
+		} else {
+			res.status(500).json({
+				message: err.message
+			});
+		}
 	}
 });
 

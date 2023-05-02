@@ -51,28 +51,36 @@ draftSchema.pre('validate', function (next) {
 });
 
 
-schema.pre('save', function (next) {
-	// One extra character for / in api
-	var apiregx = /^\/[a-zA-Z]+[a-zA-Z0-9]*$/;
+schema.pre('validate', function (next) {
+	try {
+		var apiregx = /^[a-zA-Z][a-zA-Z0-9]*$/;
+		let urlSplit = this.url.split('/');
 
-	if (this.url?.match(apiregx)) {
-		next();
-	} else {
-		next(new Error('API Endpoint must consist of alphanumeric characters and must start with \'/\' and followed by an alphabet.'));
+		if (urlSplit[urlSplit.length-1].match(apiregx) && this.name?.match(apiregx)) {
+			next();
+		} else {
+			next(new Error('FAAS_NAME_ERROR :: Function name must consist of alphanumeric characters and must start with an alphabet.'));
+		}
+	} catch (err) {
+		logger.error(`[${txnId}] faas - Error validating if API endpoint and name begin with alphabets - ${err}`);
+		next(err);
 	}
-	next();
 });
 
-draftSchema.pre('save', function (next) {
-	// One extra character for / in api
-	var apiregx = /^\/[a-zA-Z]+[a-zA-Z0-9]*$/;
-	
-	if (this.url?.match(apiregx)) {
-		next();
-	} else {
-		next(new Error('API Endpoint must consist of alphanumeric characters and must start with \'/\' and followed by an alphabet.'));
+draftSchema.pre('validate', function (next) {
+	try {
+		var apiregx = /^[a-zA-Z][a-zA-Z0-9]*$/;
+		let urlSplit = this.url.split('/');
+
+		if (urlSplit[urlSplit.length - 1].match(apiregx) && this.name?.match(apiregx)) {
+			next();
+		} else {
+			return next(new Error('FAAS_NAME_ERROR :: Function must consist of alphanumeric characters and must start with an alphabet.'));
+		}
+	} catch (err) {
+		logger.error(`[${txnId}] faas - Error validating if API endpoint and name begin with alphabets - ${err}`);
+		next(err);
 	}
-	next();
 });
 
 
@@ -287,8 +295,8 @@ schema.post('remove', function (doc) {
 async function getNextPort(txnId) {
 	logger.debug(`[${txnId}] Fetching the next port number for the function`);
 
-	let docs = await mongoose.model('faas').find({}).select('port').sort({'port': 1}).lean();
-	if (docs && docs.length > 0 && docs[0].port) 
+	let docs = await mongoose.model('faas').find({}).select('port').sort({ 'port': 1 }).lean();
+	if (docs && docs.length > 0 && docs[0].port)
 		return getNextVal(docs);
 	else
 		return startPort;

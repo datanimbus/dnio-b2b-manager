@@ -169,7 +169,7 @@ router.put('/:id', async (req, res) => {
 			logger.trace(`[${txnId}] Function data to be updated :: ${JSON.stringify(doc)}`);
 
 			doc._req = req;
-			doc.save();
+			await doc.save();
 
 		} else if (faasData.draftVersion) {
 
@@ -182,7 +182,7 @@ router.put('/:id', async (req, res) => {
 
 			draftData = Object.assign(draftData, payload);
 			draftData._req = req;
-			draftData.save();
+			await draftData.save();
 
 		} else {
 			logger.info(`[${txnId}] Function is neither in draft status nor has a linked draft, creating a new draft`);
@@ -214,9 +214,15 @@ router.put('/:id', async (req, res) => {
 		});
 	} catch (err) {
 		logger.error(err);
-		return res.status(500).json({
-			message: err.message
-		});
+		if (err.message.includes('FAAS_NAME_ERROR')) {
+			return res.status(400).json({
+				message: err.message
+			});
+		} else {
+			return res.status(500).json({
+				message: err.message
+			});
+		}
 	}
 });
 

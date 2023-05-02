@@ -81,7 +81,7 @@ app.use(function (error, req, res, next) {
 		logger.error(error);
 		if (!res.headersSent) {
 			let statusCode = error.statusCode || 500;
-			if (error?.message?.includes('APP_NAME_ERROR') || error?.message?.includes('FLOW_NAME_ERROR')) {
+			if (error?.message?.includes('APP_NAME_ERROR') || error?.message?.includes('FLOW_NAME_ERROR') || error?.message?.includes('FAAS_NAME_ERROR')) {
 				statusCode = 400;
 			} 
 			res.status(statusCode).json({
