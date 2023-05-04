@@ -54,10 +54,12 @@ draftSchema.pre('validate', function (next) {
 schema.pre('validate', function (next) {
 	try {
 		// One extra character for / in api
-		let apiregx = /^\/[a-zA-Z]+[a-zA-Z0-9]*$/;
-		let nameregx = /^[a-zA-Z]+[a-zA-Z0-9 _]*$/;
+		let apiregx = /^[a-zA-Z]+[a-zA-Z0-9]*$/;
+		let nameregx = /^[a-zA-Z]+[a-zA-Z0-9 -_]*$/;
 
-		if (this.url.match(apiregx)) {
+		let urlSplit = this.url.split('/');
+
+		if (urlSplit[urlSplit.length - 1].match(apiregx)) {
 			if (this.name?.match(nameregx)) {
 				next();
 			} else {
@@ -74,10 +76,12 @@ schema.pre('validate', function (next) {
 
 draftSchema.pre('validate', function (next) {
 	try {
-		let apiregx = /^\/[a-zA-Z]+[a-zA-Z0-9]*$/;
-		let nameregx = /^[a-zA-Z]+[a-zA-Z0-9 _]*$/;
+		let apiregx = /^[a-zA-Z]+[a-zA-Z0-9]*$/;
+		let nameregx = /^[a-zA-Z]+[a-zA-Z0-9 -_]*$/;
 
-		if (this.url.match(apiregx)) {
+		let urlSplit = this.url.split('/');
+
+		if (urlSplit[urlSplit.length - 1].match(apiregx)) {
 			if (this.name?.match(nameregx)) {
 				next();
 			} else {
