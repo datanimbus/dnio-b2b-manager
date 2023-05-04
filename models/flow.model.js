@@ -95,35 +95,42 @@ draftSchema.pre('save', function (next) {
 
 schema.pre('save', function (next) {
 	// One extra character for / in api
-	// var apiregx = /^\/[a-zA-Z]+[a-zA-Z0-9]*$/;
-	var apiregx = /^[a-zA-Z][a-zA-Z0-9]*$/;
-	
-	if (this.inputNode?.options?.path?.length > 40) {
-		return next(new Error('API endpoint length cannot be greater than 40'));
-	}
-
-	if (this.inputNode?.options?.path?.split('/')[1].match(apiregx) && this.name?.match(apiregx)) {
-		next();
-	} else {
-		next(new Error('FLOW_NAME_ERROR :: API Endpoint and name must consist of alphanumeric characters and must start with an alphabet.'));
-	}
-	next();
-});
-
-draftSchema.pre('save', function (next) {
-	// One extra character for / in api
-	var apiregx = /^\/[a-zA-Z]+[a-zA-Z0-9]*$/;
+	let apiregx = /^\/[a-zA-Z]+[a-zA-Z0-9]*$/;
+	let nameregx = /^[a-zA-Z]+[a-zA-Z0-9 _]*$/;
 	
 	if (this.inputNode?.options?.path?.length > 40) {
 		return next(new Error('API endpoint length cannot be greater than 40'));
 	}
 
 	if (this.inputNode?.options?.path?.match(apiregx)) {
-		next();
+		if (this.name?.match(nameregx)) {
+			next();
+		} else {
+			next(new Error('FLOW_NAME_ERROR :: Name must consist of alphanumeric characters and/or underscore and space and must start with an alphabet.'));
+		}
 	} else {
-		next(new Error('API Endpoint must consist of alphanumeric characters and must start with \'/\' and followed by an alphabet.'));
+		next(new Error('FLOW_NAME_ERROR :: API Endpoint must consist of alphanumeric characters and must start with \'/\' and followed by an alphabet.'));
 	}
-	next();
+});
+
+draftSchema.pre('save', function (next) {
+	// One extra character for / in api
+	let apiregx = /^\/[a-zA-Z]+[a-zA-Z0-9]*$/;
+	let nameregx = /^[a-zA-Z]+[a-zA-Z0-9 _]*$/;
+	
+	if (this.inputNode?.options?.path?.length > 40) {
+		return next(new Error('API endpoint length cannot be greater than 40'));
+	}
+
+	if (this.inputNode?.options?.path?.match(apiregx)) {
+		if (this.name?.match(nameregx)) {
+			next();
+		} else {
+			next(new Error('FLOW_NAME_ERROR :: Name must consist of alphanumeric characters and/or underscore and space and must start with an alphabet.'));
+		}
+	} else {
+		next(new Error('FLOW_NAME_ERROR :: API Endpoint must consist of alphanumeric characters and must start with \'/\' and followed by an alphabet.'));
+	}
 });
 
 
