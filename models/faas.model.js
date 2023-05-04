@@ -53,13 +53,18 @@ draftSchema.pre('validate', function (next) {
 
 schema.pre('validate', function (next) {
 	try {
-		var apiregx = /^[a-zA-Z][a-zA-Z0-9]*$/;
-		let urlSplit = this.url.split('/');
+		// One extra character for / in api
+		let apiregx = /^\/[a-zA-Z]+[a-zA-Z0-9]*$/;
+		let nameregx = /^[a-zA-Z]+[a-zA-Z0-9 _]*$/;
 
-		if (urlSplit[urlSplit.length-1].match(apiregx) && this.name?.match(apiregx)) {
-			next();
+		if (this.url.match(apiregx)) {
+			if (this.name?.match(nameregx)) {
+				next();
+			} else {
+				next(new Error('FAAS_NAME_ERROR :: Name must consist of alphanumeric characters and/or underscore and space and must start with an alphabet.'));
+			}
 		} else {
-			next(new Error('FAAS_NAME_ERROR :: Function name must consist of alphanumeric characters and must start with an alphabet.'));
+			next(new Error('FAAS_NAME_ERROR :: API Endpoint must consist of alphanumeric characters and must start with \'/\' and followed by an alphabet.'));
 		}
 	} catch (err) {
 		logger.error(`[${txnId}] faas - Error validating if API endpoint and name begin with alphabets - ${err}`);
@@ -69,13 +74,17 @@ schema.pre('validate', function (next) {
 
 draftSchema.pre('validate', function (next) {
 	try {
-		var apiregx = /^[a-zA-Z][a-zA-Z0-9]*$/;
-		let urlSplit = this.url.split('/');
+		let apiregx = /^\/[a-zA-Z]+[a-zA-Z0-9]*$/;
+		let nameregx = /^[a-zA-Z]+[a-zA-Z0-9 _]*$/;
 
-		if (urlSplit[urlSplit.length - 1].match(apiregx) && this.name?.match(apiregx)) {
-			next();
+		if (this.url.match(apiregx)) {
+			if (this.name?.match(nameregx)) {
+				next();
+			} else {
+				next(new Error('FAAS_NAME_ERROR :: Name must consist of alphanumeric characters and/or underscore and space and must start with an alphabet.'));
+			}
 		} else {
-			return next(new Error('FAAS_NAME_ERROR :: Function must consist of alphanumeric characters and must start with an alphabet.'));
+			next(new Error('FAAS_NAME_ERROR :: API Endpoint must consist of alphanumeric characters and must start with \'/\' and followed by an alphabet.'));
 		}
 	} catch (err) {
 		logger.error(`[${txnId}] faas - Error validating if API endpoint and name begin with alphabets - ${err}`);
