@@ -194,6 +194,11 @@ router.put('/:id/deploy', async (req, res) => {
 		if (config.isK8sEnv() && !doc.isBinary) {
 			doc.image = flowBaseImage;
 
+			doc.status = 'Pending';
+			doc.isNew = false;
+
+			await doc.save();
+
 			let status = await k8sUtils.upsertService(doc);
 			status = await k8sUtils.upsertDeployment(doc);
 
@@ -203,20 +208,20 @@ router.put('/:id/deploy', async (req, res) => {
 			if (status.statusCode != 200 && status.statusCode != 202) {
 				return res.status(status.statusCode).json({ message: 'Unable to deploy Flow' });
 			}
-			doc.status = 'Pending';
-			doc.isNew = false;
+			
 
 		} else if (doc.isBinary) {
 			doc.status = 'Active';
 			doc.isNew = false;
 
+			await doc.save();
+
 		} else {
 			doc.status = 'Pending';
 			doc.isNew = false;
+
+			await doc.save();
 		}
-
-
-		await doc.save();
 
 		if (doc.inputNode.type === 'FILE' || doc.nodes.some(node => node.type === 'FILE')) {
 			let action;
