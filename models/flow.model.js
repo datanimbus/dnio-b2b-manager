@@ -96,7 +96,7 @@ draftSchema.pre('save', function (next) {
 schema.pre('save', function (next) {
 	// One extra character for / in api
 	let apiregx = /^\/[a-zA-Z]+[a-zA-Z0-9]*$/;
-	let nameregx = /^[a-zA-Z]+[a-zA-Z0-9 -_]*$/;
+	var nameregx = /^[a-zA-Z]+[a-zA-Z0-9_ -]*$/;
 	
 	if (this.inputNode?.options?.path?.length > 40) {
 		return next(new Error('API endpoint length cannot be greater than 40'));
@@ -116,7 +116,7 @@ schema.pre('save', function (next) {
 draftSchema.pre('save', function (next) {
 	// One extra character for / in api
 	let apiregx = /^\/[a-zA-Z]+[a-zA-Z0-9]*$/;
-	let nameregx = /^[a-zA-Z]+[a-zA-Z0-9 -_]*$/;
+	var nameregx = /^[a-zA-Z]+[a-zA-Z0-9_ -]*$/;
 	
 	if (this.inputNode?.options?.path?.length > 40) {
 		return next(new Error('API endpoint length cannot be greater than 40'));
