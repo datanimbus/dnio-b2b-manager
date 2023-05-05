@@ -55,7 +55,7 @@ schema.pre('validate', function (next) {
 	try {
 		// One extra character for / in api
 		let apiregx = /^[a-zA-Z]+[a-zA-Z0-9]*$/;
-		let nameregx = /^[a-zA-Z]+[a-zA-Z0-9 -_]*$/;
+		var nameregx = /^[a-zA-Z]+[a-zA-Z0-9_ -]*$/;
 
 		let urlSplit = this.url.split('/');
 
@@ -77,7 +77,7 @@ schema.pre('validate', function (next) {
 draftSchema.pre('validate', function (next) {
 	try {
 		let apiregx = /^[a-zA-Z]+[a-zA-Z0-9]*$/;
-		let nameregx = /^[a-zA-Z]+[a-zA-Z0-9 -_]*$/;
+		var nameregx = /^[a-zA-Z]+[a-zA-Z0-9_ -]*$/;
 
 		let urlSplit = this.url.split('/');
 
