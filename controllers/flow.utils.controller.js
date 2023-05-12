@@ -90,6 +90,27 @@ router.get('/status/count', async (req, res) => {
 	}
 });
 
+router.get('/node-library/count', async (req, res) => {
+	try {
+		const filter = queryUtils.parseFilter(req.query.filter);
+		if (filter) {
+			delete filter.app;
+		}
+		const docs = await flowConfigModel.countDocuments(filter);
+		res.status(200).json(docs);
+	} catch (err) {
+		logger.error(err);
+		if (typeof err === 'string') {
+			return res.status(500).json({
+				message: err
+			});
+		}
+		res.status(500).json({
+			message: err.message
+		});
+	}
+});
+
 router.get('/node-library', async (req, res) => {
 	try {
 		const filter = queryUtils.parseFilter(req.query.filter);
