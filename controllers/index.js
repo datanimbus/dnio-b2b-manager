@@ -28,6 +28,7 @@ router.get('/faas/fetchAll', async (req, res) => {
 router.use('/auth', paramParser, require('./agent-auth.controller'));
 router.use('/app', require('./app.controller'));
 router.use('/admin/node', paramParser, require('./custom-node.controller'));
+router.use('/admin/node/utils', paramParser, require('./custom-node.utils.controller'));
 router.use('/:app/agent', paramParser, require('./agent.controller'));
 router.use('/:app/agent/utils', paramParser, require('./agent-session.controller'));
 router.use('/:app/agent/utils', paramParser, require('./agent.utils.controller'));

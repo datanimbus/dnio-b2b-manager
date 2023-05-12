@@ -16,6 +16,7 @@ const logger = log4js.getLogger(global.loggerName);
 const flowModel = mongoose.model('flow');
 const draftFlowModel = mongoose.model('flow.draft');
 const agentActionModel = mongoose.model('agent-action');
+const flowConfigModel = mongoose.model('b2b.libraries');
 
 let dockerRegistryType = process.env.DOCKER_REGISTRY_TYPE ? process.env.DOCKER_REGISTRY_TYPE : '';
 if (dockerRegistryType.length > 0) dockerRegistryType = dockerRegistryType.toUpperCase();
@@ -55,7 +56,7 @@ router.get('/status/count', async (req, res) => {
 			filter.app = req.locals.app;
 			filter['_metadata.deleted'] = false;
 		}
-		
+
 		let aggregateQuery = [
 			{ $match: filter },
 			{
@@ -66,7 +67,7 @@ router.get('/status/count', async (req, res) => {
 			}
 		];
 		let result = await flowModel.aggregate(aggregateQuery);
-		
+
 		let response = {};
 		let total = 0;
 		result.forEach(rs => {
@@ -76,6 +77,47 @@ router.get('/status/count', async (req, res) => {
 		response['Total'] = total;
 
 		return res.json(response);
+	} catch (err) {
+		logger.error(err);
+		if (typeof err === 'string') {
+			return res.status(500).json({
+				message: err
+			});
+		}
+		res.status(500).json({
+			message: err.message
+		});
+	}
+});
+
+router.get('/node-library', async (req, res) => {
+	try {
+		const filter = queryUtils.parseFilter(req.query.filter);
+		if (filter) {
+			filter.app = req.locals.app;
+		}
+		const data = queryUtils.getPaginationData(req);
+		const docs = await flowConfigModel.find(filter).select(data.select).sort(data.sort).skip(data.skip).limit(data.count).lean();
+		res.status(200).json(docs);
+	} catch (err) {
+		logger.error(err);
+		if (typeof err === 'string') {
+			return res.status(500).json({
+				message: err
+			});
+		}
+		res.status(500).json({
+			message: err.message
+		});
+	}
+});
+
+router.post('/node-library', async (req, res) => {
+	try {
+		const doc = new flowConfigModel(req.body);
+		doc._req = req;
+		const status = await doc.save();
+		res.status(200).json(status);
 	} catch (err) {
 		logger.error(err);
 		if (typeof err === 'string') {
@@ -208,7 +250,7 @@ router.put('/:id/deploy', async (req, res) => {
 			if (status.statusCode != 200 && status.statusCode != 202) {
 				return res.status(status.statusCode).json({ message: 'Unable to deploy Flow' });
 			}
-			
+
 
 		} else if (doc.isBinary) {
 			doc.status = 'Active';
@@ -230,7 +272,7 @@ router.put('/:id/deploy', async (req, res) => {
 			} else {
 				action = 'create';
 			}
-			
+
 			let flowActionList = helpers.constructFlowEvent(req, '', doc, action);
 			flowActionList.forEach(action => {
 				const actionDoc = new agentActionModel(action);
@@ -553,19 +595,19 @@ router.put('/stopAll', async (req, res) => {
 
 			if (config.isK8sEnv() && !doc.isBinary) {
 				const status = await k8sUtils.scaleDeployment(doc, 0);
-				
+
 				logger.debug(status);
-				
+
 				if (status.statusCode !== 200 && status.statusCode !== 202) {
 					logger.error('K8S :: Error stopping flow');
 					logger.error(`Unable to stop Flow :: ${doc._id} :: ${status}`);
 				}
 			}
-	
+
 			let eventId = 'EVENT_FLOW_STOP';
 			logger.debug(`[${txnId}] Publishing Event - ${eventId}`);
 			dataStackUtils.eventsUtil.publishEvent(eventId, 'flow', req, doc, null);
-	
+
 			socket.emit('flowStatus', {
 				_id: doc._id,
 				app: app,
@@ -575,7 +617,7 @@ router.put('/stopAll', async (req, res) => {
 				namespace: doc.namespace,
 				message: 'Stopped'
 			});
-	
+
 			doc.status = 'Stopped';
 			doc.isNew = false;
 			doc._req = req;

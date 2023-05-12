@@ -22,12 +22,14 @@ const schema = mongooseUtils.MakeSchema(definition, {
 const draftSchema = mongooseUtils.MakeSchema(draftDefinition, {
 	versionKey: 'version'
 });
+const npmLibrarySchema = mongooseUtils.MakeSchema({}, { strict: false });
 
 schema.index({ name: 1, app: 1 }, { unique: true, sparse: true, collation: { locale: 'en_US', strength: 2 } });
 schema.index({ 'inputNode.options.path': 1, app: 1 }, { unique: true, sparse: true, collation: { locale: 'en_US', strength: 2 } });
 
 schema.plugin(mongooseUtils.metadataPlugin());
 draftSchema.plugin(mongooseUtils.metadataPlugin());
+npmLibrarySchema.plugin(mongooseUtils.metadataPlugin());
 
 
 schema.pre('save', function (next) {
@@ -97,7 +99,7 @@ schema.pre('save', function (next) {
 	// One extra character for / in api
 	let apiregx = /^\/[a-zA-Z]+[a-zA-Z0-9]*$/;
 	var nameregx = /^[a-zA-Z]+[a-zA-Z0-9_ -]*$/;
-	
+
 	if (this.inputNode?.options?.path?.length > 40) {
 		return next(new Error('API endpoint length cannot be greater than 40'));
 	}
@@ -117,7 +119,7 @@ draftSchema.pre('save', function (next) {
 	// One extra character for / in api
 	let apiregx = /^\/[a-zA-Z]+[a-zA-Z0-9]*$/;
 	var nameregx = /^[a-zA-Z]+[a-zA-Z0-9_ -]*$/;
-	
+
 	if (this.inputNode?.options?.path?.length > 40) {
 		return next(new Error('API endpoint length cannot be greater than 40'));
 	}
@@ -135,7 +137,7 @@ draftSchema.pre('save', function (next) {
 
 
 schema.pre('save', mongooseUtils.generateId('FLOW', 'b2b.flow', null, 4, 2000));
-
+npmLibrarySchema.pre('save', mongooseUtils.generateId('CONFIG', 'config.b2b.libraries', null, 4, 2000));
 
 schema.pre('save', dataStackUtils.auditTrail.getAuditPreSaveHook('b2b.flow'));
 
@@ -184,4 +186,5 @@ schema.post('remove', function (doc) {
 
 
 mongoose.model('flow', schema, 'b2b.flows');
-mongoose.model('flow.draft', schema, 'b2b.flows.draft');
+mongoose.model('flow.draft', draftSchema, 'b2b.flows.draft');
+mongoose.model('b2b.libraries', npmLibrarySchema, 'config.b2b.libraries');

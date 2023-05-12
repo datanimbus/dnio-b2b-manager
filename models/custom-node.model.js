@@ -63,3 +63,10 @@ schema.post('remove', dataStackUtils.auditTrail.getAuditPostRemoveHook('b2b.node
 
 
 mongoose.model('node', schema, 'b2b.nodes');
+
+
+
+const configSchema = mongooseUtils.MakeSchema({ _id: 'String', label: 'String', value: 'String' });
+
+configSchema.plugin(mongooseUtils.metadataPlugin());
+mongoose.model('b2b.category', configSchema, 'config.b2b.category');
