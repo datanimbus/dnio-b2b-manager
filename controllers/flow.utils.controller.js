@@ -94,7 +94,7 @@ router.get('/node-library', async (req, res) => {
 	try {
 		const filter = queryUtils.parseFilter(req.query.filter);
 		if (filter) {
-			filter.app = 'Admin';
+			delete filter.app;
 		}
 		const data = queryUtils.getPaginationData(req);
 		const docs = await flowConfigModel.find(filter).select(data.select).sort(data.sort).skip(data.skip).limit(data.count).lean();
