@@ -2,8 +2,8 @@ const log4js = require('log4js');
 const mongoose = require('mongoose');
 const yamljs = require('json-to-pretty-yaml');
 const router = require('express').Router({ mergeParams: true });
-
 const dataStackUtils = require('@appveen/data.stack-utils');
+const _ = require('lodash');
 
 const config = require('../config');
 const k8sUtils = require('../utils/k8s.utils');
@@ -117,6 +117,45 @@ router.post('/node-library', async (req, res) => {
 		const doc = new flowConfigModel(req.body);
 		doc._req = req;
 		const status = await doc.save();
+		res.status(200).json(status);
+	} catch (err) {
+		logger.error(err);
+		if (typeof err === 'string') {
+			return res.status(500).json({
+				message: err
+			});
+		}
+		res.status(500).json({
+			message: err.message
+		});
+	}
+});
+
+router.put('/node-library/:id', async (req, res) => {
+	try {
+		let doc = await flowConfigModel.findById(req.params.id);
+		doc._req = req;
+		doc = _.merge(doc, req.body);
+		const status = await doc.save();
+		res.status(200).json(status);
+	} catch (err) {
+		logger.error(err);
+		if (typeof err === 'string') {
+			return res.status(500).json({
+				message: err
+			});
+		}
+		res.status(500).json({
+			message: err.message
+		});
+	}
+});
+
+router.delete('/node-library/:id', async (req, res) => {
+	try {
+		const doc = new flowConfigModel(req.body);
+		doc._req = req;
+		const status = flowConfigModel.deleteOne({ _id: req.params.id });
 		res.status(200).json(status);
 	} catch (err) {
 		logger.error(err);

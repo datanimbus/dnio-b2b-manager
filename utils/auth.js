@@ -37,6 +37,9 @@ const adminOnlyUrls = [
 	'/{app}/node/',
 	'/{app}/node/{id}',
 	'/{app}/node/utils/count',
+	'/{app}/flow/utils/node-library/',
+	'/{app}/flow/utils/node-library/{id}',
+	'/{app}/flow/utils/node-library/utils/count',
 ];
 
 const superAdminOnlyUrls = [];
