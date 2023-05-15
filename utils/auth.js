@@ -8,6 +8,7 @@ const logger = global.logger;
 
 const permittedUrls = [
 	'/auth/login',
+	'/internal/env',
 	'/internal/app/{id}',
 	'/internal/health/live',
 	'/internal/health/ready'

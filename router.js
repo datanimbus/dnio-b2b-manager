@@ -2,6 +2,7 @@ const log4js = require('log4js');
 const router = require('express').Router({ mergeParams: true });
 const { v4: uuid } = require('uuid');
 const proxy = require('express-http-proxy');
+const url = require('url');
 
 const routerUtils = require('./utils/router.utils');
 const flowUtils = require('./utils/flow.utils');
@@ -33,7 +34,14 @@ router.use('/:app/:api(*)?', async (req, res, next) => {
 		}
 		const result = await flowUtils.createInteraction(req, { flowId: routeData.flowId });
 		const proxyHost = routeData.proxyHost;
-		const proxyPath = routeData.proxyPath + '?interactionId=' + result._id;
+		let proxyPath;
+		if (Object.keys(req.query).length > 0) {
+			const urlParsed = url.parse(req.url, true);
+			logger.trace('URL parsed with query params - ', urlParsed.search);
+			proxyPath = routeData.proxyPath + urlParsed.search + '&interactionId=' + result._id;
+		} else {
+			proxyPath = routeData.proxyPath + '?interactionId=' + result._id;
+		}
 		logger.info('Proxying request to: ', proxyHost + proxyPath);
 		proxy(proxyHost, {
 			memoizeHost: false,
