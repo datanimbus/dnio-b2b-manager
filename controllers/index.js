@@ -39,7 +39,7 @@ router.use('/:app/flow', paramParser, require('./flow.controller'));
 router.use('/:app/flow/utils', paramParser, require('./flow.utils.controller'));
 router.use('/:app/interaction', paramParser, require('./interaction.controller'));
 // router.use('/:app/node', paramParser, require('./custom-node.controller'));
-router.use('/internal/app', require('./internal.controller'));
+router.use('/internal', require('./internal.controller'));
 router.use('/internal/health', require('./health.controller'));
 
 module.exports = router;
