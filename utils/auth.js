@@ -30,14 +30,15 @@ const internalUrls = [
 	// '/app/{id}',
 	'/{app}/faas/utils/{id}/init',
 	'/{app}/faas/utils/{id}/statusChange',
-	'/{app}/flow/utils/{id}/init'
+	'/{app}/flow/utils/{id}/init',
+	'/{app}/flow/utils/node-library',
 ];
 
 const adminOnlyUrls = [
 	'/{app}/node/',
 	'/{app}/node/{id}',
 	'/{app}/node/utils/count',
-	'/{app}/flow/utils/node-library/',
+	'/{app}/flow/utils/node-library',
 	'/{app}/flow/utils/node-library/{id}',
 	'/{app}/flow/utils/node-library/utils/count',
 ];
@@ -115,10 +116,10 @@ router.use((req, res, next) => {
 	const matchingPath = commonUrls.find(e => compareURL(e, req.path));
 	if (matchingPath) {
 		const params = getUrlParams(matchingPath, req.path);
-		
+
 		if (params && params['{app}'] && !params['{app}'].match(/^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]+$/)) {
 			return next(new Error('APP_NAME_ERROR :: App name must consist of alphanumeric characters or \'-\' , and must start and end with an alphanumeric character.'));
-		} 
+		}
 
 		if (!req.locals.app && params && params['{app}']) req.locals.app = params['{app}'];
 	}
@@ -154,7 +155,7 @@ router.use((req, res, next) => {
 
 	if (req.locals.app && !req.locals.app.match(/^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]+$/)) {
 		return next(new Error('APP_NAME_ERROR :: App name must consist of alphanumeric characters or \'-\' , and must start and end with an alphanumeric character.'));
-	} 
+	}
 
 	// Check if path is allowed only to super admins.
 	if (superAdminOnlyUrls.some(e => compareURL(e, req.path)) && req.user && req.user.isSuperAdmin) {
