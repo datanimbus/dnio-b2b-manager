@@ -9,7 +9,13 @@ const logger = log4js.getLogger(global.loggerName);
 
 router.get('/env', async (req, res) => {
 	try {
-		res.status(200).json(config);
+		let envVars = {};
+		config.envVarsForFlows.forEach(key => {
+			envVars[key] = process.env[key];
+		});
+		envVars['NODE_OPTIONS'] = `--max-old-space-size=${config.maxHeapSize}`;
+		envVars['NODE_ENV'] = 'production';
+		res.status(200).json(envVars);
 	} catch (err) {
 		logger.error(`[${req.get('TxnId')}] Error Fetching ENV - ${err.message}`);
 		logger.error(err);
