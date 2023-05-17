@@ -175,7 +175,9 @@ router.put('/node-library/:id', async (req, res) => {
 router.delete('/node-library/:id', async (req, res) => {
 	try {
 		const status = await flowConfigModel.deleteOne({ _id: req.params.id });
-		res.status(200).json(status);
+		logger.info('Library Deleted!');
+		logger.debug(status);
+		res.status(200).json({ message: 'Library deleted successfully' });
 	} catch (err) {
 		logger.error(err);
 		if (typeof err === 'string') {
