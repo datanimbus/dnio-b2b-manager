@@ -174,7 +174,7 @@ router.put('/node-library/:id', async (req, res) => {
 
 router.delete('/node-library/:id', async (req, res) => {
 	try {
-		const status = flowConfigModel.deleteOne({ _id: req.params.id });
+		const status = await flowConfigModel.deleteOne({ _id: req.params.id });
 		res.status(200).json(status);
 	} catch (err) {
 		logger.error(err);
