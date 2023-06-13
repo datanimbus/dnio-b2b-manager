@@ -18,12 +18,12 @@ function encryptDataGCM(data, key) {
     const nonce = crypto.randomBytes(12);
     var cipher = crypto.createCipheriv(ALGORITHM, hashedkey, nonce);
     const encrypted = Buffer.concat([nonce, cipher.update(Buffer.from(compressedData).toString("base64")), cipher.final(), cipher.getAuthTag()]);
-    return Buffer.from(encrypted).toString("base64");;
+    return Buffer.from(encrypted).toString("base64");
 }
 
 function decompress(decryptedBuffer) {
     const inflated = zlib.inflateSync(decryptedBuffer);
-    const inflatedString = inflated.toString();
+    const inflatedString = inflated.toString('base64');
     return inflatedString;
 }
 
