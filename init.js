@@ -31,7 +31,7 @@ function agentStatusCron() {
 		logger.trace('New Date ', dateFilter);
 		dateFilter.setSeconds(config.hbFrequency * config.hbMissCount * -1);
 		logger.trace('Date ', dateFilter);
-		let findFilter = { status: { '$nin': ['STOPPED', 'DISABLED'] }, '_metadata.lastUpdated': { '$lte': dateFilter } };
+		let findFilter = { status: { '$nin': ['STOPPED', 'DISABLED', 'PENDING'] }, '_metadata.lastUpdated': { '$lte': dateFilter } };
 		logger.trace('findFilter', JSON.stringify(findFilter));
 		return agentModel.find(findFilter).lean()
 			.then(agents => {

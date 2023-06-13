@@ -8,6 +8,7 @@ const FormData = require('form-data');
 const { v4: uuid } = require('uuid');
 const { zip } = require('zip-a-folder');
 const { exec } = require('child_process');
+const XLSX = require('xlsx');
 
 const config = require('../config');
 const queryUtils = require('../utils/query.utils');
@@ -174,14 +175,18 @@ router.put('/:id/password', async (req, res) => {
 
 		const pwdResp = await securityUtils.encryptText(doc.app, payload.password);
 		if (!pwdResp || pwdResp.statusCode != 200) {
-			return next(new Error('Unable to encrypt data'));
+			return res.status(400).json({
+				message: 'Unable to encrypt data'
+			});
 		}
 		doc.password = pwdResp.body.data;
 
 		const text = securityUtils.md5(payload.password);
 		const secResp = await securityUtils.encryptText(doc.app, text);
 		if (!secResp || secResp.statusCode != 200) {
-			return next(new Error('Unable to encrypt data'));
+			return res.status(400).json({
+				message: 'Unable to encrypt data'
+			});
 		}
 		doc.secret = secResp.body.data;
 		doc.version = doc.version + 1;
@@ -413,7 +418,15 @@ router.post('/:id/upload', async (req, res) => {
 				try {
 					decryptedData = fileUtils.decryptDataGCM(encryptedData.toString(), config.encryptionKey);
 					logger.trace(`[${txnId}] DecryptedData - `, decryptedData);
-					fs.writeFileSync(uploadHeaders.originalFileName, decryptedData);
+					const fileExtension = reqFile.name.split('.').pop();
+					logger.trace('File extension - ', fileExtension);
+					if (fileExtension === 'xlsx' || fileExtension === 'xls') {
+						const wb = XLSX.read(Buffer.from(decryptedData, 'base64'));
+						XLSX.writeFile(wb, './uploads/' + reqFile.name, { bookType: 'xlsx', type: 'binary', compression: true });
+					} else {
+						fs.writeFileSync('./uploads/' + reqFile.name, Buffer.from(decryptedData, 'base64').toString());
+						// fs.writeFileSync('./uploads/' + reqFile.name, decryptedData);
+					}
 				} catch (err) {
 					logger.error(`[${txnId}] Error decrypting data - ${err}`);
 					return res.status(500).json({ message: err.message });
@@ -421,7 +434,7 @@ router.post('/:id/upload', async (req, res) => {
 
 				logger.info(`[${txnId}] File ${uploadHeaders.originalFileName} for the flow ${uploadHeaders.flowName} received, uploading file to flow`);
 				let formData = new FormData();
-				formData.append('file', fs.createReadStream(uploadHeaders.originalFileName));
+				formData.append('file', fs.createReadStream('./uploads/' + uploadHeaders.originalFileName));
 
 				let flowUrl;
 				if (config.isK8sEnv()) {
@@ -434,13 +447,13 @@ router.post('/:id/upload', async (req, res) => {
 				const result = await flowUtils.createInteraction(req, { flowId: uploadHeaders.flowId });
 				logger.trace(`[${txnId}] Interaction status - `, result);
 				logger.debug(`[${txnId}] FlowUrl - `, flowUrl);
+				let flowHeaders = formData.getHeaders();
+				flowHeaders['DATA-STACK-Txn-Id'] = req.header('DATA-STACK-Txn-Id');
+				flowHeaders['DATA-STACK-Remote-Txn-Id'] = req.header('DATA-STACK-Remote-Txn-Id');
 				const flowRes = await httpClient.httpRequest({
 					url: flowUrl + '?interactionId=' + result._id,
 					method: 'POST',
-					headers: {
-						'DATA-STACK-Txn-Id': req.header('DATA-STACK-Txn-Id'),
-						'DATA-STACK-Remote-Txn-Id': req.header('DATA-STACK-Remote-Txn-Id')
-					},
+					headers: flowHeaders,
 					body: formData
 				});
 				if (!flowRes) {
