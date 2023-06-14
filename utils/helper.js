@@ -93,6 +93,12 @@ function constructFlowEvent(req, doc, flow, action) {
 				if (['BINARY', 'DELIMITER', 'FLATFILE'].indexOf(inputContentType) > -1) {
 					metaData.fileSuffix = '.';
 				}
+				if (inputObj.options.inputDirectories) {
+					metaData.inputDirectories = inputObj.options.inputDirectories;
+				}
+				if (inputObj.options.uniqueTxnId) {
+					metaData.uniqueRemoteTransaction = inputObj.options.uniqueTxnId;
+				}
 			} else if (agentType === 'FILE' && agent.blockType === 'output') {
 				let fileSuffix = outputContentType;
 				if (outputContentType === 'EXCEL') {
@@ -118,7 +124,6 @@ function constructFlowEvent(req, doc, flow, action) {
 			}*/
 
 			agentActionObject['metaData'] = JSON.stringify(metaData);
-			agentActionObject['agentID'] = agent.agentID;
 			return agentActionObject;
 		});
 		logger.trace({ agentActionList });
