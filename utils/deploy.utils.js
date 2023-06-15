@@ -42,6 +42,9 @@ async function deploy(data, type) {
 		let val = envKeys[i];
 		envObj[val] = process.env[val];
 	}
+	if (type == 'flow') {
+		envObj['B2B_ALLOW_NPM_INSTALL'] = process.env[B2B_ALLOW_NPM_INSTALL];
+	}
 	envObj['DATA_STACK_APP_NS'] = (config.DATA_STACK_NAMESPACE + '-' + data.app).toLowerCase();
 	logger.debug('***************************************************');
 	logger.debug('port', data.port);
