@@ -97,7 +97,7 @@ draftSchema.pre('save', function (next) {
 
 schema.pre('save', function (next) {
 	// One extra character for / in api
-	let apiregx = /^\/[a-zA-Z]+[a-zA-Z0-9]*$/;
+	let apiregx = /^\/[a-zA-Z]+[a-zA-Z0-9/{}]*$/;
 	var nameregx = /^[a-zA-Z]+[a-zA-Z0-9_ -]*$/;
 
 	if (this.inputNode?.options?.path?.length > 40) {
@@ -117,7 +117,7 @@ schema.pre('save', function (next) {
 
 draftSchema.pre('save', function (next) {
 	// One extra character for / in api
-	let apiregx = /^\/[a-zA-Z]+[a-zA-Z0-9]*$/;
+	let apiregx = /^\/[a-zA-Z]+[a-zA-Z0-9/{}]*$/;
 	var nameregx = /^[a-zA-Z]+[a-zA-Z0-9_ -]*$/;
 
 	if (this.inputNode?.options?.path?.length > 40) {
