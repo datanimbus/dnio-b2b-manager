@@ -13,8 +13,9 @@ routerUtils.initRouterMap();
 router.use('/:app/:api(*)?', async (req, res, next) => {
 	try {
 		const path = '/' + req.params.app + '/' + req.params.api;
-		logger.debug('Looking for path in map:', path, global.activeFlows[path]);
-		if (!global.activeFlows[path]) {
+		let routeData = routerUtils.getMatchingRoute(req, path, global.activeFlows);
+		logger.debug('Looking for path in map:', path, routeData);
+		if (!routeData) {
 			return res.status(400).json({ message: `No Flows with path ${path} Found` });
 		}
 		const headers = JSON.parse(JSON.stringify(req.headers));
@@ -28,7 +29,7 @@ router.use('/:app/:api(*)?', async (req, res, next) => {
 		delete headers['connection'];
 		delete headers['user-agent'];
 		delete headers['content-length'];
-		const routeData = global.activeFlows[path];
+		// const routeData = global.activeFlows[path];
 		if (!routeData || !routeData.proxyHost || !routeData.proxyPath) {
 			return res.status(404).json({ message: 'No Route Found' });
 		}
