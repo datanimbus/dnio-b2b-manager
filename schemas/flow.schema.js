@@ -49,6 +49,32 @@ const definition = {
 	'nodes': { 'type': 'Object' },
 	'errorNode': { 'type': 'Object' },
 	'dataStructures': { 'type': 'Object' },
+	'constants': [
+		{
+			'key': {
+				'type': 'String', 'required': true
+			},
+			'dataType': {
+				'type': 'String', 'required': true
+			},
+			'value': {
+				'type': 'String'
+			}
+		}
+	],
+	'volumeMounts': [
+		{
+			'name': {
+				'type': 'String', 'required': true
+			},
+			'hostPath': {
+				'type': 'String', 'required': true
+			},
+			'containerPath': {
+				'type': 'String', 'required': true
+			}
+		}
+	],
 	'port': { 'type': 'String' },
 	'description': { 'type': 'String' },
 	'isBinary': {
