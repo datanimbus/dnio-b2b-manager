@@ -39,9 +39,9 @@ router.use('/:app/:api(*)?', async (req, res, next) => {
 		if (Object.keys(req.query).length > 0) {
 			const urlParsed = url.parse(req.url, true);
 			logger.trace('URL parsed with query params - ', urlParsed.search);
-			proxyPath = routeData.proxyPath + urlParsed.search + '&interactionId=' + result._id;
+			proxyPath = '/api/b2b'+path + urlParsed.search + '&interactionId=' + result._id;
 		} else {
-			proxyPath = routeData.proxyPath + '?interactionId=' + result._id;
+			proxyPath = '/api/b2b'+path + '?interactionId=' + result._id;
 		}
 		logger.info('Proxying request to: ', proxyHost + proxyPath);
 		proxy(proxyHost, {

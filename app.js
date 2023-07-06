@@ -12,6 +12,7 @@ const cookieParser = require('cookie-parser');
 
 const config = require('./config');
 require('./db-factory');
+const routerUtils = require('./utils/router.utils');
 
 const logger = global.logger;
 global.activeRequest = 0;
@@ -54,11 +55,13 @@ app.use(['/b2b/pipes'], (req, res, next) => {
 		return next(new Error('FLOW_NAME_ERROR :: Flow name must consist of alphanumeric characters, and must start with an alphabet.'));
 	}
 
-	if (!global.activeFlows[req.path]) {
+	let routeData = routerUtils.getMatchingRoute(req, req.path, global.activeFlows);
+	logger.debug('Looking for path in map:', req.path, routeData);
+	if (!routeData) {
 		return res.status(404).json({ message: 'Flow is not running' });
 	}
-	
-	let skipAuth = global.activeFlows[req.path].skipAuth;
+
+	let skipAuth = routeData.skipAuth;
 	if (!skipAuth) {
 		return require('./utils/flow.auth')(req, res, next);
 	}
@@ -83,7 +86,7 @@ app.use(function (error, req, res, next) {
 			let statusCode = error.statusCode || 500;
 			if (error?.message?.includes('APP_NAME_ERROR') || error?.message?.includes('FLOW_NAME_ERROR') || error?.message?.includes('FAAS_NAME_ERROR')) {
 				statusCode = 400;
-			} 
+			}
 			res.status(statusCode).json({
 				message: error.message
 			});
