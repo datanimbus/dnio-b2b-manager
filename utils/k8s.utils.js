@@ -30,7 +30,7 @@ async function upsertService(data) {
 
 async function upsertDeployment(data) {
 	try {
-		const envKeys = ['FQDN', 'LOG_LEVEL', 'MONGO_APPCENTER_URL', 'MONGO_AUTHOR_DBNAME', 'MONGO_AUTHOR_URL', 'MONGO_LOGS_DBNAME', 'MONGO_LOGS_URL', 'MONGO_RECONN_TIME', 'MONGO_RECONN_TRIES', 'STREAMING_CHANNEL', 'STREAMING_HOST', 'STREAMING_PASS', 'STREAMING_RECONN_ATTEMPTS', 'STREAMING_RECONN_TIMEWAIT', 'STREAMING_USER', 'DATA_STACK_NAMESPACE', 'CACHE_CLUSTER', 'CACHE_HOST', 'CACHE_PORT', 'CACHE_RECONN_ATTEMPTS', 'CACHE_RECONN_TIMEWAIT_MILLI', 'RELEASE', 'TLS_REJECT_UNAUTHORIZED', 'API_REQUEST_TIMEOUT','B2B_ALLOW_NPM_INSTALL'];
+		const envKeys = ['FQDN', 'LOG_LEVEL', 'MONGO_APPCENTER_URL', 'MONGO_AUTHOR_DBNAME', 'MONGO_AUTHOR_URL', 'MONGO_LOGS_DBNAME', 'MONGO_LOGS_URL', 'MONGO_RECONN_TIME', 'MONGO_RECONN_TRIES', 'STREAMING_CHANNEL', 'STREAMING_HOST', 'STREAMING_PASS', 'STREAMING_RECONN_ATTEMPTS', 'STREAMING_RECONN_TIMEWAIT', 'STREAMING_USER', 'DATA_STACK_NAMESPACE', 'CACHE_CLUSTER', 'CACHE_HOST', 'CACHE_PORT', 'CACHE_RECONN_ATTEMPTS', 'CACHE_RECONN_TIMEWAIT_MILLI', 'RELEASE', 'TLS_REJECT_UNAUTHORIZED', 'API_REQUEST_TIMEOUT', 'B2B_ALLOW_NPM_INSTALL'];
 		const envVars = [];
 		for (let i in envKeys) {
 			let val = envKeys[i];
@@ -39,6 +39,16 @@ async function upsertDeployment(data) {
 		envVars.push({ name: 'DATA_STACK_APP_NS', value: (config.DATA_STACK_NAMESPACE + '-' + data.app).toLowerCase() });
 		envVars.push({ name: 'DATA_STACK_FLOW_ID', value: data._id });
 		envVars.push({ name: 'DATA_STACK_APP', value: data.app });
+
+		let volumeMounts = {};
+		if (data.volumeMounts && data.volumeMounts.length > 0) {
+			data.volumeMounts.forEach((item) => {
+				volumeMounts[item.name] = {
+					containerPath: item.containerPath,
+					hostPath: item.hostPath
+				};
+			});
+		}
 
 		const options = {
 			startupProbe: {
@@ -56,14 +66,14 @@ async function upsertDeployment(data) {
 		let res = await k8sClient.deployment.getDeployment(data.namespace, data.deploymentName);
 		logger.debug('Deployment found for the name:', data.deploymentName, res.statusCode, data.image);
 		if (res.statusCode == 200) {
-			res = await k8sClient.deployment.updateDeployment(data.namespace, data.deploymentName, data.image, (data.port || 8080), envVars, options, null);
+			res = await k8sClient.deployment.updateDeployment(data.namespace, data.deploymentName, data.image, (data.port || 8080), envVars, options, volumeMounts);
 			logger.debug('Deployment Update Status:', data.deploymentName, res.statusCode, data.image);
 			res = await k8sClient.deployment.scaleDeployment(data.namespace, data.deploymentName, 0);
 			logger.debug('Deployment Scaled to 0:', data.deploymentName, res.statusCode, data.image);
 			res = await k8sClient.deployment.scaleDeployment(data.namespace, data.deploymentName, 1);
 			logger.debug('Deployment Scaled to 1:', data.deploymentName, res.statusCode, data.image);
 		} else {
-			res = await k8sClient.deployment.createDeployment(data.namespace, data.deploymentName, data.image, (data.port || 8080), envVars, options, config.release);
+			res = await k8sClient.deployment.createDeployment(data.namespace, data.deploymentName, data.image, (data.port || 8080), envVars, options, config.release, volumeMounts);
 			logger.debug('Deployment Create Status:', data.deploymentName, res.statusCode, data.image);
 		}
 		return res;
