@@ -67,6 +67,9 @@ const definition = {
 			'name': {
 				'type': 'String', 'required': true
 			},
+			'mountType': {
+				'type': 'String', 'required': true, 'default': 'HOSTPATH'
+			},
 			'hostPath': {
 				'type': 'String', 'required': true
 			},

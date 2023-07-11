@@ -44,6 +44,7 @@ async function upsertDeployment(data) {
 		if (data.volumeMounts && data.volumeMounts.length > 0) {
 			data.volumeMounts.forEach((item) => {
 				volumeMounts[item.name] = {
+					mountType: item.mountType,
 					containerPath: item.containerPath,
 					hostPath: item.hostPath
 				};
