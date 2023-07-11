@@ -20,7 +20,7 @@
   },
   "homepage": "https://github.com/appveen/ds-b2b-manager#readme",
   "dependencies": {
-    "@appveen/data.stack-utils": "^1.0.21",
+    "@appveen/data.stack-utils": "^1.0.22",
     "@appveen/ds-auth-cache": "^1.0.7",
     "@appveen/ds-sdk": "^2.3.2",
     "@appveen/utils": "^2.1.13",
