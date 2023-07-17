@@ -40,7 +40,7 @@
     "log4js": "^6.6.1",
     "moment": "^2.29.4",
     "mongodb": "^4.10.0",
-    "mongoose": "^6.6.5",
+    "mongoose": "^6.11.3",
     "node-schedule": "^2.1.0",
     "node-cron": "^2.0.3",
     "recursive-copy": "^2.0.14",
