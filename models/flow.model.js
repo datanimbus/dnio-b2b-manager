@@ -49,7 +49,7 @@ schema.pre('save', function (next) {
 		if (!this.inputNode.options.path || !this.inputNode.options.path.trim()) {
 			this.inputNode.options.path = '/' + _.camelCase(this.name);
 		}
-		if (this.nodes && this.nodes.length == 1 && this.inputNode.type == 'FILE' && this.nodes[0].type == 'FILE') {
+		if (this.nodes && this.nodes.length == 1 && this.inputNode.type == 'FILE' && this.nodes[0].type == 'FILE' && !this.inputNode.dataStructure) {
 			this.isBinary = true;
 		}
 		if (!this.deploymentName) {
@@ -80,7 +80,7 @@ draftSchema.pre('save', function (next) {
 		if (!this.inputNode.options.path || !this.inputNode.options.path.trim()) {
 			this.inputNode.options.path = '/' + _.camelCase(this.name);
 		}
-		if (this.nodes && this.nodes.length == 1 && this.inputNode.type == 'FILE' && this.nodes[0].type == 'FILE') {
+		if (this.nodes && this.nodes.length == 1 && this.inputNode.type == 'FILE' && this.nodes[0].type == 'FILE' && !this.inputNode.dataStructure) {
 			this.isBinary = true;
 		}
 		if (!this.deploymentName) {

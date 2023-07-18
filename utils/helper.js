@@ -13,7 +13,7 @@ function constructFlowEvent(req, doc, flow, action) {
 
 		const inputObj = flow.inputNode;
 		const index = flow.nodes.findIndex(node => node.type === 'FILE');
-		let outputObj = index > 0 ? flow.nodes[index] : null;
+		let outputObj = flow.nodes[index];
 		const inputType = inputObj.type;
 		const outputType = outputObj != null ? outputObj.type : null;
 		let inputContentType = 'BINARY';
