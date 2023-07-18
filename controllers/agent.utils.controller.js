@@ -523,7 +523,7 @@ router.post('/:id/download', async (req, res) => {
 				return res.status(400).json({ message: 'File not found' });
 			}
 
-			const downloadFilePath = '/app/downloads/' + payload.fileName;
+			const downloadFilePath = './downloads/' + payload.fileName;
 			let writeStream = fs.createWriteStream(downloadFilePath);
 
 			const encryptedData = await new Promise((resolve, reject) => {
