@@ -88,7 +88,8 @@ function constructFlowEvent(req, doc, flow, action) {
 				}
 				metaData = {
 					'fileSuffix': _.lowerCase(fileSuffix),
-					'fileMaxSize': envConfig.maxFileSize
+					'fileMaxSize': envConfig.maxFileSize,
+					'direction': agent.blockType
 				};
 				if (['BINARY', 'DELIMITER', 'FLATFILE'].indexOf(inputContentType) > -1) {
 					metaData.fileSuffix = '.';
@@ -105,7 +106,8 @@ function constructFlowEvent(req, doc, flow, action) {
 					fileSuffix = flow.dataStructures[outputObj.dataStructure.outgoing._id].excelType;
 				}
 				metaData = {
-					'fileSuffix': _.lowerCase(fileSuffix)
+					'fileSuffix': _.lowerCase(fileSuffix),
+					'direction': agent.blockType
 				};
 				if (['BINARY', 'DELIMITER', 'FLATFILE'].indexOf(outputContentType) > -1) {
 					metaData.fileSuffix = '.';
