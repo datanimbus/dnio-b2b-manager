@@ -16,7 +16,7 @@ function getPaginationData(req) {
 		data.skip = data.count * ((+req.query.page) - 1);
 	}
 	if (req.query.select && req.query.select.trim()) {
-		data.select = req.query.select;
+		data.select = req.query.select ? req.query.select.split(',').join(' ') : '';
 	}
 	if (req.query.sort && req.query.sort.trim()) {
 		data.sort = req.query.sort;

@@ -122,6 +122,10 @@ router.use((req, res, next) => {
 			return next(new Error('APP_NAME_ERROR :: App name must consist of alphanumeric characters or \'-\' , and must start and end with an alphanumeric character.'));
 		}
 
+		if (req.locals.app && params && req.locals.app !== params['{app}']) {
+			return next(new Error("App in url does not match with one in either body or filter."));
+		}
+
 		if (!req.locals.app && params && params['{app}']) req.locals.app = params['{app}'];
 	}
 
@@ -176,9 +180,15 @@ router.use((req, res, next) => {
 		}
 
 		if (!req.locals.app) {
-			return res.status(400).json({ message: 'App value needed for this API' });
+			res.status(400).json({ message: 'App value needed for this API' });
+			return next(new Error('App value needed for this API'));
 		}
 
+		if (!req.user.isSuperAdmin && !req.user.allPermissions.find(e => e.app === req.locals.app) && !req.user.apps.includes(req.locals.app)) {
+			res.status(403).json({ "message": "You don't have permissions for this app." });
+			return next(new Error("You don't have permissions for this app."));
+		}
+		
 		// Check if user has permission for the path.
 		if (canAccessPath(req)) {
 			return next();
