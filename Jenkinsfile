@@ -57,7 +57,7 @@ pipeline {
             }
             steps {
                 dir('ds-agent-watcher') {
-                  git branch: "$BRANCH_NAME", url: 'https://github.com/appveen/ds-agent-watcher.git'
+                  git branch: "$BRANCH_NAME", url: 'https://github.com/datanimbus/dnio-agent-watcher.git'
                 }
             }
         }

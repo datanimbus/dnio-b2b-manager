@@ -2,8 +2,8 @@
 set -e
 if [ -f $WORKSPACE/../TOGGLE ]; then
     echo "****************************************************"
-    echo "data.stack.bm :: Toggle mode is on, terminating build"
-    echo "data.stack.bm :: BUILD CANCLED"
+    echo "datanimbus.io.bm :: Toggle mode is on, terminating build"
+    echo "datanimbus.io.bm :: BUILD CANCLED"
     echo "****************************************************"
     exit 0
 fi
@@ -33,15 +33,15 @@ fi
 # fi
 # if [ ! $LATEST_B2BGW ]; then
 #     echo "****************************************************"
-#     echo "data.stack.bm :: Please Build B2BGW 1st."
-#     echo "data.stack.bm :: BUILD FAILED"
+#     echo "datanimbus.io.bm :: Please Build B2BGW 1st."
+#     echo "datanimbus.io.bm :: BUILD FAILED"
 #     echo "****************************************************"
 #     exit 0
 # fi
 if [ ! $REL ]; then
     echo "****************************************************"
-    echo "data.stack.bm :: Please Create file DATA_STACK_RELEASE with the releaese at $WORKSPACE or provide it as 1st argument of this script."
-    echo "data.stack.bm :: BUILD FAILED"
+    echo "datanimbus.io.bm :: Please Create file DATA_STACK_RELEASE with the releaese at $WORKSPACE or provide it as 1st argument of this script."
+    echo "datanimbus.io.bm :: BUILD FAILED"
     echo "****************************************************"
     exit 0
 fi
@@ -54,13 +54,13 @@ if [ $3 ]; then
 fi
 if [ $CICD ]; then
     echo "****************************************************"
-    echo "data.stack.bm :: CICI env found"
+    echo "datanimbus.io.bm :: CICI env found"
     echo "****************************************************"
     TAG=$TAG"_"$cDate
     if [ ! -f $WORKSPACE/../DATA_STACK_NAMESPACE ]; then
         echo "****************************************************"
-        echo "data.stack.bm :: Please Create file DATA_STACK_NAMESPACE with the namespace at $WORKSPACE"
-        echo "data.stack.bm :: BUILD FAILED"
+        echo "datanimbus.io.bm :: Please Create file DATA_STACK_NAMESPACE with the namespace at $WORKSPACE"
+        echo "datanimbus.io.bm :: BUILD FAILED"
         echo "****************************************************"
         exit 0
     fi
@@ -90,13 +90,13 @@ sh $WORKSPACE/scripts/prepare_yaml.sh $REL $2
 
 cd $WORKSPACE
 # echo "****************************************************"
-# echo "data.stack.bm :: Removing executables"
+# echo "datanimbus.io.bm :: Removing executables"
 # echo "****************************************************"
 # rm generatedAgent/exes/*
 # rm -rf generatedAgent/sentinels/*
 # rm -rf generatedAgent/scriptFiles/*
 # echo "****************************************************"
-# echo "data.stack.bm :: Copying executables"
+# echo "datanimbus.io.bm :: Copying executables"
 # echo "****************************************************"
 # cp $WORKSPACE/../ds-b2b-agent/exec/* generatedAgent/exes/ 
 # cp $WORKSPACE/../govault/exec/vault-linux-386 generatedAgent/vault/
@@ -105,42 +105,42 @@ cd $WORKSPACE
 # cp $WORKSPACE/../ds-b2b-agent-watcher/README.md generatedAgent/scriptFiles/
 
 echo "****************************************************"
-echo "data.stack.bm :: Using build :: "$TAG
+echo "datanimbus.io.bm :: Using build :: "$TAG
 echo "****************************************************"
 
 echo "****************************************************"
-echo "data.stack.bm :: Adding IMAGE_TAG in Dockerfile :: "$TAG
+echo "datanimbus.io.bm :: Adding IMAGE_TAG in Dockerfile :: "$TAG
 echo "****************************************************"
 sed -i.bak s#__image_tag__#$TAG# Dockerfile
 
 if [ -f $WORKSPACE/../CLEAN_BUILD_BM ]; then
     echo "****************************************************"
-    echo "data.stack.bm :: Doing a clean build"
+    echo "datanimbus.io.bm :: Doing a clean build"
     echo "****************************************************"
     
-    # docker build --no-cache -t data.stack.bm.$TAG --build-arg LATEST_B2BGW=$LATEST_B2BGW --build-arg RELEASE=$REL .
-    docker build --no-cache -t data.stack.bm:$TAG --build-arg RELEASE=$REL .
+    # docker build --no-cache -t datanimbus.io.bm.$TAG --build-arg LATEST_B2BGW=$LATEST_B2BGW --build-arg RELEASE=$REL .
+    docker build --no-cache -t datanimbus.io.bm:$TAG --build-arg RELEASE=$REL .
     rm $WORKSPACE/../CLEAN_BUILD_BM
 
 
     echo "****************************************************"
-    echo "data.stack.bm :: Building Base Image"
+    echo "datanimbus.io.bm :: Building Base Image"
     echo "****************************************************"
     
     cd $WORKSPACE/../ds-b2b-base
-    docker build --no-cache -t data.stack.b2b.base:$TAG .
+    docker build --no-cache -t datanimbus.io.b2b.base:$TAG .
 
 
     echo "****************************************************"
-    echo "data.stack.bm :: Building Faas Image"
+    echo "datanimbus.io.bm :: Building Faas Image"
     echo "****************************************************"
 
     cd $WORKSPACE/../ds-faas
-    docker build --no-cache -t data.stack.faas.base:$TAG .
+    docker build --no-cache -t datanimbus.io.faas.base:$TAG .
 
     cd $WORKSPACE
     echo "****************************************************"
-    echo "data.stack.bm :: Copying deployment files"
+    echo "datanimbus.io.bm :: Copying deployment files"
     echo "****************************************************"
 
     if [ $CICD ]; then
@@ -159,44 +159,44 @@ if [ -f $WORKSPACE/../CLEAN_BUILD_BM ]; then
 
 else
     echo "****************************************************"
-    echo "data.stack.bm :: Doing a normal build"
+    echo "datanimbus.io.bm :: Doing a normal build"
     echo "****************************************************"
-    # docker build -t data.stack.bm:$TAG --build-arg LATEST_B2BGW=$LATEST_B2BGW --build-arg RELEASE=$REL .
-    docker build -t data.stack.bm:$TAG --build-arg RELEASE=$REL .
+    # docker build -t datanimbus.io.bm:$TAG --build-arg LATEST_B2BGW=$LATEST_B2BGW --build-arg RELEASE=$REL .
+    docker build -t datanimbus.io.bm:$TAG --build-arg RELEASE=$REL .
 
     echo "****************************************************"
-    echo "data.stack.bm :: Building Base Image"
+    echo "datanimbus.io.bm :: Building Base Image"
     echo "****************************************************"
     
     cd $WORKSPACE/../ds-b2b-base
-    docker build -t data.stack.b2b.base:$TAG .
+    docker build -t datanimbus.io.b2b.base:$TAG .
 
     cd $WORKSPACE/../ds-faas
-    docker build --no-cache -t data.stack.faas.base:$TAG .
+    docker build --no-cache -t datanimbus.io.faas.base:$TAG .
 
     cd $WORKSPACE
 
     if [ $CICD ]; then
         if [ $DOCKER_REG ]; then
-            kubectl set image deployment/bm bm=$DOCKER_REG/data.stack.bm:$TAG -n $DATA_STACK_NS --record=true
+            kubectl set image deployment/bm bm=$DOCKER_REG/datanimbus.io.bm:$TAG -n $DATA_STACK_NS --record=true
         else 
-            kubectl set image deployment/bm bm=data.stack.bm:$TAG -n $DATA_STACK_NS --record=true
+            kubectl set image deployment/bm bm=datanimbus.io.bm:$TAG -n $DATA_STACK_NS --record=true
         fi
     fi
 fi
 if [ $DOCKER_REG ]; then
     echo "****************************************************"
-    echo "data.stack.bm :: Docker Registry found, pushing image"
+    echo "datanimbus.io.bm :: Docker Registry found, pushing image"
     echo "****************************************************"
 
-    docker tag data.stack.bm:$TAG $DOCKER_REG/data.stack.bm:$TAG
-    docker push $DOCKER_REG/data.stack.bm:$TAG
-    docker tag data.stack.b2b.base:$TAG $DOCKER_REG/data.stack.b2b.base:$TAG
-    docker push $DOCKER_REG/data.stack.b2b.base:$TAG
-    docker tag data.stack.faas.base:$TAG $DOCKER_REG/data.stack.faas.base:$TAG
-    docker push $DOCKER_REG/data.stack.faas.base:$TAG
+    docker tag datanimbus.io.bm:$TAG $DOCKER_REG/datanimbus.io.bm:$TAG
+    docker push $DOCKER_REG/datanimbus.io.bm:$TAG
+    docker tag datanimbus.io.b2b.base:$TAG $DOCKER_REG/datanimbus.io.b2b.base:$TAG
+    docker push $DOCKER_REG/datanimbus.io.b2b.base:$TAG
+    docker tag datanimbus.io.faas.base:$TAG $DOCKER_REG/datanimbus.io.faas.base:$TAG
+    docker push $DOCKER_REG/datanimbus.io.faas.base:$TAG
 fi
 echo "****************************************************"
-echo "data.stack.bm :: BUILD SUCCESS :: data.stack.bm:$TAG"
+echo "datanimbus.io.bm :: BUILD SUCCESS :: datanimbus.io.bm:$TAG"
 echo "****************************************************"
 echo $TAG > $WORKSPACE/../LATEST_BM

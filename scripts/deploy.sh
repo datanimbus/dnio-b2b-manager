@@ -6,12 +6,12 @@ TAG=`cat CURRENT_BM`
 
 
 echo "****************************************************"
-echo "data.stack:bm :: Deploying Image in K8S :: $NAMESPACE"
+echo "datanimbus.io.bm :: Deploying Image in K8S :: $NAMESPACE"
 echo "****************************************************"
 
-kubectl set image deployment/bm bm=$ECR_URL/data.stack.bm:$TAG -n $NAMESPACE --record=true
+kubectl set image deployment/bm bm=$ECR_URL/datanimbus.io.bm:$TAG -n $NAMESPACE --record=true
 
 
 echo "****************************************************"
-echo "data.stack:bm :: Image Deployed in K8S AS $ECR_URL/data.stack.bm:$TAG"
+echo "datanimbus.io.bm :: Image Deployed in K8S AS $ECR_URL/datanimbus.io.bm:$TAG"
 echo "****************************************************"
