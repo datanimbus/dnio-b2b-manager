@@ -20,20 +20,20 @@ pipeline {
         }
         stage('SCM') {
             steps {
-                git branch: "$BRANCH_NAME", url: 'https://github.com/appveen/ds-b2b-manager.git'
+                git branch: "$BRANCH_NAME", url: 'https://github.com/datanimbus/dnio-b2b-manager.git'
             }
         }
         stage('SCM B2B Base Image') {
             steps {
                 dir('ds-b2b-base') {
-                  git branch: "$BRANCH_NAME", url: 'https://github.com/appveen/ds-b2b-base.git'
+                  git branch: "$BRANCH_NAME", url: 'https://github.com/datanimbus/dnio-b2b-base.git'
                 }
             }
         }
         stage('SCM FaaS Base Image') {
             steps {
                 dir('ds-faas') {
-                  git branch: "$BRANCH_NAME", url: 'https://github.com/appveen/ds-faas.git'
+                  git branch: "$BRANCH_NAME", url: 'https://github.com/datanimbus/dnio-faas-base.git'
                 }
             }
         }
@@ -45,7 +45,7 @@ pipeline {
             }
             steps {
                 dir('ds-agent') {
-                  git branch: "$BRANCH_NAME", url: 'https://github.com/appveen/ds-agent.git'
+                  git branch: "$BRANCH_NAME", url: 'https://github.com/datanimbus/dnio-agent.git'
                 }
             }
         }
