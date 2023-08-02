@@ -24,8 +24,8 @@ if (dockerRegistryType.length > 0) dockerRegistryType = dockerRegistryType.toUpp
 let dockerReg = process.env.DOCKER_REGISTRY_SERVER ? process.env.DOCKER_REGISTRY_SERVER : '';
 if (dockerReg.length > 0 && !dockerReg.endsWith('/') && dockerRegistryType != 'ECR') dockerReg += '/';
 
-let flowBaseImage = `${dockerReg}data.stack.b2b.base:${config.imageTag}`;
-if (dockerRegistryType == 'ECR') flowBaseImage = `${dockerReg}:data.stack.b2b.base:${config.imageTag}`;
+let flowBaseImage = `${dockerReg}datanimbus.io.b2b.base:${config.imageTag}`;
+if (dockerRegistryType == 'ECR') flowBaseImage = `${dockerReg}:datanimbus.io.b2b.base:${config.imageTag}`;
 
 
 router.get('/count', async (req, res) => {

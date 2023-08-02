@@ -35,7 +35,7 @@ spec:
       serviceAccountName: ds-admin
       containers:
         - name: bm
-          image: 'appveen/data.stack.bm:2.3.0'
+          image: 'appveen/datanimbus.io.bm:2.3.0'
           ports:
             - containerPort: 10011
             - containerPort: 10443

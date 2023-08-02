@@ -17,8 +17,8 @@ if (dockerRegistryType.length > 0) dockerRegistryType = dockerRegistryType.toUpp
 let dockerReg = process.env.DOCKER_REGISTRY_SERVER ? process.env.DOCKER_REGISTRY_SERVER : '';
 if (dockerReg.length > 0 && !dockerReg.endsWith('/') && dockerRegistryType != 'ECR') dockerReg += '/';
 
-let faasBaseImage = `${dockerReg}data.stack.faas.base:${config.imageTag}`;
-if (dockerRegistryType == 'ECR') faasBaseImage = `${dockerReg}:data.stack.faas.base:${config.imageTag}`;
+let faasBaseImage = `${dockerReg}datanimbus.io.faas.base:${config.imageTag}`;
+if (dockerRegistryType == 'ECR') faasBaseImage = `${dockerReg}:datanimbus.io.faas.base:${config.imageTag}`;
 
 router.get('/count', async (req, res) => {
 	try {
