@@ -36,27 +36,13 @@ router.get('/document/:type/:id', async (req, res) => {
 	let id = req.params.id;
 
 	try {
-		let draft = req.query.draft;
 		let doc;
 
 		if (type == 'faas') {
-			if (draft) {
-				doc = await mongoose.model('faas.draft').findOne({ _id: id }).lean();
-				if (!doc) {
-					doc = await mongoose.model('faas').findOne({ _id: id }).lean();	
-				}
-			} else {
-				doc = await mongoose.model('faas').findOne({ _id: id }).lean();
-			}
+			doc = await mongoose.model('faas').findOne({ _id: id }).lean();
+			
 		} else if (type == 'flow') {
-			if (draft) {
-				doc = await mongoose.model('flow.draft').findOne({ _id: id }).lean();
-				if (!doc) {
-					doc = await mongoose.model('flow').findOne({ _id: id }).lean();
-				}
-			} else {
-				doc = await mongoose.model('flow').findOne({ _id: id }).lean();
-			}
+			doc = await mongoose.model('flow').findOne({ _id: id }).lean();
 		}
 
 		if (doc) {
