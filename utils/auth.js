@@ -10,6 +10,7 @@ const permittedUrls = [
 	'/auth/login',
 	'/internal/env',
 	'/internal/app/{id}',
+	'/internal/document/{type}/{id}',
 	'/internal/health/live',
 	'/internal/health/ready'
 ];
