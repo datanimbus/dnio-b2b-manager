@@ -10,7 +10,6 @@ const permittedUrls = [
 	'/auth/login',
 	'/internal/env',
 	'/internal/app/{id}',
-	'/internal/document/{type}/{id}',
 	'/internal/health/live',
 	'/internal/health/ready'
 ];
@@ -45,7 +44,9 @@ const adminOnlyUrls = [
 	'/{app}/flow/utils/node-library/utils/count',
 ];
 
-const superAdminOnlyUrls = [];
+const superAdminOnlyUrls = [
+	'/internal/document/{type}/{id}'
+];
 
 const commonUrls = [
 	'/{app}/agent/',
