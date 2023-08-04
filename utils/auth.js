@@ -41,7 +41,9 @@ const adminOnlyUrls = [
 	'/{app}/flow/utils/node-library/utils/count',
 ];
 
-const superAdminOnlyUrls = [];
+const superAdminOnlyUrls = [
+	'/internal/document/{type}/{id}'
+];
 
 const commonUrls = [
 	'/{app}/agent/',
