@@ -308,7 +308,7 @@ function canAccessPath(req) {
 
 
 	// Integration Flows
-	if (compareURL('/{app}/flow/', req.path) && _.intersectionWith(req.user.appPermissions, ['PVIF', 'PMIF'], comparator).length > 0) {
+	if (compareURL('/{app}/flow/', req.path) && _.intersectionWith(req.user.appPermissions, ['PVIF', 'PMIF', 'INTR_'], comparator).length > 0) {
 		if (req.method === 'POST') {
 			if (_.intersectionWith(req.user.appPermissions, ['PMIF'], comparator).length > 0) {
 				return true;
@@ -318,7 +318,7 @@ function canAccessPath(req) {
 		return true;
 	}
 
-	if (compareURL('/{app}/flow/{id}', req.path) && _.intersectionWith(req.user.appPermissions, ['PVIF', 'PMIF'], comparator).length > 0) {
+	if (compareURL('/{app}/flow/{id}', req.path) && _.intersectionWith(req.user.appPermissions, ['PVIF', 'PMIF', 'INTR_'], comparator).length > 0) {
 		if (req.method === 'PUT' || req.method === 'DELETE') {
 			if (_.intersectionWith(req.user.appPermissions, ['PMIF'], comparator).length > 0) {
 				return true;

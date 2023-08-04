@@ -113,7 +113,9 @@ function parseFilter(filter) {
 	}
 	filterParsed = filter;
 	try {
-		filterParsed = JSON.parse(filterParsed);
+		if (typeof filterParsed == 'string') {
+			filterParsed = JSON.parse(filterParsed);
+		}
 	} catch (e) {
 		filterParsed = filter;
 		logger.error(e);
