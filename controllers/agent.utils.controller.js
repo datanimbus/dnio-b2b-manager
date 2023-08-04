@@ -547,7 +547,7 @@ router.post('/:id/download', async (req, res) => {
 			logger.trace(`[${txnId}] EncryptedData string - `, encryptedData.toString());
 			logger.trace(`[${txnId}] MD5 Checksum of EncryptedData - `, fileUtils.createHash(encryptedData));
 
-			res.status(200).send(encryptedData);
+			res.status(200).send(Buffer.from(encryptedData,'base64'));
 		}
 	} catch (err) {
 		logger.error(err);
