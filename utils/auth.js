@@ -36,9 +36,6 @@ const internalUrls = [
 ];
 
 const adminOnlyUrls = [
-	'/{app}/node/',
-	'/{app}/node/{id}',
-	'/{app}/node/utils/count',
 	'/{app}/flow/utils/node-library',
 	'/{app}/flow/utils/node-library/{id}',
 	'/{app}/flow/utils/node-library/utils/count',
@@ -91,7 +88,10 @@ const commonUrls = [
 	'/{app}/interaction/{flowId}/',
 	'/{app}/interaction/{flowId}/{id}',
 	'/{app}/interaction/{flowId}/{id}/state',
-	'/{app}/interaction/{flowId}/{id}/state/{stateId}/data'
+	'/{app}/interaction/{flowId}/{id}/state/{stateId}/data',
+	'/{app}/node/',
+	'/{app}/node/{id}',
+	'/{app}/node/utils/count',
 ];
 
 
@@ -188,7 +188,7 @@ router.use((req, res, next) => {
 			res.status(403).json({ "message": "You don't have permissions for this app." });
 			return next(new Error("You don't have permissions for this app."));
 		}
-		
+
 		// Check if user has permission for the path.
 		if (canAccessPath(req)) {
 			return next();
@@ -363,6 +363,34 @@ function canAccessPath(req) {
 	}
 
 	if (compareURL('/{app}/flow/utils/{id}/yamls', req.path) && _.intersectionWith(req.user.appPermissions, ['PVIF'], comparator).length > 0) {
+		return true;
+	}
+
+
+
+	// Plugins (Permissions Same as Data Pipes)
+
+	if (compareURL('/{app}/node/', req.path) && _.intersectionWith(req.user.appPermissions, ['PVIF', 'PMIF'], comparator).length > 0) {
+		if (req.method === 'POST') {
+			if (_.intersectionWith(req.user.appPermissions, ['PMIF'], comparator).length > 0) {
+				return true;
+			}
+			return false;
+		}
+		return true;
+	}
+
+	if (compareURL('/{app}/node/{id}', req.path) && _.intersectionWith(req.user.appPermissions, ['PVIF', 'PMIF'], comparator).length > 0) {
+		if (req.method === 'PUT' || req.method === 'DELETE') {
+			if (_.intersectionWith(req.user.appPermissions, ['PMIF'], comparator).length > 0) {
+				return true;
+			}
+			return false;
+		}
+		return true;
+	}
+
+	if (compareURL('/{app}/node/utils/count', req.path) && _.intersectionWith(req.user.appPermissions, ['PVIF', 'PMIF'], comparator).length > 0) {
 		return true;
 	}
 
