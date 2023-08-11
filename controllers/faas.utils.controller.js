@@ -108,6 +108,7 @@ router.put('/:id/init', async (req, res) => {
 router.put('/:id/deploy', async (req, res) => {
 	try {
 		let id = req.params.id;
+		let app = req.params.app;
 		let txnId = req.header('txnId');
 		let socket = req.app.get('socket');
 
@@ -119,9 +120,9 @@ router.put('/:id/deploy', async (req, res) => {
 
 		logger.debug(`[${txnId}] User details - ${JSON.stringify({ user, isSuperAdmin, verifyDeploymentUser })}`);
 
-		let doc = await faasModel.findOne({ _id: id, '_metadata.deleted': false });
+		let doc = await faasModel.findOne({ _id: id, app: app, '_metadata.deleted': false });
 		if (!doc) {
-			logger.error(`[${txnId}] Faas data not found for id :: ${id}`);
+			logger.error(`[${txnId}] Faas data not found for id :: ${id} in app :: ${app}`);
 			return res.status(400).json({ message: 'Invalid Function' });
 		}
 		const oldFaasObj = doc.toObject();
