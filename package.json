@@ -20,7 +20,7 @@
   },
   "homepage": "https://github.com/appveen/ds-b2b-manager#readme",
   "dependencies": {
-    "@appveen/data.stack-utils": "^1.0.22",
+    "@appveen/data.stack-utils": "github:appveen/data.stack-utils",
     "@appveen/ds-auth-cache": "^1.0.8",
     "@appveen/ds-sdk": "^2.3.4",
     "@appveen/utils": "^2.1.13",
@@ -41,8 +41,8 @@
     "moment": "^2.29.4",
     "mongodb": "^4.10.0",
     "mongoose": "^6.6.5",
-    "node-schedule": "^2.1.1",
     "node-cron": "^2.0.3",
+    "node-schedule": "^2.1.1",
     "recursive-copy": "^2.0.14",
     "shorthash": "^0.0.2",
     "socket.io": "4.7.1",
