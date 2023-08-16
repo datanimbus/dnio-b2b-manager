@@ -144,7 +144,7 @@ router.put('/:id/deploy', async (req, res) => {
 		} else {
 			logger.debug(`[${txnId}] Faas is not in draft status, checking in draft collection :: ${doc.status}`);
 
-			const draftDoc = await faasDraftModel.findOne({ _id: id, '_metadata.deleted': false });
+			const draftDoc = await faasDraftModel.findOne({ _id: id, app: app, '_metadata.deleted': false });
 
 			if (!draftDoc) {
 				logger.error(`[${txnId}] Faas has no draft version for deployment`);
@@ -210,7 +210,7 @@ router.put('/:id/deploy', async (req, res) => {
 
 router.put('/:id/repair', async (req, res) => {
 	try {
-		const doc = await faasModel.findById(req.params.id).lean();
+		const doc = await faasModel.findOne({ _id: req.params.id, app: req.params.app }).lean();
 		if (!doc) {
 			return res.status(400).json({ message: 'Invalid Function' });
 		}
@@ -244,7 +244,7 @@ router.put('/:id/start', async (req, res) => {
 		let socket = req.app.get('socket');
 		logger.info(`[${txnId}] Function start request received :: ${id}`);
 
-		const doc = await faasModel.findById(req.params.id);
+		const doc = await faasModel.findOne({ _id: req.params.id, app: req.params.app });
 		if (!doc) {
 			return res.status(400).json({ message: 'Invalid Function' });
 		}
@@ -308,7 +308,7 @@ router.put('/:id/stop', async (req, res) => {
 		let socket = req.app.get('socket');
 		logger.info(`[${txnId}] Function stop request received :: ${id}`);
 
-		const doc = await faasModel.findById(req.params.id);
+		const doc = await faasModel.findOne({ _id: req.params.id, app: req.params.app });
 		if (!doc) {
 			return res.status(404).json({ message: 'Invalid Function' });
 		}
@@ -514,13 +514,13 @@ router.put('/:id/draftDelete', async (req, res) => {
 		let txnId = req.get('TxnId');
 		logger.info(`[${txnId}] Function draft delete request received :: ${id}`);
 
-		let doc = await faasModel.findById(id);
+		let doc = await faasModel.findOne({ _id: id, app: req.params.app });
 		if (!doc) {
 			logger.error(`[${txnId}] Function data not found for id :: ${id}`);
 			return res.status(404).json({ message: 'Invalid Function' });
 		}
 
-		let draftDoc = await faasDraftModel.findById(id);
+		let draftDoc = await faasDraftModel.findOne({ _id: id, app: app });
 		if (!draftDoc) {
 			logger.debug(`[${txnId}] Function draft data not found for id :: ${id}`);
 		}
@@ -560,7 +560,7 @@ router.put('/:id/statusChange', async (req, res) => {
 
 	logger.info(`[${req.get('TxnId')}] Faas status update params - ${JSON.stringify({ id, status })}`);
 	try {
-		const doc = await faasModel.findById(id);
+		const doc = await faasModel.findOne({ _id: id, app: req.params.app });
 		if (!doc) {
 			return res.status(400).json({ message: 'Invalid Function' });
 		}
