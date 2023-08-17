@@ -544,10 +544,10 @@ router.post('/:id/download', async (req, res) => {
 				});
 			});
 			logger.trace(`[${txnId}] EncryptedData - `, encryptedData);
-			logger.trace(`[${txnId}] EncryptedData string - `, encryptedData.toString());
+			logger.trace(`[${txnId}] EncryptedData string - `, encryptedData.toString('base64'));
 			logger.trace(`[${txnId}] MD5 Checksum of EncryptedData - `, fileUtils.createHash(encryptedData));
 
-			res.status(200).send(encryptedData);
+			res.status(200).send(encryptedData.toString('base64'));
 		}
 	} catch (err) {
 		logger.error(err);
