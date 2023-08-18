@@ -14,16 +14,16 @@ async function upsertService(data) {
 	try {
 		let res = await k8sClient.service.getService(data.namespace, data.deploymentName);
 		logger.debug('Service found for the name:', data.deploymentName, res.statusCode);
-		logger.trace(`Service fetch status :: ${res}`);
+		logger.trace(`Service fetch status :: ${JSON.stringify(res)}`);
 
 		if (res.statusCode == 200) {
 			res = await k8sClient.service.updateService(data.namespace, data.deploymentName, (data.port || 8080));
 			logger.debug('Service Update Status:', data.deploymentName, res.statusCode);
-			logger.trace(`Service update status :: ${res}`);
+			logger.trace(`Service update status :: ${JSON.stringify(res)}`);
 		} else {
 			res = await k8sClient.service.createService(data.namespace, data.deploymentName, (data.port || 8080), config.release);
 			logger.debug('Service Create Status:', data.deploymentName, res.statusCode);
-			logger.trace(`Service create status :: ${res}`);
+			logger.trace(`Service create status :: ${JSON.stringify(res)}`);
 		}
 		return res;
 	} catch (err) {
@@ -125,23 +125,23 @@ async function upsertFaasDeployment(data) {
 		};
 		let res = await k8sClient.deployment.getDeployment(data.namespace, data.deploymentName);
 		logger.debug('Deployment found for the name:', data.deploymentName, res.statusCode, data.image);
-		logger.trace(`Deployment fetch status :: ${res}`);
+		logger.trace(`Deployment fetch status :: ${JSON.stringify(res)}`);
 		if (res.statusCode == 200) {
 			res = await k8sClient.deployment.updateDeployment(data.namespace, data.deploymentName, data.image, (data.port || 8080), envVars, options, null, envFrom);
 			logger.debug('Deployment Update Status:', data.deploymentName, res.statusCode, data.image);
-			logger.trace(`Deployment update status :: ${res}`);
+			logger.trace(`Deployment update status :: ${JSON.stringify(res)}`);
 
 			res = await k8sClient.deployment.scaleDeployment(data.namespace, data.deploymentName, 0);
 			logger.debug('Deployment Scaled to 0:', data.deploymentName, res.statusCode, data.image);
-			logger.trace(`Deployment scaled to 0 status :: ${res}`);
+			logger.trace(`Deployment scaled to 0 status :: ${JSON.stringify(res)}`);
 
 			res = await k8sClient.deployment.scaleDeployment(data.namespace, data.deploymentName, 1);
 			logger.debug('Deployment Scaled to 1:', data.deploymentName, res.statusCode, data.image);
-			logger.trace(`Deployment scaled to 1 status :: ${res}`);
+			logger.trace(`Deployment scaled to 1 status :: ${JSON.stringify(res)}`);
 		} else {
 			res = await k8sClient.deployment.createDeployment(data.namespace, data.deploymentName, data.image, (data.port || 8080), envVars, options, config.release, null, envFrom);
 			logger.debug('Deployment Create Status:', data.deploymentName, res.statusCode, data.image);
-			logger.trace(`Deployment create status :: ${res}`);
+			logger.trace(`Deployment create status :: ${JSON.stringify(res)}`);
 		}
 		return res;
 	} catch (err) {
