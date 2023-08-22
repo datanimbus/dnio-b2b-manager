@@ -16,12 +16,8 @@ dataStackUtils.eventsUtil.setNatsClient(client);
 
 const draftDefinition = JSON.parse(JSON.stringify(definition));
 
-const schema = mongooseUtils.MakeSchema(definition, {
-	versionKey: 'version'
-});
-const draftSchema = mongooseUtils.MakeSchema(draftDefinition, {
-	versionKey: 'version'
-});
+const schema = mongooseUtils.MakeSchema(definition);
+const draftSchema = mongooseUtils.MakeSchema(draftDefinition);
 const npmLibrarySchema = mongooseUtils.MakeSchema({ _id: String }, { strict: false });
 
 schema.index({ name: 1, app: 1 }, { unique: true, sparse: true, collation: { locale: 'en_US', strength: 2 } });
