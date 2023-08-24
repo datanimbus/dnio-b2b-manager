@@ -115,6 +115,18 @@ router.post('/', async (req, res) => {
 		doc._req = req;
 		const status = await doc.save();
 
+		if (doc.status != 'Draft' && doc.inputNode.type === 'FILE' || doc.nodes.some(node => node.type === 'FILE')) {
+			let action = 'create';
+			let flowActionList = helpers.constructFlowEvent(req, '', doc, action);
+			flowActionList.forEach(action => {
+				const actionDoc = new agentActionModel(action);
+				actionDoc._req = req;
+				let status = actionDoc.save();
+				logger.trace(`[${txnId}] Flow Action Create Status - `, status);
+				logger.trace(`[${txnId}] Flow Action Doc - `, actionDoc);
+			});
+		}
+
 		socket.emit('flowCreated', {
 			app: payload.app,
 			url: payload.url,
@@ -233,6 +245,18 @@ router.put('/:id', async (req, res) => {
 			await doc.save();
 		}
 
+		if (doc.status != 'Draft' && doc.inputNode.type === 'FILE' || doc.nodes.some(node => node.type === 'FILE')) {
+			let action = 'update';
+			let flowActionList = helpers.constructFlowEvent(req, '', doc, action);
+			flowActionList.forEach(action => {
+				const actionDoc = new agentActionModel(action);
+				actionDoc._req = req;
+				let status = actionDoc.save();
+				logger.trace(`[${txnId}] Flow Action Update Status - `, status);
+				logger.trace(`[${txnId}] Flow Action Doc - `, actionDoc);
+			});
+		}
+
 		res.status(200).json(status);
 
 		socket.emit('flowStatus', {
@@ -312,7 +336,7 @@ router.delete('/:id', async (req, res) => {
 				const actionDoc = new agentActionModel(action);
 				actionDoc._req = req;
 				let status = actionDoc.save();
-				logger.trace(`[${txnId}] Flow Action Create Status - `, status);
+				logger.trace(`[${txnId}] Flow Action Delete Status - `, status);
 				logger.trace(`[${txnId}] Flow Action Doc - `, actionDoc);
 			});
 		}
