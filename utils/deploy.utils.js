@@ -44,6 +44,7 @@ async function deploy(data, type) {
 	}
 	if (type == 'flow') {
 		envObj['B2B_ALLOW_NPM_INSTALL'] = process.env['B2B_ALLOW_NPM_INSTALL'];
+		envObj['ENCRYPTION_KEY'] = process.env['ENCRYPTION_KEY'];
 	}
 	envObj['DATA_STACK_APP_NS'] = (config.DATA_STACK_NAMESPACE + '-' + data.app).toLowerCase();
 	logger.debug('***************************************************');

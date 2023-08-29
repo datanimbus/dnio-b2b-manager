@@ -4,7 +4,7 @@ const config = require('../config');
 const definition = require('../schemas/agent-action.schema').definition;
 const mongooseUtils = require('../utils/mongoose.utils');
 
-const expiry = config.hbFrequency * config.hbMissCount;
+const expiry = config.B2B_TRANSFER_LEDGER_ENTRY_TTL;
 const schema = mongooseUtils.MakeSchema(definition);
 
 schema.plugin(mongooseUtils.metadataPlugin());
