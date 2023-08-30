@@ -127,7 +127,10 @@ router.put('/:id/deploy', async (req, res) => {
 			return res.status(400).json({ message: 'Invalid Function' });
 		}
 		const appData = await commonUtils.getApp(req, doc.app);
-		let faasBaseImage = appData.body.b2bBaseImage;
+		if (!appData.body.faasBaseImage) {
+			return res.status(400).json({ message: 'Base Image not Set' });
+		}
+		let faasBaseImage = appData.body.faasBaseImage;
 		const oldFaasObj = doc.toObject();
 		logger.debug(`[${txnId}] Faas data found`);
 		logger.trace(`[${txnId}] Faas data found :: ${JSON.stringify(doc)}`);
@@ -220,7 +223,10 @@ router.put('/:id/repair', async (req, res) => {
 			return res.status(400).json({ message: 'Invalid Function' });
 		}
 		const appData = await commonUtils.getApp(req, doc.app);
-		let faasBaseImage = appData.body.b2bBaseImage;
+		if (!appData.body.faasBaseImage) {
+			return res.status(400).json({ message: 'Base Image not Set' });
+		}
+		let faasBaseImage = appData.body.faasBaseImage;
 		doc.image = faasBaseImage;
 		let service = await k8sUtils.deleteService(doc);
 		service = await k8sUtils.upsertService(doc);

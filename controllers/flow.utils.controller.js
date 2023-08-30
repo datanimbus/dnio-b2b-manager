@@ -238,6 +238,9 @@ router.put('/:id/deploy', async (req, res) => {
 			return res.status(400).json({ message: 'Invalid Flow' });
 		}
 		const appData = await commonUtils.getApp(req, doc.app);
+		if (!appData.body.b2bBaseImage) {
+			return res.status(400).json({ message: 'Base Image not Set' });
+		}
 		let flowBaseImage = appData.body.b2bBaseImage;
 
 		const oldFlowObj = JSON.parse(JSON.stringify(doc));
@@ -378,6 +381,9 @@ router.put('/:id/repair', async (req, res) => {
 			return res.status(400).json({ message: 'Invalid Flow' });
 		}
 		const appData = await commonUtils.getApp(req, doc.app);
+		if (!appData.body.b2bBaseImage) {
+			return res.status(400).json({ message: 'Base Image not Set' });
+		}
 		let flowBaseImage = appData.body.b2bBaseImage;
 
 		if (config.isK8sEnv()) {
@@ -759,6 +765,9 @@ router.get('/:id/yamls', async (req, res) => {
 	try {
 		const doc = await flowModel.findById(req.params.id);
 		const appData = await commonUtils.getApp(req, doc.app);
+		if (!appData.body.b2bBaseImage) {
+			return res.status(400).json({ message: 'Base Image not Set' });
+		}
 		let flowBaseImage = appData.body.b2bBaseImage;
 		const namespace = (config.DATA_STACK_NAMESPACE + '-' + doc.app).toLowerCase();
 		const port = 8080;
