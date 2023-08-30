@@ -19,6 +19,9 @@ async function getApp(req, app) {
 				'Authorization': 'JWT ' + global.BM_TOKEN
 			}
 		});
+		if (Array.isArray(res.body)) {
+			res.body = res.body[0];
+		}
 		return res;
 	} catch (err) {
 		logger.error(err);
