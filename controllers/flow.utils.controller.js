@@ -10,6 +10,7 @@ const k8sUtils = require('../utils/k8s.utils');
 const queryUtils = require('../utils/query.utils');
 const routerUtils = require('../utils/router.utils');
 const helpers = require('../utils/helper');
+const commonUtils = require('../utils/common.utils');
 
 const logger = log4js.getLogger(global.loggerName);
 
@@ -24,8 +25,8 @@ if (dockerRegistryType.length > 0) dockerRegistryType = dockerRegistryType.toUpp
 let dockerReg = process.env.DOCKER_REGISTRY_SERVER ? process.env.DOCKER_REGISTRY_SERVER : '';
 if (dockerReg.length > 0 && !dockerReg.endsWith('/') && dockerRegistryType != 'ECR') dockerReg += '/';
 
-let flowBaseImage = `${dockerReg}datanimbus.io.b2b.base:${config.imageTag}`;
-if (dockerRegistryType == 'ECR') flowBaseImage = `${dockerReg}:datanimbus.io.b2b.base:${config.imageTag}`;
+// let flowBaseImage = `${dockerReg}datanimbus.io.b2b.base:${config.imageTag}`;
+// if (dockerRegistryType == 'ECR') flowBaseImage = `${dockerReg}:datanimbus.io.b2b.base:${config.imageTag}`;
 
 
 router.get('/count', async (req, res) => {
@@ -231,12 +232,13 @@ router.put('/:id/deploy', async (req, res) => {
 
 		logger.debug(`[${txnId}] User details - ${JSON.stringify({ user, isSuperAdmin, verifyDeploymentUser })}`);
 
-
 		const doc = await flowModel.findById(id);
 		if (!doc) {
 			logger.error(`[${txnId}] Flow data not found for id :: ${id}`);
 			return res.status(400).json({ message: 'Invalid Flow' });
 		}
+		const appData = await commonUtils.getApp(req, doc.app);
+		let flowBaseImage = appData.body.b2bBaseImage;
 
 		const oldFlowObj = JSON.parse(JSON.stringify(doc));
 		logger.debug(`[${txnId}] Flow data found`);
@@ -375,6 +377,8 @@ router.put('/:id/repair', async (req, res) => {
 		if (!doc) {
 			return res.status(400).json({ message: 'Invalid Flow' });
 		}
+		const appData = await commonUtils.getApp(req, doc.app);
+		let flowBaseImage = appData.body.b2bBaseImage;
 
 		if (config.isK8sEnv()) {
 			doc.image = flowBaseImage;
@@ -754,7 +758,8 @@ router.put('/:id/draftDelete', async (req, res) => {
 router.get('/:id/yamls', async (req, res) => {
 	try {
 		const doc = await flowModel.findById(req.params.id);
-
+		const appData = await commonUtils.getApp(req, doc.app);
+		let flowBaseImage = appData.body.b2bBaseImage;
 		const namespace = (config.DATA_STACK_NAMESPACE + '-' + doc.app).toLowerCase();
 		const port = 8080;
 		const name = doc.deploymentName;
