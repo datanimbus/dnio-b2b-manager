@@ -11,6 +11,9 @@ const definition = {
 		'type': 'String',
 		'required': true
 	},
+	'parentInteraction': {
+		'type': 'String'
+	},
 	'headers': {
 		'type': 'Object',
 	},

@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const log4js = require('log4js');
 const { v4: uuid } = require('uuid');
-const _ = require('lodash');
+// const _ = require('lodash');
 
 const logger = log4js.getLogger(global.loggerName);
 const interactionModal = mongoose.model('interaction');
@@ -33,6 +33,7 @@ async function createInteraction(req, options) {
 		interactionData.flowId = flowId;
 		interactionData.headers = req.headers;
 		interactionData.app = req.params.app;
+		interactionData.parentInteraction = req.query.parentInteraction;
 		interactionData.status = 'PENDING';
 
 		const doc = new interactionModal(interactionData);
@@ -41,7 +42,7 @@ async function createInteraction(req, options) {
 		// flowDoc.lastInvoked = doc._metadata.createdAt;
 		// delete flowDoc.version;
 		// await flowDoc.save();
-		await flowModal.findOneAndUpdate({_id: flowId},{$set:{lastInvoked: doc._metadata.createdAt}})
+		await flowModal.findOneAndUpdate({ _id: flowId }, { $set: { lastInvoked: doc._metadata.createdAt } });
 
 		doc._req = req;
 		const status = await doc.save();

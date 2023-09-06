@@ -13,6 +13,7 @@ const mongooseUtils = require('../utils/mongoose.utils');
 const schema = mongooseUtils.MakeSchema(definition);
 
 schema.index({ flowId: 1, app: 1 });
+schema.index({ parentInteraction: 1 });
 
 schema.plugin(mongooseUtils.metadataPlugin());
 schema.pre('save', mongooseUtils.generateId('INTR', 'interations', null, 4, 1000));
