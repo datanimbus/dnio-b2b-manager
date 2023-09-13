@@ -18,8 +18,8 @@ if (dockerRegistryType.length > 0) dockerRegistryType = dockerRegistryType.toUpp
 let dockerReg = process.env.DOCKER_REGISTRY_SERVER ? process.env.DOCKER_REGISTRY_SERVER : '';
 if (dockerReg.length > 0 && !dockerReg.endsWith('/') && dockerRegistryType != 'ECR') dockerReg += '/';
 
-// let faasBaseImage = `${dockerReg}datanimbus.io.faas.base:${config.imageTag}`;
-// if (dockerRegistryType == 'ECR') faasBaseImage = `${dockerReg}:datanimbus.io.faas.base:${config.imageTag}`;
+let faasBaseImage = `${dockerReg}datanimbus.io.faas.base:${config.imageTag}`;
+if (dockerRegistryType == 'ECR') faasBaseImage = `${dockerReg}:datanimbus.io.faas.base:${config.imageTag}`;
 
 router.get('/count', async (req, res) => {
 	try {
@@ -127,10 +127,12 @@ router.put('/:id/deploy', async (req, res) => {
 			return res.status(400).json({ message: 'Invalid Function' });
 		}
 		const appData = await commonUtils.getApp(req, doc.app);
-		if (!appData.body.faasBaseImage) {
-			return res.status(400).json({ message: 'Base Image not Set' });
+		// if (!appData.body.faasBaseImage) {
+		// 	return res.status(400).json({ message: 'Base Image not Set' });
+		// }
+		if (appData.body.faasBaseImage) {
+			faasBaseImage = appData.body.faasBaseImage;
 		}
-		let faasBaseImage = appData.body.faasBaseImage;
 		const oldFaasObj = doc.toObject();
 		logger.debug(`[${txnId}] Faas data found`);
 		logger.trace(`[${txnId}] Faas data found :: ${JSON.stringify(doc)}`);
@@ -223,10 +225,12 @@ router.put('/:id/repair', async (req, res) => {
 			return res.status(400).json({ message: 'Invalid Function' });
 		}
 		const appData = await commonUtils.getApp(req, doc.app);
-		if (!appData.body.faasBaseImage) {
-			return res.status(400).json({ message: 'Base Image not Set' });
+		// if (!appData.body.faasBaseImage) {
+		// 	return res.status(400).json({ message: 'Base Image not Set' });
+		// }
+		if (appData.body.faasBaseImage) {
+			faasBaseImage = appData.body.faasBaseImage;
 		}
-		let faasBaseImage = appData.body.faasBaseImage;
 		doc.image = faasBaseImage;
 		let service = await k8sUtils.deleteService(doc);
 		service = await k8sUtils.upsertService(doc);
