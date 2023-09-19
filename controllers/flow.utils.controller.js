@@ -25,8 +25,8 @@ if (dockerRegistryType.length > 0) dockerRegistryType = dockerRegistryType.toUpp
 let dockerReg = process.env.DOCKER_REGISTRY_SERVER ? process.env.DOCKER_REGISTRY_SERVER : '';
 if (dockerReg.length > 0 && !dockerReg.endsWith('/') && dockerRegistryType != 'ECR') dockerReg += '/';
 
-// let flowBaseImage = `${dockerReg}datanimbus.io.b2b.base:${config.imageTag}`;
-// if (dockerRegistryType == 'ECR') flowBaseImage = `${dockerReg}:datanimbus.io.b2b.base:${config.imageTag}`;
+let flowBaseImage = `${dockerReg}datanimbus.io.b2b.base:${config.imageTag}`;
+if (dockerRegistryType == 'ECR') flowBaseImage = `${dockerReg}:datanimbus.io.b2b.base:${config.imageTag}`;
 
 
 router.get('/count', async (req, res) => {
@@ -238,11 +238,12 @@ router.put('/:id/deploy', async (req, res) => {
 			return res.status(400).json({ message: 'Invalid Flow' });
 		}
 		const appData = await commonUtils.getApp(req, doc.app);
-		if (!appData.body.b2bBaseImage) {
-			return res.status(400).json({ message: 'Base Image not Set' });
+		// if (!appData.body.b2bBaseImage) {
+		// 	return res.status(400).json({ message: 'Base Image not Set' });
+		// }
+		if (appData.body.b2bBaseImage) {
+			flowBaseImage = appData.body.b2bBaseImage;
 		}
-		let flowBaseImage = appData.body.b2bBaseImage;
-
 		const oldFlowObj = JSON.parse(JSON.stringify(doc));
 		logger.debug(`[${txnId}] Flow data found`);
 		logger.trace(`[${txnId}] Flow data found :: ${JSON.stringify(doc)}`);
@@ -381,11 +382,12 @@ router.put('/:id/repair', async (req, res) => {
 			return res.status(400).json({ message: 'Invalid Flow' });
 		}
 		const appData = await commonUtils.getApp(req, doc.app);
-		if (!appData.body.b2bBaseImage) {
-			return res.status(400).json({ message: 'Base Image not Set' });
+		// if (!appData.body.b2bBaseImage) {
+		// 	return res.status(400).json({ message: 'Base Image not Set' });
+		// }
+		if (appData.body.b2bBaseImage) {
+			flowBaseImage = appData.body.b2bBaseImage;
 		}
-		let flowBaseImage = appData.body.b2bBaseImage;
-
 		if (config.isK8sEnv()) {
 			doc.image = flowBaseImage;
 			let status = await k8sUtils.deleteDeployment(doc);
@@ -765,10 +767,12 @@ router.get('/:id/yamls', async (req, res) => {
 	try {
 		const doc = await flowModel.findById(req.params.id);
 		const appData = await commonUtils.getApp(req, doc.app);
-		if (!appData.body.b2bBaseImage) {
-			return res.status(400).json({ message: 'Base Image not Set' });
+		// if (!appData.body.b2bBaseImage) {
+		// 	return res.status(400).json({ message: 'Base Image not Set' });
+		// }
+		if (appData.body.b2bBaseImage) {
+			flowBaseImage = appData.body.b2bBaseImage;
 		}
-		let flowBaseImage = appData.body.b2bBaseImage;
 		const namespace = (config.DATA_STACK_NAMESPACE + '-' + doc.app).toLowerCase();
 		const port = 8080;
 		const name = doc.deploymentName;

@@ -94,7 +94,6 @@ module.exports = {
     logsDB: process.env.MONGO_LOGS_DBNAME || 'datastackLogs',
     googleKey: process.env.GOOGLE_API_KEY || '',
     queueName: 'webHooks',
-    logQueueName: 'systemService',
     interactionLogQueueName: 'interactionLogs',
     interactionQueueName: 'interaction',
     eventsQueueName: 'events',
