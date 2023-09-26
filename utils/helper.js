@@ -48,7 +48,7 @@ function constructFlowEvent(req, doc, flow, action) {
 				'agentName': agent.agentName,
 				'flowName': flow.name,
 				'agentId': agent.agentId,
-				'flowID': flow._id,
+				'flowId': flow._id,
 				'deploymentName': flow.deploymentName,
 				'timestamp': new Date(),
 				'sentOrRead': false
