@@ -142,7 +142,7 @@ module.exports = {
     RBAC_JWT_KEY: process.env.RBAC_JWT_KEY || 'u?5k167v13w5fhjhuiweuyqi67621gqwdjavnbcvadjhgqyuqagsduyqtw87e187etqiasjdbabnvczmxcnkzn',
     MAX_JSON_SIZE: process.env.MAX_JSON_SIZE || '5mb',
     encryptionKey: process.env.ENCRYPTION_KEY || '34857057658800771270426551038148',
-    gwFQDN: process.env.B2B_GATEWAY_FQDN || 'localhost',
+    gwFQDN: process.env.FQDN || 'localhost',
     hbFrequency: process.env.B2B_HB_FREQUENCY ? parseInt(process.env.B2B_HB_FREQUENCY) : 10,
     hbMissCount: process.env.B2B_HB_MISSED_COUNT ? parseInt(process.env.B2B_HB_MISSED_COUNT) : 10,
     flowPendingWaitTime: process.env.B2B_FLOW_PENDING_WAIT_TIME ? parseInt(process.env.B2B_FLOW_PENDING_WAIT_TIME) : 10,
