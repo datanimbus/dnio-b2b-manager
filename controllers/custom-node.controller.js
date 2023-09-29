@@ -104,14 +104,14 @@ router.delete('/:id', async (req, res) => {
 		let doc = await nodeModel.findById(req.params.id);
 		if (!doc) {
 			return res.status(404).json({
-				message: 'Node Not Found'
+				message: 'Plugin Not Found'
 			});
 		}
 		doc._req = req;
 		let status = await doc.remove();
-		logger.debug('Node Deleted', status);
+		logger.debug('Plugin Deleted', status);
 		res.status(200).json({
-			message: 'Node Deleted'
+			message: 'Plugin Deleted'
 		});
 	} catch (err) {
 		logger.error(err);
