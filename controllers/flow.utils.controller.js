@@ -228,9 +228,8 @@ router.put('/:id/deploy', async (req, res) => {
 
 		let user = req.user;
 		let isSuperAdmin = user.isSuperAdmin;
-		let verifyDeploymentUser = config.verifyDeploymentUser;
 
-		logger.debug(`[${txnId}] User details - ${JSON.stringify({ user, isSuperAdmin, verifyDeploymentUser })}`);
+		logger.debug(`[${txnId}] User details - ${JSON.stringify({ user, isSuperAdmin })}`);
 
 		const doc = await flowModel.findById(id);
 		if (!doc) {
@@ -257,10 +256,10 @@ router.put('/:id/deploy', async (req, res) => {
 			return res.status(400).json({ message: 'No changes to redeploy' });
 		} else if (doc.status === 'Draft') {
 			logger.debug(`[${txnId}] Flow is in Draft status`);
-			if (verifyDeploymentUser && !isSuperAdmin && doc._metadata && doc._metadata.lastUpdatedBy == user) {
-				logger.error(`[${txnId}] Self deployment not allowed ::  ${{ lastUpdatedBy: doc._metadata.lastUpdatedBy, currentUser: user }}`);
-				return res.status(403).json({ message: 'You cannot deploy your own changes' });
-			}
+			// if (verifyDeploymentUser && !isSuperAdmin && doc._metadata && doc._metadata.lastUpdatedBy == user) {
+			// 	logger.error(`[${txnId}] Self deployment not allowed ::  ${{ lastUpdatedBy: doc._metadata.lastUpdatedBy, currentUser: user }}`);
+			// 	return res.status(403).json({ message: 'You cannot deploy your own changes' });
+			// }
 		} else {
 			logger.debug(`[${txnId}] Flow is not in draft status, checking in draft collection :: ${doc.status}`);
 
@@ -273,10 +272,10 @@ router.put('/:id/deploy', async (req, res) => {
 			logger.debug(`[${txnId}] Flow data found in draft collection`);
 			logger.trace(`[${txnId}] Flow draft data :: ${JSON.stringify(draftDoc)}`);
 
-			if (verifyDeploymentUser && !isSuperAdmin && draftDoc._metadata && draftDoc._metadata.lastUpdatedBy == user) {
-				logger.error(`[${txnId}] Self deployment not allowed :: ${{ lastUpdatedBy: draftDoc._metadata.lastUpdatedBy, currentUser: user }}`);
-				return res.status(400).json({ message: 'You cannot deploy your own changes' });
-			}
+			// if (verifyDeploymentUser && !isSuperAdmin && draftDoc._metadata && draftDoc._metadata.lastUpdatedBy == user) {
+			// 	logger.error(`[${txnId}] Self deployment not allowed :: ${{ lastUpdatedBy: draftDoc._metadata.lastUpdatedBy, currentUser: user }}`);
+			// 	return res.status(400).json({ message: 'You cannot deploy your own changes' });
+			// }
 
 			if (draftDoc && draftDoc.app != doc.app) {
 				logger.error(`[${txnId}] App change not permitted`);
