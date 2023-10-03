@@ -122,7 +122,6 @@ module.exports = {
         useNewUrlParser: true,
         dbName: process.env.MONGO_LOGS_DBNAME || 'datastackLogs'
     },
-    verifyDeploymentUser: parseBoolean(process.env.VERIFY_DEPLOYMENT_USER) || false,
     TZ_DEFAULT: process.env.TZ_DEFAULT || 'Zulu',
     agentMonitoringExpiry: process.env.B2B_HB_LOG_EXPIRY ? parseInt(process.env.B2B_HB_LOG_EXPIRY) : 30 * 60,
     maxFileSize: process.env.B2B_AGENT_MAX_FILE_SIZE ? getFileSize(process.env.B2B_AGENT_MAX_FILE_SIZE) : 1000 * 1024 * 1024,
@@ -137,7 +136,6 @@ module.exports = {
     maxConcurrentDownloads: parseInt(process.B2B_DEFAULT_CONCURRENT_FILE_DOWNLOADS || 5),
     B2B_ENABLE_TIMEBOUND: parseBoolean(process.env.B2B_ENABLE_TIMEBOUND),
     B2B_ENABLE_TRUSTED_IP: parseBoolean(process.env.B2B_ENABLE_TRUSTED_IP),
-    VERIFY_DEPLOYMENT_USER: parseBoolean(process.env.VERIFY_DEPLOYMENT_USER),
     RBAC_JWT_KEY: process.env.RBAC_JWT_KEY || 'u?5k167v13w5fhjhuiweuyqi67621gqwdjavnbcvadjhgqyuqagsduyqtw87e187etqiasjdbabnvczmxcnkzn',
     MAX_JSON_SIZE: process.env.MAX_JSON_SIZE || '5mb',
     encryptionKey: process.env.ENCRYPTION_KEY || '34857057658800771270426551038148',
