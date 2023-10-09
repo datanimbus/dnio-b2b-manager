@@ -282,12 +282,15 @@ router.put('/:id/stop', async (req, res) => {
 				message: 'Agent Not Found'
 			});
 		}
+		doc.status = 'STOPPED';
+		let status = await doc.save();
+		logger.debug('Agent Stop Status Updated ', status);
 		const actionDoc = new agentActionModel({
 			agentId: doc.agentId,
 			action: 'AGENT-STOPPED'
 		});
 		actionDoc._req = req;
-		let status = await actionDoc.save();
+		status = await actionDoc.save();
 		status = await cacheUtils.endSession(req.params.id);
 		logger.debug('Agent Stop Triggered ', status);
 		return res.status(200).json({ message: 'Agent Stop Triggered' });
@@ -302,20 +305,56 @@ router.put('/:id/stop', async (req, res) => {
 router.put('/:id/disable', async (req, res) => {
 	try {
 		let doc = await agentModel.findById({ _id: req.params.id }).lean();
+		let oldStatus = doc.status;
 		if (!doc) {
 			return res.status(404).json({
 				message: 'Agent Not Found'
 			});
 		}
-		const actionDoc = new agentActionModel({
-			agentId: doc.agentId,
-			action: 'AGENT-DISABLED'
-		});
-		actionDoc._req = req;
-		let status = await actionDoc.save();
+		doc.status = 'STOPPED';
+		doc.active = false;
+		let status = await doc.save();
+		logger.debug('Agent Disable Status Updated ', status);
+		if (oldStatus === 'RUNNING') {
+			const actionDoc = new agentActionModel({
+				agentId: doc.agentId,
+				action: 'AGENT-DISABLED'
+			});
+			actionDoc._req = req;
+			status = await actionDoc.save();
+		}
 		status = await cacheUtils.endSession(req.params.id);
 		logger.debug('Agent Disable Triggered ', status);
 		return res.status(200).json({ message: 'Agent Disable Triggered' });
+	} catch (err) {
+		logger.error(err);
+		res.status(500).json({
+			message: err.message
+		});
+	}
+});
+
+router.put('/:id/enable', async (req, res) => {
+	try {
+		let doc = await agentModel.findById({ _id: req.params.id }).lean();
+		if (!doc) {
+			return res.status(404).json({
+				message: 'Agent Not Found'
+			});
+		}
+		doc.status = 'STOPPED';
+		doc.active = true;
+		let status = await doc.save();
+		logger.debug('Agent Enable Status Updated ', status);
+		const actionDoc = new agentActionModel({
+			agentId: doc.agentId,
+			action: 'AGENT-ENABLED'
+		});
+		actionDoc._req = req;
+		status = await actionDoc.save();
+		status = await cacheUtils.endSession(req.params.id);
+		logger.debug('Agent Enable Triggered ', status);
+		return res.status(200).json({ message: 'Agent Enable Triggered' });
 	} catch (err) {
 		logger.error(err);
 		res.status(500).json({
@@ -858,7 +897,7 @@ function generateFileDownloadMetaData(metaDataInfo, fileId, chunkChecksumList, a
 	metaData.totalChunks = metaDataInfo.totalChunks;
 	metaData.fileLocation = metaDataInfo.fileLocation;
 	metaData.downloadAgentID = agentId;
-	metaData.outputDirectory = metaDataInfo.outputDirectory;
+	metaData.outputDirectory = generateOutputDirectoriesForAgent(metaDataInfo.outputDirectory);
 	// metaData.mirrorDirectory = metaDataInfo.mirrorDirectory;
 	return metaData;
 }
@@ -916,4 +955,11 @@ function generateFileProcessedErrorMetaData(metaDataInfo, errorMsg) {
 	return metaData;
 }
 
+function generateOutputDirectoriesForAgent(outputDirectories) {
+	let outputDirectory = [];
+	outputDirectories.forEach(directory => {
+		outputDirectory.push(directory.path);
+	});
+	return outputDirectory;
+}
 module.exports = router;
