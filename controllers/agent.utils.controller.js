@@ -276,7 +276,7 @@ router.delete('/:id/session', async (req, res) => {
 
 router.put('/:id/stop', async (req, res) => {
 	try {
-		let doc = await agentModel.findById({ _id: req.params.id }).lean();
+		let doc = await agentModel.findById({ _id: req.params.id });
 		if (!doc) {
 			return res.status(404).json({
 				message: 'Agent Not Found'
@@ -304,7 +304,7 @@ router.put('/:id/stop', async (req, res) => {
 
 router.put('/:id/disable', async (req, res) => {
 	try {
-		let doc = await agentModel.findById({ _id: req.params.id }).lean();
+		let doc = await agentModel.findById({ _id: req.params.id });
 		let oldStatus = doc.status;
 		if (!doc) {
 			return res.status(404).json({
@@ -336,7 +336,7 @@ router.put('/:id/disable', async (req, res) => {
 
 router.put('/:id/enable', async (req, res) => {
 	try {
-		let doc = await agentModel.findById({ _id: req.params.id }).lean();
+		let doc = await agentModel.findById({ _id: req.params.id });
 		if (!doc) {
 			return res.status(404).json({
 				message: 'Agent Not Found'
