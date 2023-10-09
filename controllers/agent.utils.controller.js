@@ -413,6 +413,10 @@ router.post('/:id/upload', async (req, res) => {
 
 				let chunkChecksumList = uploadHeaders.chunkChecksum;
 
+				const index = doc.nodes.findIndex(node => node.type === 'FILE');
+				let outputObj = doc.nodes[index];
+				uploadHeaders.outputDirectory = outputObj.options.outputDirectories;
+
 				let downloadMetaDataObj = generateFileDownloadMetaData(uploadHeaders, fileDetails.filename, chunkChecksumList, targentAgentId);
 				agentEvent = helpers.constructAgentEvent(req, targentAgentId, uploadHeaders, 'DOWNLOAD_REQUEST', downloadMetaDataObj);
 				const downloadActionDoc = new agentActionModel(agentEvent);
@@ -729,6 +733,16 @@ router.post('/:id/agentAction', async (req, res) => {
 		logger.trace('Agent Action payload.metaDataInfo -', payload.metaDataInfo);
 		logger.trace('Agent Action payload.eventDetails -', payload.eventDetails);
 
+		const doc = await flowModel.findById(payload.eventDetails.flowId);
+		if (!doc) {
+			return res.status(400).json({ message: 'Invalid Flow' });
+		}
+
+		const index = doc.nodes.findIndex(node => node.type === 'FILE');
+		let outputObj = doc.nodes[index];
+		payload.metaDataInfo.outputDirectory = outputObj.options.outputDirectories;
+		// payload.metaDataInfo.mirrorDirectory = outputObj.options.mirrorInputDirectories;
+
 		if (action === 'download') {
 			let downloadMetaDataObj = generateFileDownloadMetaData(payload.metaDataInfo, payload.metaDataInfo.fileID, '', targentAgentId);
 			let agentEvent = helpers.constructAgentEvent(req, targentAgentId, payload.eventDetails, 'DOWNLOAD_REQUEST', downloadMetaDataObj);
@@ -843,6 +857,8 @@ function generateFileDownloadMetaData(metaDataInfo, fileId, chunkChecksumList, a
 	metaData.totalChunks = metaDataInfo.totalChunks;
 	metaData.fileLocation = metaDataInfo.fileLocation;
 	metaData.downloadAgentID = agentId;
+	metaData.outputDirectory = metaDataInfo.outputDirectory;
+	// metaData.mirrorDirectory = metaDataInfo.mirrorDirectory;
 	return metaData;
 }
 
