@@ -628,7 +628,8 @@ router.get('/:id/download/exec', async (req, res) => {
 			'central-folder': '.',
 			'heartbeat-frequency': config.hbFrequency,
 			'log-level': process.env.LOG_LEVEL || 'info',
-			'sentinel-port-number': '54321'
+			'sentinel-port-number': '54321',
+			'poller-frequency': '60'
 		};
 		logger.trace('config initialized - ', agentConfig);
 		let confStr = createConf(agentConfig);
