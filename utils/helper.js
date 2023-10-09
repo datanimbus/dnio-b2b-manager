@@ -112,6 +112,12 @@ function constructFlowEvent(req, doc, flow, action) {
 				if (['BINARY', 'DELIMITER', 'FLATFILE'].indexOf(outputContentType) > -1) {
 					metaData.fileSuffix = '.';
 				}
+				if (outputObj.options.outputDirectories) {
+					metaData.outputDirectories = outputObj.options.outputDirectories;
+				}
+				if (outputObj.options.mirrorInputDirectories) {
+					metaData.mirrorInputDirectories = outputObj.options.mirrorInputDirectories;
+				}
 			}
 
 			/*if (inputObj && inputType === 'FILE' && agentType === 'FILE' && agent.blockType === 'input') {
