@@ -48,7 +48,7 @@ function constructFlowEvent(req, doc, flow, action) {
 				'agentName': agent.agentName,
 				'flowName': flow.name,
 				'agentId': agent.agentId,
-				'flowID': flow._id,
+				'flowId': flow._id,
 				'deploymentName': flow.deploymentName,
 				'timestamp': new Date(),
 				'sentOrRead': false
@@ -111,6 +111,12 @@ function constructFlowEvent(req, doc, flow, action) {
 				};
 				if (['BINARY', 'DELIMITER', 'FLATFILE'].indexOf(outputContentType) > -1) {
 					metaData.fileSuffix = '.';
+				}
+				if (outputObj.options.outputDirectories) {
+					metaData.outputDirectories = outputObj.options.outputDirectories;
+				}
+				if (outputObj.options.mirrorInputDirectories) {
+					metaData.mirrorInputDirectories = outputObj.options.mirrorInputDirectories;
 				}
 			}
 

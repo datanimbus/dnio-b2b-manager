@@ -57,6 +57,7 @@ const commonUrls = [
 	'/{app}/agent/utils/{id}/update',
 	'/{app}/agent/utils/{id}/download/exec',
 	'/{app}/agent/utils/{id}/logs',
+	'/{app}/agent/utils/{id}/disable',
 
 	'/{app}/dataFormat/',
 	'/{app}/dataFormat/{id}',
