@@ -9,7 +9,7 @@ RUN apk upgrade
 
 RUN set -ex; apk add --no-cache --virtual .fetch-deps curl tar git;
 
-WORKDIR /app
+WORKDIR /tmp/app
 
 COPY package.json package.json
 
