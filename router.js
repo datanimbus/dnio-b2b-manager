@@ -3,6 +3,7 @@ const router = require('express').Router({ mergeParams: true });
 const { v4: uuid } = require('uuid');
 const proxy = require('express-http-proxy');
 const url = require('url');
+const httpClient = require('./http-client');
 
 const routerUtils = require('./utils/router.utils');
 const flowUtils = require('./utils/flow.utils');
@@ -33,15 +34,26 @@ router.use('/:app/:api(*)?', async (req, res, next) => {
 		if (!routeData || !routeData.proxyHost || !routeData.proxyPath) {
 			return res.status(404).json({ message: 'No Route Found' });
 		}
-		const result = await flowUtils.createInteraction(req, { flowId: routeData.flowId });
+
+		//Check flow readiness
 		const proxyHost = routeData.proxyHost;
+		let readinessPath = '/api/b2b/internal/health/ready';
+		const resp = await httpClient.httpRequest({
+			method: 'GET',
+			url: proxyHost + readinessPath
+		});
+		if (resp.statusCode != 200) {
+			return res.status(resp.statusCode).json(resp.body);
+		}
+
+		const result = await flowUtils.createInteraction(req, { flowId: routeData.flowId });
 		let proxyPath;
 		if (Object.keys(req.query).length > 0) {
 			const urlParsed = url.parse(req.url, true);
 			logger.trace('URL parsed with query params - ', urlParsed.search);
-			proxyPath = '/api/b2b'+path + urlParsed.search + '&interactionId=' + result._id;
+			proxyPath = '/api/b2b' + path + urlParsed.search + '&interactionId=' + result._id;
 		} else {
-			proxyPath = '/api/b2b'+path + '?interactionId=' + result._id;
+			proxyPath = '/api/b2b' + path + '?interactionId=' + result._id;
 		}
 		logger.info('Proxying request to: ', proxyHost + proxyPath);
 		proxy(proxyHost, {
@@ -70,6 +82,9 @@ router.use('/:app/:api(*)?', async (req, res, next) => {
 			responseBody = err;
 		}
 		logger.error(err);
+		if (responseBody.toString().includes('ECONNREFUSED')) {
+			responseBody = { message: 'Flow is down, please check the flow pod status' }
+		}
 		res.status(statusCode).json(responseBody);
 	}
 });
