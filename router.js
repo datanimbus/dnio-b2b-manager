@@ -43,7 +43,7 @@ router.use('/:app/:api(*)?', async (req, res, next) => {
 			url: proxyHost + readinessPath
 		});
 		if (resp.statusCode != 200) {
-			return res.status(resp.statusCode).json(resp.body);
+			return res.status(resp.statusCode).json({ message: 'Flow is not running' });
 		}
 
 		const result = await flowUtils.createInteraction(req, { flowId: routeData.flowId });
