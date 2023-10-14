@@ -1,6 +1,6 @@
 {
   "name": "ds-b2b-manager",
-  "version": "2.7.6",
+  "version": "2.8.0",
   "description": "Integration manager",
   "main": "app.js",
   "scripts": {
