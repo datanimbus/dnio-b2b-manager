@@ -59,6 +59,7 @@ async function createInteraction(req, options) {
 		return status;
 	} catch (err) {
 		logger.error(err);
+		throw err;
 	}
 }
 
