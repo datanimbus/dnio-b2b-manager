@@ -7,6 +7,7 @@ const httpClient = require('./http-client');
 
 const routerUtils = require('./utils/router.utils');
 const flowUtils = require('./utils/flow.utils');
+const config = require('./config');
 
 const logger = log4js.getLogger(global.loggerName);
 routerUtils.initRouterMap();
@@ -31,19 +32,21 @@ router.use('/:app/:api(*)?', async (req, res, next) => {
 		delete headers['user-agent'];
 		delete headers['content-length'];
 		// const routeData = global.activeFlows[path];
-		if (!routeData || !routeData.proxyHost || !routeData.proxyPath) {
-			return res.status(404).json({ message: 'No Route Found' });
-		}
-
-		//Check flow readiness
-		const proxyHost = routeData.proxyHost;
-		let readinessPath = '/api/b2b/internal/health/ready';
-		const resp = await httpClient.httpRequest({
-			method: 'GET',
-			url: proxyHost + readinessPath
-		});
-		if (resp.statusCode != 200) {
-			return res.status(resp.statusCode).json({ message: 'Flow is not running' });
+		let proxyHost;
+		if (config.isK8sEnv()) {
+			if (!routeData || !routeData.proxyHost || !routeData.proxyPath) {
+				return res.status(404).json({ message: 'No Route Found' });
+			}
+			//Check flow readiness
+			proxyHost = routeData.proxyHost;
+			let readinessPath = '/api/b2b/internal/health/ready';
+			const resp = await httpClient.httpRequest({
+				method: 'GET',
+				url: proxyHost + readinessPath
+			});
+			if (resp.statusCode != 200) {
+				return res.status(resp.statusCode).json({ message: 'Flow is not running' });
+			}
 		}
 
 		const result = await flowUtils.createInteraction(req, { flowId: routeData.flowId });
@@ -83,7 +86,7 @@ router.use('/:app/:api(*)?', async (req, res, next) => {
 		}
 		logger.error(err);
 		if (responseBody.toString().includes('ECONNREFUSED')) {
-			responseBody = { message: 'Flow is down, please check the flow pod status' }
+			responseBody = { message: 'Flow is down, please check the flow pod status' };
 		}
 		res.status(statusCode).json(responseBody);
 	}

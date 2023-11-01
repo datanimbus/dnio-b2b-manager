@@ -1,6 +1,10 @@
 const mongoose = require('mongoose');
 const log4js = require('log4js');
 const { v4: uuid } = require('uuid');
+const config = require('../config');
+
+const mongooseUtils = require('./mongoose.utils');
+
 // const _ = require('lodash');
 
 const logger = log4js.getLogger(global.loggerName);
@@ -30,22 +34,21 @@ async function createInteraction(req, options) {
 		}
 
 		const interactionData = {};
+		interactionData._id = await mongooseUtils.createId('INTR', 'b2b.interactions', null, null, 1000);
 		interactionData.flowId = flowId;
-		interactionData.headers = req.headers;
+		interactionData.txnId = req.headers['data-stack-txn-id'];
+		interactionData.remoteTxnId = req.headers['data-stack-remote-txn-id'];
+		// interactionData.headers = req.headers;
 		interactionData.app = req.params.app;
+		interactionData.query = req.query;
 		interactionData.parentInteraction = req.query.parentInteraction;
 		interactionData.status = 'PENDING';
 
 		const doc = new interactionModal(interactionData);
-
-		// let flowDoc = await flowModal.findById(flowId);
-		// flowDoc.lastInvoked = doc._metadata.createdAt;
-		// delete flowDoc.version;
-		// await flowDoc.save();
-		await flowModal.findOneAndUpdate({ _id: flowId }, { $set: { lastInvoked: doc._metadata.createdAt } });
-
 		doc._req = req;
 		const status = await doc.save();
+		await mongoose.connections[1].useDb(config.DATA_STACK_NAMESPACE + '-' + req.params.app).collection('b2b.interactions').insertOne(interactionData);
+		await flowModal.findOneAndUpdate({ _id: flowId }, { $set: { lastInvoked: new Date() } });
 		logger.info(`Interaction Created for [${req.headers['data-stack-txn-id']}] [${req.headers['data-stack-remote-txn-id']}]`);
 		logger.debug(status);
 		return status;
