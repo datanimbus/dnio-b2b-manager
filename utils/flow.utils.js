@@ -38,7 +38,11 @@ async function createInteraction(req, options) {
 		interactionData.flowId = flowId;
 		interactionData.txnId = req.headers['data-stack-txn-id'];
 		interactionData.remoteTxnId = req.headers['data-stack-remote-txn-id'];
-		// interactionData.headers = req.headers;
+		interactionData.headers = {};
+		interactionData.headers['data-stack-txn-id'] = req.headers['data-stack-txn-id'];
+		interactionData.headers['data-stack-remote-txn-id'] = req.headers['data-stack-remote-txn-id'];
+		interactionData.headers['content-length'] = req.headers['content-length'];
+		interactionData.headers['content-type'] = req.headers['content-type'];
 		interactionData.app = req.params.app;
 		interactionData.query = req.query;
 		interactionData.params = req.params;
