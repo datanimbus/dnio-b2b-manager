@@ -11,10 +11,23 @@ const definition = {
 		'type': 'String',
 		'required': true
 	},
+	'txnId': {
+		'type': 'String',
+		'required': true
+	},
+	'remoteTxnId': {
+		'type': 'String'
+	},
 	'parentInteraction': {
 		'type': 'String'
 	},
 	'headers': {
+		'type': 'Object',
+	},
+	'query': {
+		'type': 'Object',
+	},
+	'params': {
 		'type': 'Object',
 	},
 	'name': {

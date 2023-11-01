@@ -41,6 +41,7 @@ async function createInteraction(req, options) {
 		// interactionData.headers = req.headers;
 		interactionData.app = req.params.app;
 		interactionData.query = req.query;
+		interactionData.params = req.params;
 		interactionData.parentInteraction = req.query.parentInteraction;
 		interactionData.status = 'PENDING';
 
