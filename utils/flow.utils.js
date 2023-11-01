@@ -34,7 +34,7 @@ async function createInteraction(req, options) {
 		}
 
 		const interactionData = {};
-		interactionData._id = await mongooseUtils.createId('INTR', 'b2b.interactions', null, null, 1000);
+		// interactionData._id = await mongooseUtils.createId('INTR', 'b2b.interactions', null, null, 1000);
 		interactionData.flowId = flowId;
 		interactionData.txnId = req.headers['data-stack-txn-id'];
 		interactionData.remoteTxnId = req.headers['data-stack-remote-txn-id'];
