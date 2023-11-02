@@ -1,14 +1,13 @@
 const mongoose = require('mongoose');
 const log4js = require('log4js');
 const { v4: uuid } = require('uuid');
-const config = require('../config');
-
-const mongooseUtils = require('./mongoose.utils');
-
 // const _ = require('lodash');
 
+const config = require('../config');
+const mongooseUtils = require('./mongoose.utils');
+
+
 const logger = log4js.getLogger(global.loggerName);
-const interactionModal = mongoose.model('interaction');
 const flowModal = mongoose.model('flow');
 
 function validatePayload(payload) {
@@ -34,7 +33,7 @@ async function createInteraction(req, options) {
 		}
 
 		const interactionData = {};
-		// interactionData._id = await mongooseUtils.createId('INTR', 'b2b.interactions', null, null, 1000);
+		interactionData._id = await mongooseUtils.createId('INTR', 'b2b.interactions', null, null, 1000);
 		interactionData.flowId = flowId;
 		interactionData.txnId = req.headers['data-stack-txn-id'];
 		interactionData.remoteTxnId = req.headers['data-stack-remote-txn-id'];
@@ -49,10 +48,8 @@ async function createInteraction(req, options) {
 		interactionData.parentInteraction = req.query.parentInteraction;
 		interactionData.status = 'PENDING';
 
-		const doc = new interactionModal(interactionData);
-		doc._req = req;
-		const status = await doc.save();
-		await mongoose.connections[1].useDb(config.DATA_STACK_NAMESPACE + '-' + req.params.app).collection('b2b.interactions').insertOne(interactionData);
+		const collection = mongoose.connections[1].useDb(config.DATA_STACK_NAMESPACE + '-' + req.params.app).collection(`b2b.${flowId}.interactions`);
+		const status = await collection.insertOne(interactionData);
 		await flowModal.findOneAndUpdate({ _id: flowId }, { $set: { lastInvoked: new Date() } });
 		logger.info(`Interaction Created for [${req.headers['data-stack-txn-id']}] [${req.headers['data-stack-remote-txn-id']}]`);
 		logger.debug(status);

@@ -7,7 +7,9 @@ function getPaginationData(req) {
 		skip: 0,
 		count: 30,
 		select: '',
-		sort: ''
+		sort: '',
+		selectObject: {},
+		sortObject: {}
 	};
 	if (req.query.count && (+req.query.count) > 0) {
 		data.count = +req.query.count;
@@ -21,7 +23,32 @@ function getPaginationData(req) {
 	if (req.query.sort && req.query.sort.trim()) {
 		data.sort = req.query.sort;
 	}
+
+	if (req.query.select && req.query.select.trim()) {
+		data.selectObject = getAsObject(req.query.select);
+	}
+	if (req.query.sort && req.query.sort.trim()) {
+		data.sortObject = getAsObject(req.query.sort);
+	}
+
 	return data;
+}
+
+function getAsObject(value) {
+	try {
+		const temp = value.split(',');
+		return temp.reduce((prev, curr) => {
+			let key = curr;
+			if (key.startsWith('-')) {
+				key = key.substr(1, key.length);
+			}
+			prev[key] = curr.startsWith('-') ? -1 : 1;
+			return prev;
+		}, {});
+	} catch (e) {
+		logger.error(e);
+		throw e;
+	}
 }
 
 function IsString(val) {
