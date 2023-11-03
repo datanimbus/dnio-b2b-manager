@@ -1,12 +1,16 @@
+const log4js = require('log4js');
 const mongoose = require('mongoose');
 const dataStackUtils = require('@appveen/data.stack-utils');
 // const utils = require('@appveen/utils');
 // const _ = require('lodash');
 
+const config = require('../config');
+const queue = require('../queue');
 const definition = require('../schemas/data-format.schema').definition;
 const mongooseUtils = require('../utils/mongoose.utils.js');
-const queue = require('../queue');
 const commonUtils = require('../utils/common.utils');
+
+const logger = log4js.getLogger(global.loggerName);
 
 const client = queue.getClient();
 dataStackUtils.eventsUtil.setNatsClient(client);
@@ -63,6 +67,14 @@ schema.post('remove', dataStackUtils.auditTrail.getAuditPostRemoveHook('dataForm
 // 		return next(err);
 // 	}
 // });
+
+schema.post('remove', function (doc) {
+	let appDB = mongoose.connections[1].useDb(config.DATA_STACK_NAMESPACE + '-' + doc.app);
+	appDB.dropCollection(`dataformat.${doc._id}`).catch((err) => {
+		logger.error(`Error Orrcured while deleting collection - dataformat.${doc._id}`);
+		logger.error(err);
+	});
+});
 
 schema.pre('save', function (next) {
 	this._isNew = this.isNew;
