@@ -1,3 +1,4 @@
+const path = require('path');
 const router = require('express').Router({ mergeParams: true });
 const log4js = require('log4js');
 const mongoose = require('mongoose');
@@ -5,6 +6,7 @@ const mongoose = require('mongoose');
 
 const config = require('../config');
 const queryUtils = require('../utils/query.utils');
+const storageUtils = require('../utils/storage.utils');
 
 const logger = log4js.getLogger(global.loggerName);
 // const interactionModel = mongoose.model('interaction');
@@ -126,8 +128,21 @@ router.get('/:flowId/:id/state/:stateId/data', async (req, res) => {
 		// 		message: 'Data Model Not Found'
 		// 	});
 		// }
-		const collection = mongoose.connections[1].useDb(config.DATA_STACK_NAMESPACE + '-' + req.params.app).collection(`b2b.${req.params.flowId}.node-state.data`);
-		const record = await collection.findOne({ interactionId: req.params.id, nodeId: req.params.stateId });
+		let appData = await mongoose.connection.db.collection('userMgmt.apps').findOne({ _id: req.params.app });
+		let record;
+		if (appData && appData.interactionStore && appData.interactionStore.storeType == 'azureblob') {
+			let connectorData = await mongoose.connection.db.collection('config.connectors').findOne({
+				_id: appData.interactionStore.configuration.connector._id,
+				app: req.params.app
+			});
+			let blobOptions = connectorData.values;
+			blobOptions.blobName = path.join(appData._id, req.params.flowId, req.params.id, req.params.stateId + '.json');
+			let data = await storageUtils.getBufferFromAzureBlob(blobOptions);
+			record = JSON.parse(data);
+		} else {
+			const collection = mongoose.connections[1].useDb(config.DATA_STACK_NAMESPACE + '-' + req.params.app).collection(`b2b.${req.params.flowId}.node-state.data`);
+			record = await collection.findOne({ interactionId: req.params.id, nodeId: req.params.stateId });
+		}
 		res.status(200).json(record);
 	} catch (err) {
 		logger.error(err);
