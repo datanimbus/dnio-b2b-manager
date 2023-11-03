@@ -8,7 +8,7 @@ const FormData = require('form-data');
 const { v4: uuid } = require('uuid');
 const { zip } = require('zip-a-folder');
 const { exec } = require('child_process');
-const XLSX = require('xlsx');
+const ExcelJS = require('exceljs');
 
 const config = require('../config');
 const queryUtils = require('../utils/query.utils');
@@ -489,8 +489,9 @@ router.post('/:id/upload', async (req, res) => {
 					const fileExtension = reqFile.name.split('.').pop();
 					logger.trace('File extension - ', fileExtension);
 					if (fileExtension === 'xlsx' || fileExtension === 'xls') {
-						const wb = XLSX.read(Buffer.from(decryptedData, 'base64'));
-						XLSX.writeFile(wb, './uploads/' + reqFile.name, { bookType: 'xlsx', type: 'binary', compression: true });
+						const workbook = new ExcelJS.Workbook();
+						await workbook.xlsx.load(Buffer.from(decryptedData, 'base64'));
+						await workbook.xlsx.writeFile('./uploads/' + reqFile.name);
 					} else {
 						fs.writeFileSync('./uploads/' + reqFile.name, Buffer.from(decryptedData, 'base64').toString());
 						// fs.writeFileSync('./uploads/' + reqFile.name, decryptedData);
