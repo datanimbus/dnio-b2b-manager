@@ -66,8 +66,8 @@ function interactionsCleanCron() {
 	cron.schedule('0 */6 * * *', async function () {
 		logger.info('Running cron to clean interactions');
 		try {
-			const appCache = {};
-			const flowList = await mongoose.connection.db.collection('b2b.flows').find({}).project({ _id: 1, app: 1 }).toArray();
+			let appCache = {};
+			let flowList = await mongoose.connection.db.collection('b2b.flows').find({}).project({ _id: 1, app: 1 }).toArray();
 			logger.debug('Flows Found:', flowList.length);
 			await flowList.reduce(async (prev, flow) => {
 				try {
@@ -102,6 +102,8 @@ function interactionsCleanCron() {
 					logger.error(err);
 				}
 			});
+			appCache = null;
+			flowList = null;
 		} catch (err) {
 			logger.error(err);
 		}
