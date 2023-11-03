@@ -130,15 +130,23 @@ router.get('/:flowId/:id/state/:stateId/data', async (req, res) => {
 		// }
 		let appData = await mongoose.connection.db.collection('userMgmt.apps').findOne({ _id: req.params.app });
 		let record;
-		if (appData && appData.interactionStore && appData.interactionStore.storeType == 'azureblob') {
+		if (appData && appData.interactionStore && appData.interactionStore.storeType != 'db') {
 			let connectorData = await mongoose.connection.db.collection('config.connectors').findOne({
 				_id: appData.interactionStore.configuration.connector._id,
 				app: req.params.app
 			});
 			let blobOptions = connectorData.values;
 			blobOptions.blobName = path.join(appData._id, req.params.flowId, req.params.id, req.params.stateId + '.json');
-			let data = await storageUtils.getBufferFromAzureBlob(blobOptions);
-			record = JSON.parse(data);
+			if (appData && appData.interactionStore && appData.interactionStore.storeType == 'azureblob') {
+				let data = await storageUtils.getBufferFromAzureBlob(blobOptions);
+				record = JSON.parse(data);
+			} else if (appData && appData.interactionStore && appData.interactionStore.storeType == 'awss3') {
+				let data = await storageUtils.getBufferFromS3Bucket(blobOptions);
+				record = JSON.parse(data);
+			} else {
+				res.status(400).json({ message: 'Invalid Store Type' });
+				return;
+			}
 		} else {
 			const collection = mongoose.connections[1].useDb(config.DATA_STACK_NAMESPACE + '-' + req.params.app).collection(`b2b.${req.params.flowId}.node-state.data`);
 			record = await collection.findOne({ interactionId: req.params.id, nodeId: req.params.stateId });
