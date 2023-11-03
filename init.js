@@ -1,12 +1,14 @@
-const JWT = require('jsonwebtoken');
+const path = require('path');
 const log4js = require('log4js');
+const mkdirp = require('mkdirp');
+const JWT = require('jsonwebtoken');
+const mongoose = require('mongoose');
+const cron = require('node-cron');
+
 const config = require('./config');
 // const httpClient = require('./http-client');
-const path = require('path');
-const mkdirp = require('mkdirp');
-const mongoose = require('mongoose');
+
 const logger = log4js.getLogger(global.loggerName);
-const cron = require('node-cron');
 
 function init() {
 	const token = JWT.sign({ name: 'DS_B2B_MANAGER', _id: 'admin', isSuperAdmin: true }, config.RBAC_JWT_KEY);
@@ -16,6 +18,7 @@ function init() {
 	mkdirp.sync(path.join(folderPath, 'downloads'));
 
 	agentStatusCron();
+	interactionsCleanCron();
 }
 
 function agentStatusCron() {
@@ -56,6 +59,70 @@ function agentStatusCron() {
 				logger.error(err);
 			});
 	});
+}
+
+
+function interactionsCleanCron() {
+	cron.schedule('0 */6 * * *', async function () {
+		logger.info('Running cron to clean interactions');
+		try {
+			const appCache = {};
+			const flowList = await mongoose.connection.db.collection('b2b.flows').find({}).project({ _id: 1, app: 1 }).toArray();
+			logger.debug('Flows Found:', flowList.length);
+			await flowList.reduce(async (prev, flow) => {
+				try {
+					await prev;
+					logger.debug('Triggering Cleanup for Flow:', flow._id);
+					if (!appCache[flow.app]) {
+						appCache[flow.app] = await mongoose.connection.db.collection('userMgmt.apps').findOne({ _id: flow.app }, { projection: { _id: 1, interactionStore: 1 } });
+					}
+					let appData = appCache[flow.app];
+					if (appData.interactionStore
+						&& appData.interactionStore.retainPolicy
+						&& appData.interactionStore.retainPolicy
+						&& appData.interactionStore.retainPolicy.retainValue > -1) {
+						const retainValue = +appData.interactionStore.retainPolicy.retainValue;
+						const appDB = mongoose.connections[1].useDb(config.DATA_STACK_NAMESPACE + '-' + flow.app);
+						const col1 = appDB.collection(`b2b.${flow._id}.interactions`);
+						const col2 = appDB.collection(`b2b.${flow._id}.node-state`);
+						const col3 = appDB.collection(`b2b.${flow._id}.node-state.data`);
+
+						if (appData.interactionStore.retainPolicy.retainType == 'count') {
+							await removeDocsBasedOnCount(col1, retainValue);
+							await removeDocsBasedOnCount(col2, retainValue);
+							await removeDocsBasedOnCount(col3, retainValue);
+						} else {
+							await removeDocsBasedOnDays(col1, retainValue);
+							await removeDocsBasedOnDays(col2, retainValue);
+							await removeDocsBasedOnDays(col3, retainValue);
+						}
+					}
+				} catch (err) {
+					logger.debug('Error Occured for Flow:', flow._id);
+					logger.error(err);
+				}
+			});
+		} catch (err) {
+			logger.error(err);
+		}
+	});
+}
+
+function removeDocsBasedOnCount(col, retainValue) {
+	const latestIds = col.find({}, { _id: 1 }).sort({ _id: -1 }).limit(retainValue).map(doc => doc._id);
+	logger.debug('Keeping These Records:', JSON.stringify(latestIds));
+	const status = col.deleteMany({ _id: { $nin: latestIds } });
+	logger.debug('Delete Status :', JSON.stringify(status));
+	return status;
+}
+
+function removeDocsBasedOnDays(col, retainValue) {
+	const daysAgo = new Date();
+	daysAgo.setDate(daysAgo.getDate() - retainValue);
+	logger.debug('Removing Records Older Then:', daysAgo);
+	const status = col.deleteMany({ timestamp: { $lt: daysAgo } });
+	logger.debug('Delete Status :', JSON.stringify(status));
+	return status;
 }
 
 module.exports.init = init;
