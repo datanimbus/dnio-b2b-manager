@@ -35,8 +35,14 @@ async function getBufferFromS3Bucket(options) {
 		};
 		const command = new GetObjectCommand(input);
 		const response = await client.send(command);
-		const bufferData = await response.Body.read();
-		const stringData = bufferData.toString('utf-8');
+		const streamToString = (stream) =>
+			new Promise((resolve, reject) => {
+				const chunks = [];
+				stream.on('data', (chunk) => chunks.push(chunk));
+				stream.on('error', reject);
+				stream.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+			});
+		const stringData = await streamToString(response.Body);
 		return stringData;
 	} catch (err) {
 		logger.error('Error While Downloading Blob');
