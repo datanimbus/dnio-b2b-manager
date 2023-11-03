@@ -50,13 +50,14 @@ router.use('/:app/:api(*)?', async (req, res, next) => {
 		}
 
 		const result = await flowUtils.createInteraction(req, { flowId: routeData.flowId });
+		const interactionId = result.insertedId;
 		let proxyPath;
 		if (Object.keys(req.query).length > 0) {
 			const urlParsed = url.parse(req.url, true);
 			logger.trace('URL parsed with query params - ', urlParsed.search);
-			proxyPath = '/api/b2b' + path + urlParsed.search + '&interactionId=' + result._id;
+			proxyPath = '/api/b2b' + path + urlParsed.search + '&interactionId=' + interactionId;
 		} else {
-			proxyPath = '/api/b2b' + path + '?interactionId=' + result._id;
+			proxyPath = '/api/b2b' + path + '?interactionId=' + interactionId;
 		}
 		logger.info('Proxying request to: ', proxyHost + proxyPath);
 		proxy(proxyHost, {
