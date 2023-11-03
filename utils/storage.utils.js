@@ -1,5 +1,5 @@
 const log4js = require('log4js');
-const { BlobServiceClient } = require('@azu	re/storage-blob');
+const { BlobServiceClient } = require('@azure/storage-blob');
 const { S3Client, GetObjectCommand } = require('@aws-sdk/client-s3');
 
 const logger = log4js.getLogger(global.loggerName);
