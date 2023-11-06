@@ -47,6 +47,12 @@ async function createInteraction(req, options) {
 		interactionData.params = req.params;
 		interactionData.parentInteraction = req.query.parentInteraction;
 		interactionData.status = 'PENDING';
+		if (!interactionData._metadata) {
+			interactionData._metadata = {};
+		}
+		interactionData._metadata.lastUpdated = new Date();
+		interactionData._metadata.createdAt = new Date();
+		interactionData._metadata.deleted = false;
 
 		const collection = mongoose.connections[1].useDb(config.DATA_STACK_NAMESPACE + '-' + req.params.app).collection(`b2b.${flowId}.interactions`);
 		const status = await collection.insertOne(interactionData);
