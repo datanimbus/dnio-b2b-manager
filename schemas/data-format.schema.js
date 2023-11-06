@@ -36,6 +36,9 @@ const definition = {
 	'formatType': {
 		'type': 'String'
 	},
+	'subType': {
+		'type': 'String'
+	},
 	'excelType': {
 		'type': 'String'
 	},
