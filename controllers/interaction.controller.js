@@ -18,7 +18,7 @@ router.get('/:flowId', async (req, res) => {
 	try {
 		const collection = mongoose.connections[1].useDb(config.DATA_STACK_NAMESPACE + '-' + req.params.app).collection(`b2b.${req.params.flowId}.interactions`);
 		const filter = queryUtils.parseFilter(req.query.filter);
-		filter.flowId = req.params.flowId;
+		// filter.flowId = req.params.flowId;
 		if (req.query.countOnly) {
 			// const count = await interactionModel.countDocuments(filter);
 			const count = await collection.countDocuments(filter);

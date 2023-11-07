@@ -87,6 +87,8 @@ function interactionsCleanCron() {
 						const col2 = appDB.collection(`b2b.${flow._id}.node-state`);
 						const col3 = appDB.collection(`b2b.${flow._id}.node-state.data`);
 
+						createIndexIfNotExists(col1, col2, col3);
+
 						if (appData.interactionStore.retainPolicy.retainType == 'count') {
 							await removeDocsBasedOnCount(col1, retainValue);
 							await removeDocsBasedOnCount(col2, retainValue);
@@ -125,6 +127,99 @@ function removeDocsBasedOnDays(col, retainValue) {
 	const status = col.deleteMany({ timestamp: { $lt: daysAgo } });
 	logger.debug('Delete Status :', JSON.stringify(status));
 	return status;
+}
+
+async function createIndexIfNotExists(col1, col2, col3) {
+	if (!col1.indexExists('txnId_1_remoteTxnId_1')) {
+		try {
+			await col1.createIndex({ txnId: 1, remoteTxnId: 1 });
+		} catch (err) {
+			logger.error(`Error while Creating Index [txnId_1_remoteTxnId_1] in collection [${col1.name}]`);
+			logger.error(err);
+		}
+	}
+	if (!col1.indexExists('status_1')) {
+		try {
+			await col1.createIndex({ status: 1 });
+		} catch (err) {
+			logger.error(`Error while Creating Index [status_1] in collection [${col1.name}]`);
+			logger.error(err);
+		}
+	}
+	if (!col1.indexExists('_metadata.lastUpdated_1')) {
+		try {
+			await col1.createIndex({ '_metadata.lastUpdated': 1 });
+		} catch (err) {
+			logger.error(`Error while Creating Index [_metadata.lastUpdated_1] in collection [${col1.name}]`);
+			logger.error(err);
+		}
+	}
+	if (!col1.indexExists('_metadata.createdAt_1')) {
+		try {
+			await col1.createIndex({ '_metadata.createdAt': 1 });
+		} catch (err) {
+			logger.error(`Error while Creating Index [_metadata.createdAt_1] in collection [${col1.name}]`);
+			logger.error(err);
+		}
+	}
+
+	if (!col2.indexExists('interactionId_1')) {
+		try {
+			await col2.createIndex({ interactionId: 1 });
+		} catch (err) {
+			logger.error(`Error while Creating Index [interactionId_1] in collection [${col2.name}]`);
+			logger.error(err);
+		}
+	}
+	if (!col2.indexExists('status_1')) {
+		try {
+			await col2.createIndex({ status: 1 });
+		} catch (err) {
+			logger.error(`Error while Creating Index [status_1] in collection [${col2.name}]`);
+			logger.error(err);
+		}
+	}
+	if (!col2.indexExists('_metadata.lastUpdated_1')) {
+		try {
+			await col2.createIndex({ '_metadata.lastUpdated': 1 });
+		} catch (err) {
+			logger.error(`Error while Creating Index [_metadata.lastUpdated_1] in collection [${col2.name}]`);
+			logger.error(err);
+		}
+	}
+	if (!col2.indexExists('_metadata.createdAt_1')) {
+		try {
+			await col2.createIndex({ '_metadata.createdAt': 1 });
+		} catch (err) {
+			logger.error(`Error while Creating Index [_metadata.createdAt_1] in collection [${col2.name}]`);
+			logger.error(err);
+		}
+	}
+
+	if (!col3.indexExists('interactionId_1_nodeId_1')) {
+		try {
+			await col3.createIndex({ interactionId: 1, nodeId: 1 });
+		} catch (err) {
+			logger.error(`Error while Creating Index [interactionId_1_nodeId_1] in collection [${col3.name}]`);
+			logger.error(err);
+		}
+	}
+	if (!col3.indexExists('_metadata.lastUpdated_1')) {
+		try {
+			await col3.createIndex({ '_metadata.lastUpdated': 1 });
+		} catch (err) {
+			logger.error(`Error while Creating Index [_metadata.lastUpdated_1] in collection [${col3.name}]`);
+			logger.error(err);
+		}
+	}
+	if (!col3.indexExists('_metadata.createdAt_1')) {
+		try {
+			await col3.createIndex({ '_metadata.createdAt': 1 });
+		} catch (err) {
+			logger.error(`Error while Creating Index [_metadata.createdAt_1] in collection [${col3.name}]`);
+			logger.error(err);
+		}
+	}
 }
 
 module.exports.init = init;
