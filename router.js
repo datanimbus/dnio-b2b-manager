@@ -49,6 +49,11 @@ router.use('/:app/:api(*)?', async (req, res, next) => {
 			}
 		}
 
+		const remoteTxnIdExists = await flowUtils.checkForUniqueRemoteTxnId(req, { flowId: routeData.flowId });
+		if (remoteTxnIdExists) {
+			return res.status(400).json({ message: 'Unique Remote Txn ID Check Failed' });
+		}
+
 		const result = await flowUtils.createInteraction(req, { flowId: routeData.flowId });
 		const interactionId = result.insertedId;
 		let proxyPath;

@@ -66,7 +66,30 @@ async function createInteraction(req, options) {
 	}
 }
 
+async function checkForUniqueRemoteTxnId(req, options) {
+	try {
+		const remoteTxnId = req.headers['data-stack-remote-txn-id'];
+		const flowId = options.flowId;
+		const flowDoc = await flowModal.findOne({ _id: flowId }).select('_id inputNode').lean();
+		if (flowDoc.inputNode && flowDoc.inputNode.options && flowDoc.inputNode.options.uniqueRemoteTransaction) {
+			const collection = mongoose.connections[1].useDb(config.DATA_STACK_NAMESPACE + '-' + req.params.app).collection(`b2b.${flowId}.interactions`);
+			const doc = await collection.findOne({ remoteTxnId: remoteTxnId });
+			if (doc) {
+				logger.info(`Interaction Found for Remote Txn ID: [${req.headers['data-stack-remote-txn-id']}] :: `, doc._id);
+				logger.debug(doc);
+				return true;
+			} else {
+				return false;
+			}
+		}
+		return false;
+	} catch (err) {
+		logger.error(err);
+		throw err;
+	}
+}
 
 
 module.exports.validatePayload = validatePayload;
 module.exports.createInteraction = createInteraction;
+module.exports.checkForUniqueRemoteTxnId = checkForUniqueRemoteTxnId;
