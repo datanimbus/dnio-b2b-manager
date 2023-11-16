@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const log4js = require('log4js');
 
 const config = require('./config');
+const { fetchEnvironmentVariablesFromDB } = require('./config');
 const models = require('./models');
 const queue = require('./queue');
 const init = require('./init');
@@ -32,9 +33,10 @@ logsDB.on('reconnect', () => { logger.info(` *** ${config.logsDB} RECONNECTED **
 logsDB.on('connected', () => { logger.info(`Connected to ${config.logsDB} DB`); global.logsDB = logsDB; });
 logsDB.on('reconnectFailed', () => { logger.error(` *** ${config.logsDB} FAILED TO RECONNECT *** `); });
 
-mongoose.connect(config.mongoAuthorUrl, config.mongoAuthorOptions).then(() => {
+mongoose.connect(config.mongoAuthorUrl, config.mongoAuthorOptions).then(async () => {
 	global.authorDB = mongoose.connection.db;
 	mongoose.connection.db.collection('av-cache').createIndex({ timestamp: 1 }, { expireAfterSeconds: 10 });
+	await fetchEnvironmentVariablesFromDB();
 }).catch(err => {
 	logger.error(err);
 	process.exit(0);
