@@ -42,9 +42,6 @@ echo "****************************************************"
 echo "datanimbus.io.bm :: FaaS Base Built using TAG :: $TAG"
 echo "****************************************************"
 
-echo $SIGNING_KEY_USER
-echo $SIGNING_KEY_PASSWORD
-
 if $buildAgent ; then
     echo "****************************************************"
     echo "datanimbus.io.bm :: Building Agents using TAG :: $TAG"
@@ -53,8 +50,8 @@ if $buildAgent ; then
     cd $WORKSPACE/ds-agent
 
     sed -i.bak s#__image_tag__#$TAG# Dockerfile
-    sed -i.bak s#__signing_key_user__#$SIGNING_KEY_USER# Dockerfile
-    sed -i.bak s#__signing_key_password__#$SIGNING_KEY_PASSWORD# Dockerfile
+    # sed -i.bak s#__signing_key_user__#$SIGNING_KEY_USER# Dockerfile
+    # sed -i.bak s#__signing_key_password__#$SIGNING_KEY_PASSWORD# Dockerfile
 
     if [ $cleanBuild ]; then
         docker build --no-cache --pull -t datanimbus.io.b2b.agents:$TAG --build-arg SIGNING_KEY_USER=$SIGNING_KEY_USER --build-arg SIGNING_KEY_PASSWORD=$SIGNING_KEY_PASSWORD .
@@ -81,8 +78,8 @@ if $buildAgentWatcher ; then
     cd $WORKSPACE/ds-agent-watcher
 
     sed -i.bak s#__image_tag__#$TAG# Dockerfile
-    sed -i.bak s#__signing_key_user__#$SIGNING_KEY_USER# Dockerfile
-    sed -i.bak s#__signing_key_password__#$SIGNING_KEY_PASSWORD# Dockerfile
+    # sed -i.bak s#__signing_key_user__#$SIGNING_KEY_USER# Dockerfile
+    # sed -i.bak s#__signing_key_password__#$SIGNING_KEY_PASSWORD# Dockerfile
 
     if [ $cleanBuild ]; then
         docker build --no-cache --pull -t datanimbus.io.b2b.agent.watcher:$TAG --build-arg SIGNING_KEY_USER=$SIGNING_KEY_USER --build-arg SIGNING_KEY_PASSWORD=$SIGNING_KEY_PASSWORD .
