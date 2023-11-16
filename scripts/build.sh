@@ -42,6 +42,9 @@ echo "****************************************************"
 echo "datanimbus.io.bm :: FaaS Base Built using TAG :: $TAG"
 echo "****************************************************"
 
+echo $SIGNING_KEY_USER
+echo $SIGNING_KEY_PASSWORD
+
 if $buildAgent ; then
     echo "****************************************************"
     echo "datanimbus.io.bm :: Building Agents using TAG :: $TAG"
