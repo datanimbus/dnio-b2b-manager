@@ -77,7 +77,7 @@ function interactionsCleanCron() {
 						appCache[flow.app] = await mongoose.connection.db.collection('userMgmt.apps').findOne({ _id: flow.app }, { projection: { _id: 1, interactionStore: 1 } });
 					}
 					let appData = appCache[flow.app];
-					if (appData.interactionStore
+					if (appData && appData.interactionStore
 						&& appData.interactionStore.retainPolicy
 						&& appData.interactionStore.retainPolicy
 						&& appData.interactionStore.retainPolicy.retainValue > -1) {
