@@ -79,6 +79,17 @@ pipeline {
                 sh "./scripts/push_ecr.sh"
             }
         }
+        stage('Deploy') {
+            when {
+                expression {
+                    params.deploy == true
+                }
+            }
+            steps {
+                sh "chmod 777 ./scripts/deploy.sh"
+                sh "./scripts/deploy.sh"
+            }
+        }
         stage('Push to Docker Hub') {
             when {
                 expression {
@@ -99,17 +110,6 @@ pipeline {
             steps {
                 sh "chmod 777 ./scripts/push_s3.sh"
                 sh "./scripts/push_s3.sh"
-            }
-        }
-        stage('Deploy') {
-            when {
-                expression {
-                    params.deploy == true
-                }
-            }
-            steps {
-                sh "chmod 777 ./scripts/deploy.sh"
-                sh "./scripts/deploy.sh"
             }
         }
         stage('Clean Up') {
