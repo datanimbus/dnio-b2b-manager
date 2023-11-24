@@ -306,14 +306,11 @@ router.put('/:id/deploy', async (req, res) => {
 
 			await doc.save();
 
-			let status = await k8sUtils.upsertService(doc);
-			status = await k8sUtils.upsertDeployment(doc);
+			let srvcStatus = await k8sUtils.upsertService(doc);
+			let depStatus = await k8sUtils.upsertDeployment(doc);
 
-			logger.info('Deploy API called');
-			logger.debug(status);
-
-			if (status.statusCode != 200 && status.statusCode != 202) {
-				return res.status(status.statusCode).json({ message: 'Unable to deploy Flow' });
+			if ((srvcStatus.statusCode < 200 || srvcStatus.statusCode > 202) || (depStatus.statusCode < 200 || depStatus.statusCode > 202)) {
+				return res.status(400).json({ message: 'Unable to deploy Flow' });
 			}
 
 
