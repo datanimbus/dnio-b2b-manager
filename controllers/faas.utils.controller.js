@@ -197,8 +197,8 @@ router.put('/:id/deploy', async (req, res) => {
 			const status = await k8sUtils.upsertFaasDeployment(doc);
 			logger.debug(`Upsert service status :: ${service.statusCode}`);
 			logger.debug(`Upsert deployment status :: ${status.statusCode}`);
-			if ((status.statusCode <= 200 || status.statusCode >= 202) || (service.statusCode <= 200 || service.statusCode >= 202)) {
-				return res.status(status.statusCode).json({ message: 'Unable to deploy function' });
+			if ((status.statusCode < 200 || status.statusCode > 202) || (service.statusCode < 200 || service.statusCode > 202)) {
+				return res.status(400).json({ message: 'Unable to deploy function' });
 			}
 		}
 
