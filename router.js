@@ -32,13 +32,12 @@ router.use('/:app/:api(*)?', async (req, res, next) => {
 		delete headers['user-agent'];
 		delete headers['content-length'];
 		// const routeData = global.activeFlows[path];
-		let proxyHost;
+		let proxyHost = routeData.proxyHost;
 		if (config.isK8sEnv()) {
 			if (!routeData || !routeData.proxyHost || !routeData.proxyPath) {
 				return res.status(404).json({ message: 'No Route Found' });
 			}
 			//Check flow readiness
-			proxyHost = routeData.proxyHost;
 			let readinessPath = '/api/b2b/internal/health/ready';
 			const resp = await httpClient.httpRequest({
 				method: 'GET',

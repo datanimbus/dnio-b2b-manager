@@ -20,7 +20,7 @@ async function initRouterMap() {
 				};
 			} else {
 				global.activeFlows['/' + item.app + item.inputNode.options.path] = {
-					proxyHost: 'http://localhost:8080',
+					proxyHost: 'http://localhost:8000',
 					proxyPath: '/api/b2b/' + item.app + item.inputNode.options.path,
 					flowId: item._id,
 					skipAuth: item.skipAuth || false
