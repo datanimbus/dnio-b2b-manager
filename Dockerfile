@@ -33,6 +33,6 @@ ENV NODE_ENV='production'
 EXPOSE 10011
 EXPOSE 10443
 
-# RUN chmod -R 777 /app
+RUN chmod -R 777 /tmp/app
 
 CMD [ "node", "app.js" ]
