@@ -23,7 +23,9 @@ router.get('/utils/count', async (req, res) => {
 
 router.get('/', async (req, res) => {
 	try {
+		let app = req.params.app;
 		const filter = queryUtils.parseFilter(req.query.filter);
+		filter.app = app;
 		if (req.query.countOnly) {
 			const count = await nodeModel.countDocuments(filter);
 			return res.status(200).json(count);
