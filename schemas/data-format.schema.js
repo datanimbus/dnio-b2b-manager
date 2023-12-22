@@ -7,6 +7,7 @@ const definition = {
 		'required': true
 	},
 	'description': { 'type': 'String' },
+	'type': { 'type': 'String', 'default': 'Object' },
 	'definition': {
 		'type': [
 			{
@@ -33,6 +34,9 @@ const definition = {
 		'required': true
 	},
 	'formatType': {
+		'type': 'String'
+	},
+	'subType': {
 		'type': 'String'
 	},
 	'excelType': {

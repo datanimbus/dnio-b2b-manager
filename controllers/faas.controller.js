@@ -40,13 +40,14 @@ router.get('/:id', async (req, res) => {
 		let txnId = req.get('txnId');
 		let draft = req.query.draft;
 		let id = req.params.id;
+		let app = req.params.app;
 
 		logger.info(`[${txnId}] Faas show request received :: ${id} :: draft :: ${draft}`);
 
 		if (draft) {
-			let draftQuery = faasDraftModel.findById(id);
+			let draftQuery = faasDraftModel.findOne({ _id: id, app: app });
 			if (req.query.select) {
-				draftQuery = draftQuery.select(req.query.select);
+				draftQuery = draftQuery.select(req.query.select.split(',').join(' '));
 			}
 			let draftDoc = await draftQuery.lean();
 			if (draftDoc) {
@@ -54,9 +55,9 @@ router.get('/:id', async (req, res) => {
 			}
 			logger.debug(`[${txnId}] Faas draft not found in draft collection, checking in main collection`);
 		}
-		let mongoQuery = faasModel.findById(req.params.id);
+		let mongoQuery = faasModel.findOne({ _id: id, app: app });
 		if (req.query.select) {
-			mongoQuery = mongoQuery.select(req.query.select);
+			mongoQuery = mongoQuery.select(req.query.select.split(',').join(' '));
 		}
 		let doc = await mongoQuery.lean();
 		if (!doc) {
@@ -140,7 +141,7 @@ router.put('/:id', async (req, res) => {
 
 		logger.trace(`[${txnId}] Function update data received :: ${JSON.stringify(payload)}`);
 
-		let doc = await faasModel.findOne({ _id: req.params.id, '_metadata.deleted': false });
+		let doc = await faasModel.findOne({ _id: req.params.id, app: req.params.app, '_metadata.deleted': false });
 
 		if (!doc) {
 			logger.error(`[${txnId}] Function data not found in b2b.faas collection`);
@@ -169,7 +170,7 @@ router.put('/:id', async (req, res) => {
 			logger.trace(`[${txnId}] Function data to be updated :: ${JSON.stringify(doc)}`);
 
 			doc._req = req;
-			doc.save();
+			await doc.save();
 
 		} else if (faasData.draftVersion) {
 
@@ -182,7 +183,7 @@ router.put('/:id', async (req, res) => {
 
 			draftData = Object.assign(draftData, payload);
 			draftData._req = req;
-			draftData.save();
+			await draftData.save();
 
 		} else {
 			logger.info(`[${txnId}] Function is neither in draft status nor has a linked draft, creating a new draft`);
@@ -214,9 +215,15 @@ router.put('/:id', async (req, res) => {
 		});
 	} catch (err) {
 		logger.error(err);
-		return res.status(500).json({
-			message: err.message
-		});
+		if (err.message.includes('FAAS_NAME_ERROR')) {
+			return res.status(400).json({
+				message: err.message
+			});
+		} else {
+			return res.status(500).json({
+				message: err.message
+			});
+		}
 	}
 });
 

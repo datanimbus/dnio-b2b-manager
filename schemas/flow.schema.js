@@ -18,7 +18,7 @@ const definition = {
 		'type': 'Number',
 		'default': 1
 	},
-	'runningVersion': {
+	'draftVersion': {
 		'type': 'Number'
 	},
 	'runningFlow': {					 //Internal
@@ -33,14 +33,51 @@ const definition = {
 	'namespace': {					 //Internal
 		'type': 'String'
 	},
+	'skipAuth': {
+		'type': 'Boolean',
+		'default': false
+	},
 	'status': {                          //Internal
 		'type': 'String',
 		'enum': ['Pending', 'Stopped', 'Error', 'Active', 'Draft'],
 		'default': 'Draft'
 	},
+	'lastInvoked': {
+		'type': 'Date'
+	},
 	'inputNode': { 'type': 'Object' },
 	'nodes': { 'type': 'Object' },
+	'errorNode': { 'type': 'Object' },
 	'dataStructures': { 'type': 'Object' },
+	'constants': [
+		{
+			'key': {
+				'type': 'String', 'required': true
+			},
+			'dataType': {
+				'type': 'String', 'required': true
+			},
+			'value': {
+				'type': 'String'
+			}
+		}
+	],
+	'volumeMounts': [
+		{
+			'name': {
+				'type': 'String', 'required': true
+			},
+			'mountType': {
+				'type': 'String', 'required': true, 'default': 'HOSTPATH'
+			},
+			'hostPath': {
+				'type': 'String', 'required': true
+			},
+			'containerPath': {
+				'type': 'String', 'required': true
+			}
+		}
+	],
 	'port': { 'type': 'String' },
 	'description': { 'type': 'String' },
 	'isBinary': {

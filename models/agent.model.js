@@ -25,9 +25,10 @@ schema.index({ name: 1, app: 1 }, { unique: true, sparse: true, collation: { loc
 schema.index({ agentId: 1 });
 
 schema.post('save', function (error, doc, next) {
+	logger.error(error);
 	if ((error.code === 11000
-		|| error.message.indexOf('__CUSTOM_NAME_DUPLICATE_ERROR__') > -1
-		|| error.message.indexOf('E11000') > -1
+		|| error?.message?.indexOf('__CUSTOM_NAME_DUPLICATE_ERROR__') > -1
+		|| error?.message?.indexOf('E11000') > -1
 	)) {
 		next(new Error('Agent name is already in use'));
 	} else {
@@ -47,7 +48,7 @@ schema.pre('remove', dataStackUtils.auditTrail.getAuditPreRemoveHook());
 schema.post('remove', dataStackUtils.auditTrail.getAuditPostRemoveHook('b2b.agents.audit', client, 'auditQueue'));
 
 schema.pre('save', function (next) {
-	let regex = /^[a-zA-Z0-9_ -]*$/;
+	let regex = /^[a-zA-Z0-9_\s\-\\.]*$/;
 	this._isNew = this.isNew;
 	if (this.name && this.name.length > 24) return next(new Error('Agent name cannot be more than 24 characters'));
 	if (this.name && regex.test(this.name)) return next();

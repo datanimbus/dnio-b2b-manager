@@ -1,12 +1,63 @@
 const router = require('express').Router();
 const log4js = require('log4js');
 const mongoose = require('mongoose');
+const config = require('../config');
 
 const logger = log4js.getLogger(global.loggerName);
 
 // const indexUtils = require('../utils/indexes.utils');
 
-router.delete('/:id', async (req, res) => {
+router.get('/env', async (req, res) => {
+	try {
+		let envVars = {};
+		config.envVarsForFlows.forEach(key => {
+			envVars[key] = process.env[key];
+		});
+		envVars['NODE_OPTIONS'] = `--max-old-space-size=${config.maxHeapSize}`;
+		envVars['NODE_ENV'] = 'production';
+		res.status(200).json(envVars);
+	} catch (err) {
+		logger.error(`[${req.get('TxnId')}] Error Fetching ENV - ${err.message}`);
+		logger.error(err);
+		if (typeof err === 'string') {
+			return res.status(500).json({
+				message: err
+			});
+		}
+		res.status(500).json({
+			message: err.message
+		});
+	}
+});
+
+
+router.get('/document/:type/:id', async (req, res) => {
+	let type = req.params.type;
+	let id = req.params.id;
+
+	try {
+		let doc;
+
+		if (type == 'faas') {
+			doc = await mongoose.model('faas').findOne({ _id: id }).lean();
+			
+		} else if (type == 'flow') {
+			doc = await mongoose.model('flow').findOne({ _id: id }).lean();
+		}
+
+		if (doc) {
+			return res.status(200).json(doc);
+		} else {
+			return res.status(404).json({ message: "Not found." });
+		}
+	} catch (err) {
+		logger.error(`Error fetching document Type :: ${type} :: ID :: ${id} :: ${err}`);
+		return res.status(500).json({ message: err.message || err });
+	}
+});
+
+
+router.delete('/app/:id', async (req, res) => {
 	try {
 		const app = req.params.id;
 		let promises;

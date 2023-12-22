@@ -11,14 +11,17 @@ const validatePropertyTypes = ['String', 'Number', 'Boolean', 'Date', 'Object', 
 async function getApp(req, app) {
 	try {
 		const res = await httpClient.httpRequest({
-			url: config.baseUrlUSR + '/app/' + app + '?select=_id',
+			url: config.baseUrlUSR + '/data/app/' + app,
 			method: 'GET',
 			headers: {
 				'Content-Type': 'application/json',
 				'TxnId': req.headers['TxnId'],
-				'Authorization': req.headers['Authorization']
+				'Authorization': 'JWT ' + global.BM_TOKEN
 			}
 		});
+		if (Array.isArray(res.body)) {
+			res.body = res.body[0];
+		}
 		return res;
 	} catch (err) {
 		logger.error(err);

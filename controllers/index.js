@@ -27,7 +27,11 @@ router.get('/faas/fetchAll', async (req, res) => {
 });
 router.use('/auth', paramParser, require('./agent-auth.controller'));
 router.use('/app', require('./app.controller'));
+router.use('/:app/node', paramParser, require('./custom-node.controller'));
+router.use('/:app/plugin', paramParser, require('./custom-node.controller'));
+// router.use('/:app/node/utils', paramParser, require('./custom-node.utils.controller'));
 router.use('/:app/agent', paramParser, require('./agent.controller'));
+router.use('/:app/agent/utils', paramParser, require('./agent-session.controller'));
 router.use('/:app/agent/utils', paramParser, require('./agent.utils.controller'));
 router.use('/:app/dataFormat', paramParser, require('./data-format.controller'));
 router.use('/:app/faas', paramParser, require('./faas.controller'));
@@ -35,8 +39,8 @@ router.use('/:app/faas/utils', paramParser, require('./faas.utils.controller'));
 router.use('/:app/flow', paramParser, require('./flow.controller'));
 router.use('/:app/flow/utils', paramParser, require('./flow.utils.controller'));
 router.use('/:app/interaction', paramParser, require('./interaction.controller'));
-// router.use('/:app/partner', paramParser, require('./partner.controller'));
-router.use('/internal/app', require('./internal.controller'));
+// router.use('/:app/node', paramParser, require('./custom-node.controller'));
+router.use('/internal', require('./internal.controller'));
 router.use('/internal/health', require('./health.controller'));
 
 module.exports = router;

@@ -3,13 +3,12 @@ const log4js = require('log4js');
 const mongoose = require('mongoose');
 const JWT = require('jsonwebtoken');
 const fs = require('fs');
-const path = require('path');
 const crypto = require('crypto');
 const FormData = require('form-data');
 const { v4: uuid } = require('uuid');
 const { zip } = require('zip-a-folder');
 const { exec } = require('child_process');
-const _ = require('lodash');
+const ExcelJS = require('exceljs');
 
 const config = require('../config');
 const queryUtils = require('../utils/query.utils');
@@ -30,6 +29,7 @@ const LICENSE_FILE = './generatedAgent/LICENSE';
 const README_FILE = './generatedAgent/scriptFiles/README.md';
 
 let fileIDDownloadingList = {};
+
 
 router.get('/count', async (req, res) => {
 	try {
@@ -59,7 +59,8 @@ router.post('/:id/init', async (req, res) => {
 			});
 		}
 		// const flows = await flowModel.find({ app: req.locals.app, $or: [{ 'inputNode.options.agentId': agentId }, { 'nodes.options.agentId': agentId }] }).select('_id inputNode nodes').lean();
-		const flows = await flowModel.find({ app: req.params.app, $or: [{ 'inputNode.options.agents.agentId': agentId }, { 'nodes.options.agents.agentId': agentId }] }).lean();
+		// logger.info('filter - ', { app: req.params.app, $or: [{ 'inputNode.options.agents.agentId': agentId }, { 'nodes.options.agents.agentId': agentId }] });
+		const flows = await flowModel.find({ app: req.params.app, status: 'Active', $or: [{ 'inputNode.options.agents.agentId': agentId }, { 'nodes.options.agents.agentId': agentId }] }).lean();
 		logger.trace(`[${txnId}] Flows found - ${flows.map(_d => _d._id)}`);
 		// const allFlows = [];
 		let newRes = [];
@@ -78,7 +79,7 @@ router.post('/:id/init', async (req, res) => {
 		await Promise.all(promises).then((_d) => {
 			newRes = [].concat.apply([], _d);
 			logger.debug(`[${txnId}]`, JSON.stringify({ newRes }));
-			newRes = newRes.filter(_k => _k && _k.agentID == agentId);
+			newRes = newRes.filter(_k => _k && _k.agentId == agentId);
 			logger.trace(`[${txnId}] Transfer Ledger Enteries - ${JSON.stringify({ transferLedgerEntries: newRes })}`);
 			res.status(200).json({ transferLedgerEntries: newRes, mode: process.env.MODE ? process.env.MODE.toUpperCase() : 'PROD' });
 		});
@@ -94,15 +95,21 @@ router.post('/:id/heartbeat', async (req, res) => {
 	try {
 		const txnId = req.header('txnId');
 		const agentId = req.params.id;
-		logger.info(`[${txnId}] [${agentId}] Processing Agent Init Action`);
+		logger.info(`[${txnId}] [${agentId}] Processing Agent Hearbeat Action`);
 		logger.trace(`[${txnId}] [${agentId}] Agent Init Action Body -`, JSON.stringify(req.body));
 
-		let doc = await agentModel.findOne({ agentId: agentId }).lean();
+		let doc = await agentModel.findOne({ agentId: agentId });
 		if (!doc) {
 			logger.error(`[${txnId}] [${agentId}] Agent Not Found`);
 			return res.status(404).json({
 				message: 'Agent Not Found'
 			});
+		}
+
+		if (doc.status != 'RUNNING') {
+			doc.status = 'RUNNING';
+			doc._req = req;
+			await doc.save();
 		}
 
 		const actions = [];
@@ -128,7 +135,9 @@ router.post('/:id/heartbeat', async (req, res) => {
 
 router.get('/:id/password', async (req, res) => {
 	try {
+		const txnId = req.header('txnId');
 		const agentId = req.params.id;
+		logger.info(`[${txnId}] Processing Get Agent Password Action of - `, agentId);
 		let doc = await agentModel.findById({ _id: agentId }).lean();
 		if (!doc) {
 			return res.status(404).json({
@@ -152,14 +161,35 @@ router.get('/:id/password', async (req, res) => {
 
 router.put('/:id/password', async (req, res) => {
 	try {
+		const txnId = req.header('txnId');
 		const agentId = req.params.id;
-		let doc = await agentModel.findById({ agentId: agentId });
+		const payload = req.body;
+		logger.info(`[${txnId}] Processing Update Agent Password Action of - `, agentId);
+		logger.trace(`[${txnId}] Req payload -`, JSON.stringify(payload));
+		let doc = await agentModel.findById({ _id: agentId });
 		if (!doc) {
 			return res.status(404).json({
 				message: 'Agent Not Found'
 			});
 		}
-		doc.password = null;
+
+		const pwdResp = await securityUtils.encryptText(doc.app, payload.password);
+		if (!pwdResp || pwdResp.statusCode != 200) {
+			return res.status(400).json({
+				message: 'Unable to encrypt data'
+			});
+		}
+		doc.password = pwdResp.body.data;
+
+		const text = securityUtils.md5(payload.password);
+		const secResp = await securityUtils.encryptText(doc.app, text);
+		if (!secResp || secResp.statusCode != 200) {
+			return res.status(400).json({
+				message: 'Unable to encrypt data'
+			});
+		}
+		doc.secret = secResp.body.data;
+		doc.version = doc.version + 1;
 		doc._req = req;
 		let status = await doc.save();
 		const actionDoc = new agentActionModel({
@@ -246,21 +276,85 @@ router.delete('/:id/session', async (req, res) => {
 
 router.put('/:id/stop', async (req, res) => {
 	try {
-		let doc = await agentModel.findById({ agentId: req.params.id }).lean();
+		let doc = await agentModel.findById({ _id: req.params.id });
 		if (!doc) {
 			return res.status(404).json({
 				message: 'Agent Not Found'
 			});
 		}
+		doc.status = 'STOPPED';
+		let status = await doc.save();
+		logger.debug('Agent Stop Status Updated ', status);
 		const actionDoc = new agentActionModel({
 			agentId: doc.agentId,
 			action: 'AGENT-STOPPED'
 		});
 		actionDoc._req = req;
-		let status = await actionDoc.save();
+		status = await actionDoc.save();
 		status = await cacheUtils.endSession(req.params.id);
 		logger.debug('Agent Stop Triggered ', status);
 		return res.status(200).json({ message: 'Agent Stop Triggered' });
+	} catch (err) {
+		logger.error(err);
+		res.status(500).json({
+			message: err.message
+		});
+	}
+});
+
+router.put('/:id/disable', async (req, res) => {
+	try {
+		let doc = await agentModel.findById({ _id: req.params.id });
+		let oldStatus = doc.status;
+		if (!doc) {
+			return res.status(404).json({
+				message: 'Agent Not Found'
+			});
+		}
+		doc.status = 'STOPPED';
+		doc.active = false;
+		let status = await doc.save();
+		logger.debug('Agent Disable Status Updated ', status);
+		if (oldStatus === 'RUNNING') {
+			const actionDoc = new agentActionModel({
+				agentId: doc.agentId,
+				action: 'AGENT-DISABLED'
+			});
+			actionDoc._req = req;
+			status = await actionDoc.save();
+		}
+		status = await cacheUtils.endSession(req.params.id);
+		logger.debug('Agent Disable Triggered ', status);
+		return res.status(200).json({ message: 'Agent Disable Triggered' });
+	} catch (err) {
+		logger.error(err);
+		res.status(500).json({
+			message: err.message
+		});
+	}
+});
+
+router.put('/:id/enable', async (req, res) => {
+	try {
+		let doc = await agentModel.findById({ _id: req.params.id });
+		if (!doc) {
+			return res.status(404).json({
+				message: 'Agent Not Found'
+			});
+		}
+		doc.status = 'STOPPED';
+		doc.active = true;
+		let status = await doc.save();
+		logger.debug('Agent Enable Status Updated ', status);
+		const actionDoc = new agentActionModel({
+			agentId: doc.agentId,
+			action: 'AGENT-ENABLED'
+		});
+		actionDoc._req = req;
+		status = await actionDoc.save();
+		status = await cacheUtils.endSession(req.params.id);
+		logger.debug('Agent Enable Triggered ', status);
+		return res.status(200).json({ message: 'Agent Enable Triggered' });
 	} catch (err) {
 		logger.error(err);
 		res.status(500).json({
@@ -358,6 +452,10 @@ router.post('/:id/upload', async (req, res) => {
 
 				let chunkChecksumList = uploadHeaders.chunkChecksum;
 
+				const index = doc.nodes.findIndex(node => node.type === 'FILE');
+				let outputObj = doc.nodes[index];
+				uploadHeaders.outputDirectory = outputObj.options.outputDirectories;
+
 				let downloadMetaDataObj = generateFileDownloadMetaData(uploadHeaders, fileDetails.filename, chunkChecksumList, targentAgentId);
 				agentEvent = helpers.constructAgentEvent(req, targentAgentId, uploadHeaders, 'DOWNLOAD_REQUEST', downloadMetaDataObj);
 				const downloadActionDoc = new agentActionModel(agentEvent);
@@ -375,7 +473,7 @@ router.post('/:id/upload', async (req, res) => {
 					});
 					downloadStream.on('error', (err) => {
 						logger.error(`[${txnId}] Error streaming file - ${err}`);
-						reject(error);
+						reject(err);
 					});
 					downloadStream.on('end', () => {
 						buf = Buffer.concat(bufs);
@@ -388,7 +486,16 @@ router.post('/:id/upload', async (req, res) => {
 				try {
 					decryptedData = fileUtils.decryptDataGCM(encryptedData.toString(), config.encryptionKey);
 					logger.trace(`[${txnId}] DecryptedData - `, decryptedData);
-					fs.writeFileSync(uploadHeaders.originalFileName, decryptedData);
+					const fileExtension = reqFile.name.split('.').pop();
+					logger.trace('File extension - ', fileExtension);
+					if (fileExtension === 'xlsx' || fileExtension === 'xls') {
+						const workbook = new ExcelJS.Workbook();
+						await workbook.xlsx.load(Buffer.from(decryptedData, 'base64'));
+						await workbook.xlsx.writeFile('./uploads/' + reqFile.name);
+					} else {
+						fs.writeFileSync('./uploads/' + reqFile.name, Buffer.from(decryptedData, 'base64').toString());
+						// fs.writeFileSync('./uploads/' + reqFile.name, decryptedData);
+					}
 				} catch (err) {
 					logger.error(`[${txnId}] Error decrypting data - ${err}`);
 					return res.status(500).json({ message: err.message });
@@ -396,7 +503,7 @@ router.post('/:id/upload', async (req, res) => {
 
 				logger.info(`[${txnId}] File ${uploadHeaders.originalFileName} for the flow ${uploadHeaders.flowName} received, uploading file to flow`);
 				let formData = new FormData();
-				formData.append('file', fs.createReadStream(uploadHeaders.originalFileName));
+				formData.append('file', fs.createReadStream('./uploads/' + uploadHeaders.originalFileName));
 
 				let flowUrl;
 				if (config.isK8sEnv()) {
@@ -409,19 +516,18 @@ router.post('/:id/upload', async (req, res) => {
 				const result = await flowUtils.createInteraction(req, { flowId: uploadHeaders.flowId });
 				logger.trace(`[${txnId}] Interaction status - `, result);
 				logger.debug(`[${txnId}] FlowUrl - `, flowUrl);
+				let flowHeaders = formData.getHeaders();
+				flowHeaders['DATA-STACK-Txn-Id'] = req.header('DATA-STACK-Txn-Id');
+				flowHeaders['DATA-STACK-Remote-Txn-Id'] = req.header('DATA-STACK-Remote-Txn-Id');
 				const flowRes = await httpClient.httpRequest({
 					url: flowUrl + '?interactionId=' + result._id,
 					method: 'POST',
-					headers: {
-						'Authorization': req.header('authorization'),
-						'DATA-STACK-Txn-Id': req.header('DATA-STACK-Txn-Id'),
-						'DATA-STACK-Remote-Txn-Id': req.header('DATA-STACK-Remote-Txn-Id')
-					},
+					headers: flowHeaders,
 					body: formData
 				});
 				if (!flowRes) {
 					logger.error(`Flow ${doc.name} is down`);
-					generateFileProcessedErrorActionForAgent(req, uploadHeaders, "Flow is not reachable");
+					generateFileProcessedErrorActionForAgent(req, uploadHeaders, 'Flow is not reachable');
 					throw new Error(`Flow ${doc.name} is down`);
 				} else if (flowRes.statusCode === 200 || flowRes.statusCode === 202) {
 					logger.info(`[${txnId}] Adding FileProcessedSuccess Request to Agent ${agentId} for the file ${uploadHeaders.originalFileName}, for the Flow ${uploadHeaders.flowName}`);
@@ -486,7 +592,7 @@ router.post('/:id/download', async (req, res) => {
 				return res.status(400).json({ message: 'File not found' });
 			}
 
-			const downloadFilePath = '/app/downloads/' + payload.fileName;
+			const downloadFilePath = './downloads/' + payload.fileName;
 			let writeStream = fs.createWriteStream(downloadFilePath);
 
 			const encryptedData = await new Promise((resolve, reject) => {
@@ -507,7 +613,7 @@ router.post('/:id/download', async (req, res) => {
 				});
 			});
 			logger.trace(`[${txnId}] EncryptedData - `, encryptedData);
-			logger.trace(`[${txnId}] EncryptedData string - `, encryptedData.toString());
+			logger.trace(`[${txnId}] EncryptedData string - `, encryptedData.toString('base64'));
 			logger.trace(`[${txnId}] MD5 Checksum of EncryptedData - `, fileUtils.createHash(encryptedData));
 
 			res.status(200).send(encryptedData);
@@ -562,7 +668,8 @@ router.get('/:id/download/exec', async (req, res) => {
 			'central-folder': '.',
 			'heartbeat-frequency': config.hbFrequency,
 			'log-level': process.env.LOG_LEVEL || 'info',
-			'sentinel-port-number': '54321'
+			'sentinel-port-number': '54321',
+			'poller-frequency': '60'
 		};
 		logger.trace('config initialized - ', agentConfig);
 		let confStr = createConf(agentConfig);
@@ -597,32 +704,22 @@ router.get('/:id/download/exec', async (req, res) => {
 	}
 });
 
-router.post('/logs', async (req, res) => {
+router.get('/:id/logs', async (req, res) => {
 	try {
-		const agentId = req.header('DATA-STACK-Agent-Id');
-		const agentName = req.header('DATA-STACK-Agent-Name');
-		const ipAddress = req.header('DATA-STACK-Ip-Address');
-		const macAddress = req.header('DATA-STACK-Mac-Address');
+		const agentId = req.params.id;
 		const app = req.locals.app;
-		const payload = req.body;
-		logger.info(`Received request to upload agent log - `, agentId, app);
-		logger.trace(`Agent Log payload -`, JSON.stringify(payload));
-		let agentLogObjectArray = JSON.parse(JSON.stringify(payload));
-		logger.trace(`Agent Log parsed payload - `, agentLogObjectArray);
-		for (let i in agentLogObjectArray) {
-			let agentLogObject = agentLogObjectArray[i];
-			agentLogObject['agentId'] = agentId;
-			agentLogObject['agentName'] = agentName;
-			agentLogObject['app'] = app;
-			agentLogObject['ipAddress'] = ipAddress;
-			agentLogObject['macAddress'] = macAddress;
-			const agentLogDoc = new agentLogModel(agentLogObject);
-			agentLogDoc._req = req;
-			let status = agentLogDoc.save();
-			logger.trace('Agent Action Create Status: ', status);
-			logger.trace('Agent Log Doc - ', agentLogDoc);
+		logger.info('Received request for fetching agent log - ', agentId, app);
+
+		const filter = queryUtils.parseFilter(req.query.filter);
+		filter.agentId = agentId;
+		filter.app = app;
+		if (req.query.countOnly) {
+			const count = await agentLogModel.countDocuments(filter);
+			return res.status(200).json(count);
 		}
-		return res.status(200).json({ message: "Agent Log Successfully Uploaded" });
+		const data = queryUtils.getPaginationData(req);
+		const docs = await agentLogModel.find(filter).select(data.select).sort(data.sort).skip(data.skip).limit(data.count).lean();
+		res.status(200).json(docs);
 	} catch (err) {
 		logger.error(err);
 		res.status(500).json({
@@ -631,21 +728,33 @@ router.post('/logs', async (req, res) => {
 	}
 });
 
-router.get('/:id/logs', async (req, res) => {
+router.post('/logs', async (req, res) => {
 	try {
-		const agentId = req.params.id;
+		const agentId = req.header('DATA-STACK-Agent-Id');
+		const agentName = req.header('DATA-STACK-Agent-Name');
+		const ipAddress = req.header('DATA-STACK-Ip-Address');
+		const macAddress = req.header('DATA-STACK-Mac-Address');
 		const app = req.locals.app;
-		logger.info(`Received request for fetching agent log - `, agentId, app);
-		let agentLogs = [];
-		const logs = await agentLogModel.find({ agentId: agentId, app: app });
-		if (logs.length > 0) {
-			await Promise.all(logs.map(async (doc) => {
-				agentLogs.push(doc.toObject());
-				doc._req = req;
-				await doc.save();
-			}));
+		const payload = req.body;
+		logger.info('Received request to upload agent log - ', agentId, app);
+		logger.trace('Agent Log payload -', JSON.stringify(payload));
+		let agentLogObjectArray = JSON.parse(JSON.stringify(payload));
+		logger.trace('Agent Log parsed payload - ', agentLogObjectArray);
+		for (let i in agentLogObjectArray) {
+			let agentLogObject = agentLogObjectArray[i];
+			agentLogObject['agentId'] = agentId;
+			agentLogObject['agentName'] = agentName;
+			agentLogObject['app'] = app;
+			agentLogObject['ipAddress'] = ipAddress;
+			agentLogObject['macAddress'] = macAddress;
+			agentLogObject['timestamp'] = new Date(agentLogObject['timestamp']);
+			const agentLogDoc = new agentLogModel(agentLogObject);
+			agentLogDoc._req = req;
+			let status = await agentLogDoc.save();
+			logger.trace('Agent Action Create Status: ', status);
+			logger.trace('Agent Log Doc - ', agentLogDoc);
 		}
-		return res.status(200).json({ agentLogs: agentLogs });
+		return res.status(200).json({ message: 'Agent Log Successfully Uploaded' });
 	} catch (err) {
 		logger.error(err);
 		res.status(500).json({
@@ -661,9 +770,19 @@ router.post('/:id/agentAction', async (req, res) => {
 		const action = req.header('action');
 		logger.info(`[${txnId}] Received request for adding ${action} action to TargentAgent ${targentAgentId}`);
 		let payload = JSON.parse(JSON.stringify(req.body));
-		logger.trace(`Agent Action payload -`, payload);
-		logger.trace(`Agent Action payload.metaDataInfo -`, payload.metaDataInfo);
-		logger.trace(`Agent Action payload.eventDetails -`, payload.eventDetails);
+		logger.trace('Agent Action payload -', payload);
+		logger.trace('Agent Action payload.metaDataInfo -', payload.metaDataInfo);
+		logger.trace('Agent Action payload.eventDetails -', payload.eventDetails);
+
+		const doc = await flowModel.findById(payload.eventDetails.flowId);
+		if (!doc) {
+			return res.status(400).json({ message: 'Invalid Flow' });
+		}
+
+		const index = doc.nodes.findIndex(node => node.type === 'FILE');
+		let outputObj = doc.nodes[index];
+		payload.metaDataInfo.outputDirectory = outputObj.options.outputDirectories;
+		// payload.metaDataInfo.mirrorDirectory = outputObj.options.mirrorInputDirectories;
 
 		if (action === 'download') {
 			let downloadMetaDataObj = generateFileDownloadMetaData(payload.metaDataInfo, payload.metaDataInfo.fileID, '', targentAgentId);
@@ -683,6 +802,8 @@ router.post('/:id/agentAction', async (req, res) => {
 	}
 });
 
+
+
 function createConf(config) {
 	let str = '';
 	Object.keys(config).forEach(_k => {
@@ -691,7 +812,6 @@ function createConf(config) {
 	});
 	return str;
 }
-
 
 function zipAFolder(src, dest) {
 	return zip(src, dest);
@@ -778,6 +898,8 @@ function generateFileDownloadMetaData(metaDataInfo, fileId, chunkChecksumList, a
 	metaData.totalChunks = metaDataInfo.totalChunks;
 	metaData.fileLocation = metaDataInfo.fileLocation;
 	metaData.downloadAgentID = agentId;
+	metaData.outputDirectory = generateOutputDirectoriesForAgent(metaDataInfo.outputDirectory);
+	// metaData.mirrorDirectory = metaDataInfo.mirrorDirectory;
 	return metaData;
 }
 
@@ -834,4 +956,11 @@ function generateFileProcessedErrorMetaData(metaDataInfo, errorMsg) {
 	return metaData;
 }
 
+function generateOutputDirectoriesForAgent(outputDirectories) {
+	let outputDirectory = [];
+	outputDirectories.forEach(directory => {
+		outputDirectory.push(directory.path);
+	});
+	return outputDirectory;
+}
 module.exports = router;

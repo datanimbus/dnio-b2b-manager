@@ -3,7 +3,7 @@ pipeline {
 
 
     parameters{
-        string(name: 'tag', defaultValue: 'vNext', description: 'Image Tag')
+        string(name: 'tag', defaultValue: 'main', description: 'Image Tag')
         booleanParam(name: 'buildAgent', defaultValue: false, description: 'Build B2B Agents')
         booleanParam(name: 'buildAgentWatcher', defaultValue: false, description: 'Build B2B Agent Watcher')
         booleanParam(name: 'cleanBuild', defaultValue: false, description: 'Clean Build')
@@ -20,20 +20,20 @@ pipeline {
         }
         stage('SCM') {
             steps {
-                git branch: "$BRANCH_NAME", url: 'https://github.com/appveen/ds-b2b-manager.git'
+                git branch: "$BRANCH_NAME", url: 'https://github.com/datanimbus/dnio-b2b-manager.git'
             }
         }
         stage('SCM B2B Base Image') {
             steps {
                 dir('ds-b2b-base') {
-                  git branch: "$BRANCH_NAME", url: 'https://github.com/appveen/ds-b2b-base.git'
+                  git branch: "$BRANCH_NAME", url: 'https://github.com/datanimbus/dnio-b2b-base.git'
                 }
             }
         }
         stage('SCM FaaS Base Image') {
             steps {
                 dir('ds-faas') {
-                  git branch: "$BRANCH_NAME", url: 'https://github.com/appveen/ds-faas.git'
+                  git branch: "$BRANCH_NAME", url: 'https://github.com/datanimbus/dnio-faas-base.git'
                 }
             }
         }
@@ -45,7 +45,7 @@ pipeline {
             }
             steps {
                 dir('ds-agent') {
-                  git branch: "$BRANCH_NAME", url: 'https://github.com/appveen/ds-agent.git'
+                  git branch: "$BRANCH_NAME", url: 'https://github.com/datanimbus/dnio-agent.git'
                 }
             }
         }
@@ -57,7 +57,7 @@ pipeline {
             }
             steps {
                 dir('ds-agent-watcher') {
-                  git branch: "$BRANCH_NAME", url: 'https://github.com/appveen/ds-agent-watcher.git'
+                  git branch: "$BRANCH_NAME", url: 'https://github.com/datanimbus/dnio-agent-watcher.git'
                 }
             }
         }
@@ -77,17 +77,6 @@ pipeline {
             steps {
                 sh "chmod 777 ./scripts/push_ecr.sh"
                 sh "./scripts/push_ecr.sh"
-            }
-        }
-        stage('Save to S3') {
-            when {
-                expression {
-                    params.pushToS3  == true || params.dockerHub  == true
-                }
-            }
-            steps {
-                sh "chmod 777 ./scripts/push_s3.sh"
-                sh "./scripts/push_s3.sh"
             }
         }
         stage('Deploy') {
@@ -110,6 +99,17 @@ pipeline {
             steps {
                 sh "chmod 777 ./scripts/push_hub.sh"
                 sh "./scripts/push_hub.sh"
+            }
+        }
+        stage('Save to S3') {
+            when {
+                expression {
+                    params.pushToS3  == true || params.dockerHub  == true
+                }
+            }
+            steps {
+                sh "chmod 777 ./scripts/push_s3.sh"
+                sh "./scripts/push_s3.sh"
             }
         }
         stage('Clean Up') {

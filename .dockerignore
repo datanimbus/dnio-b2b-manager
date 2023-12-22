@@ -5,6 +5,7 @@ node_modules
 .gitignore
 .dockerignore
 .huskyrc
+.git
 Dockerfile
 pm.yaml
 VERSION
@@ -21,3 +22,5 @@ LAST_PULL
 LAST_PULL_BM
 CURRENT_BM
 LATEST_BM
+build
+.git

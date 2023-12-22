@@ -1,24 +1,37 @@
 const router = require('express').Router({ mergeParams: true });
 const log4js = require('log4js');
 const mongoose = require('mongoose');
-const _ = require('lodash');
 
+// const config = require('../config');
 const queryUtils = require('../utils/query.utils');
-const commonUtils = require('../utils/common.utils');
 
 const logger = log4js.getLogger(global.loggerName);
-const dataFormatModel = mongoose.model('dataFormat');
+const nodeModel = mongoose.model('node');
 
+router.get('/utils/count', async (req, res) => {
+	try {
+		const filter = queryUtils.parseFilter(req.query.filter);
+		const count = await nodeModel.countDocuments(filter);
+		return res.status(200).json(count);
+	} catch (err) {
+		logger.error(err);
+		res.status(500).json({
+			message: err.message
+		});
+	}
+});
 
 router.get('/', async (req, res) => {
 	try {
+		let app = req.params.app;
 		const filter = queryUtils.parseFilter(req.query.filter);
+		filter.app = app;
 		if (req.query.countOnly) {
-			const count = await dataFormatModel.countDocuments(filter);
+			const count = await nodeModel.countDocuments(filter);
 			return res.status(200).json(count);
 		}
 		const data = queryUtils.getPaginationData(req);
-		const docs = await dataFormatModel.find(filter).select(data.select).sort(data.sort).skip(data.skip).limit(data.count).lean();
+		const docs = await nodeModel.find(filter).select(data.select).sort(data.sort).skip(data.skip).limit(data.count).lean();
 		res.status(200).json(docs);
 	} catch (err) {
 		logger.error(err);
@@ -30,14 +43,14 @@ router.get('/', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
 	try {
-		let mongoQuery = dataFormatModel.findById(req.params.id);
+		let mongoQuery = nodeModel.findById(req.params.id);
 		if (req.query.select) {
 			mongoQuery = mongoQuery.select(req.query.select);
 		}
 		let doc = await mongoQuery.lean();
 		if (!doc) {
 			return res.status(404).json({
-				message: 'Document Not Found'
+				message: 'Node Not Found'
 			});
 		}
 		res.status(200).json(doc);
@@ -52,14 +65,7 @@ router.get('/:id', async (req, res) => {
 router.post('/', async (req, res) => {
 	try {
 		const payload = req.body;
-		payload.app = payload.app || req.locals.app;
-		if (payload.definition && payload.definition.length > 0) {
-			const errors = commonUtils.validateDefinition(payload.definition);
-			if (errors) {
-				return res.status(400).json({ message: 'Validation Failed', errors: errors });
-			}
-		}
-		let doc = new dataFormatModel(payload);
+		let doc = new nodeModel(payload);
 		doc._req = req;
 		const status = await doc.save();
 		res.status(200).json(status);
@@ -74,27 +80,18 @@ router.post('/', async (req, res) => {
 router.put('/:id', async (req, res) => {
 	try {
 		const payload = req.body;
-		if (payload.definition && payload.definition.length > 0) {
-			const errors = commonUtils.validateDefinition(payload.definition);
-			if (errors) {
-				return res.status(400).json({ message: 'Validation Failed', errors: errors });
-			}
-		}
-		let doc = await dataFormatModel.findById(req.params.id);
+		let doc = await nodeModel.findById(req.params.id);
 		if (!doc) {
 			return res.status(404).json({
-				message: 'Document Not Found'
+				message: 'Node Not Found'
 			});
 		}
-		delete payload._metadata;
-		delete payload.__v;
-		delete payload.version;
+		payload.version = doc.version + 1;
 		Object.keys(payload).forEach(key => {
 			doc[key] = payload[key];
 		});
-		// _.merge(doc, payload);
 		doc._req = req;
-		const status = await doc.save();
+		let status = await doc.save();
 		res.status(200).json(status);
 	} catch (err) {
 		logger.error(err);
@@ -106,16 +103,17 @@ router.put('/:id', async (req, res) => {
 
 router.delete('/:id', async (req, res) => {
 	try {
-		let doc = await dataFormatModel.findById(req.params.id);
+		let doc = await nodeModel.findById(req.params.id);
 		if (!doc) {
 			return res.status(404).json({
-				message: 'Document Not Found'
+				message: 'Plugin Not Found'
 			});
 		}
 		doc._req = req;
-		await doc.remove();
+		let status = await doc.remove();
+		logger.debug('Plugin Deleted', status);
 		res.status(200).json({
-			message: 'Document Deleted'
+			message: 'Plugin Deleted'
 		});
 	} catch (err) {
 		logger.error(err);

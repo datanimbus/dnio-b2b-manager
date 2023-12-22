@@ -6,6 +6,7 @@ const JWT = require('jsonwebtoken');
 const config = require('../config');
 const securityUtils = require('../utils/security.utils');
 const cacheUtils = require('../utils/cache.utils');
+const mongoCache = require('../utils/mongo.cache.utils');
 
 const logger = log4js.getLogger(global.loggerName);
 const agentModel = mongoose.model('agent');
@@ -22,8 +23,13 @@ router.post('/login', async (req, res) => {
 			});
 		}
 		if (doc && !doc.active) {
-			return res.status(400).json({
-				message: 'Agent is marked disabled'
+			return res.status(403).json({
+				message: 'Agent is Disabled, please contact Administrator'
+			});
+		}
+		if (doc.status === 'RUNNING') {
+			return res.status(403).json({
+				message: 'Agent is Already Running on '+doc.ipAddress
 			});
 		}
 		let result = await securityUtils.decryptText(doc.app, doc.password);
@@ -56,6 +62,8 @@ router.post('/login', async (req, res) => {
 		temp.secret = result.body.data;
 		doc.lastLoggedIn = new Date();
 		doc.status = 'RUNNING';
+		doc.ipAddress = req.body.ipAddress;
+		doc.macAddress = req.body.macAddress;
 		doc._req = req;
 		result = await doc.save();
 		logger.debug('Agent Logged In :', doc.lastLoggedIn);
@@ -65,6 +73,23 @@ router.post('/login', async (req, res) => {
 		temp.maxConcurrentUploads = config.maxConcurrentUploads;
 		temp.maxConcurrentDownloads = config.maxConcurrentDownloads;
 		logger.debug('Agent auth response :', temp);
+
+		/** Setting Token in Mongo DB Cache with TTL for Blacklisting 
+		 * ---START---
+		*/
+		const tokenData = {};
+		tokenData._id = temp._id;
+		tokenData.app = temp.app;
+		tokenData.agentId = temp.agentId;
+		tokenData.name = temp.name;
+		tokenData.lastLoggedIn = temp.lastLoggedIn;
+		tokenData.token = temp.token.substr(temp.token.length - 6);
+		const key = securityUtils.md5(token);
+		const expireAfter = new Date();
+		expireAfter.setHours(expireAfter.getHours() + 2);
+		mongoCache.setData(key, tokenData, expireAfter);
+		/** ---END--- */
+
 		res.status(200).json(temp);
 	} catch (err) {
 		logger.error(err);

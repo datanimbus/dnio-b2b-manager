@@ -7,12 +7,12 @@ const socket = require('socket.io');
 // const path = require('path');
 // const https = require('https');
 const express = require('express');
-const { AuthCacheMW } = require('@appveen/ds-auth-cache');
 const fileUpload = require('express-fileupload');
 const cookieParser = require('cookie-parser');
 
 const config = require('./config');
 require('./db-factory');
+const routerUtils = require('./utils/router.utils');
 
 const logger = global.logger;
 global.activeRequest = 0;
@@ -26,17 +26,6 @@ function initSocket(server) {
 		logger.info('Connection accepted from : ' + socket.id);
 	});
 }
-
-let permittedUrls = [
-	'/{app}/flow/utils/{id}/init',
-	'/{app}/faas/utils/{id}/init',
-	'/auth/login',
-	'/faas/fetchAll',
-	'/{app}/faas/utils/{id}/statusChange',
-	'/internal/app/{id}',
-	'/internal/health/live',
-	'/internal/health/ready'
-];
 
 const app = express();
 
@@ -56,9 +45,28 @@ app.use((req, res, next) => {
 	next();
 });
 
-//testing comment
+app.use(['/b2b/pipes'], (req, res, next) => {
+	let urlSplit = req.path.split('/');
 
-app.use(['/b2b/pipes'], require('./router'));
+	if (urlSplit[1] && !urlSplit[1].match(/^[a-zA-Z0-9][a-zA-Z0-9-]*[a-zA-Z0-9]+$/)) {
+		return next(new Error('APP_NAME_ERROR :: App name must consist of alphanumeric characters or \'-\' , and must start and end with an alphanumeric character.'));
+	}
+	if (urlSplit[2] && !urlSplit[2].match(/^[a-zA-Z][a-zA-Z0-9]*$/)) {
+		return next(new Error('FLOW_NAME_ERROR :: Flow name must consist of alphanumeric characters, and must start with an alphabet.'));
+	}
+
+	let routeData = routerUtils.getMatchingRoute(req, req.path, global.activeFlows);
+	logger.debug('Looking for path in map:', req.path, routeData);
+	if (!routeData) {
+		return res.status(404).json({ message: 'Flow is not running' });
+	}
+
+	let skipAuth = routeData.skipAuth;
+	if (!skipAuth) {
+		return require('./utils/flow.auth')(req, res, next);
+	}
+	next();
+}, require('./router'));
 
 app.use(express.json({ inflate: true, limit: config.MAX_JSON_SIZE }));
 app.use(express.urlencoded({ extended: true }));
@@ -69,7 +77,24 @@ app.use(fileUpload({
 	useTempFiles: true,
 	tempFileDir: './uploads'
 }));
-app.use(['/bm', '/b2b/bm'], AuthCacheMW({ permittedUrls: permittedUrls, secret: config.RBAC_JWT_KEY, decodeOnly: true }), require('./controllers'));
+app.use(['/bm', '/b2b/bm'], require('./utils/auth'), require('./controllers'));
+
+app.use(function (error, req, res, next) {
+	if (error) {
+		logger.error(error);
+		if (!res.headersSent) {
+			let statusCode = error.statusCode || 500;
+			if (error?.message?.includes('APP_NAME_ERROR') || error?.message?.includes('FLOW_NAME_ERROR') || error?.message?.includes('FAAS_NAME_ERROR')) {
+				statusCode = 400;
+			}
+			res.status(statusCode).json({
+				message: error.message
+			});
+		}
+	} else {
+		next();
+	}
+});
 
 const server = app.listen(config.port, () => {
 	logger.info('HTTP Server is listening on:', config.port);

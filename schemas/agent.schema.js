@@ -2,6 +2,10 @@ const definition = {
     '_id': {
         'type': 'String'
     },
+    'version': {
+        'type': 'Number',
+        'default': 1
+    },
     'app': {
         'type': 'String'
     },
@@ -26,7 +30,8 @@ const definition = {
         'type': 'String'
     },
     'pendingFiles': {
-        'type': 'Object'
+        'type': 'Number',
+        'default': 0
     },
     'name': {
         'type': 'String'
