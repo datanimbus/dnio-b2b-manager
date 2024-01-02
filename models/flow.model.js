@@ -18,14 +18,12 @@ const draftDefinition = JSON.parse(JSON.stringify(definition));
 
 const schema = mongooseUtils.MakeSchema(definition);
 const draftSchema = mongooseUtils.MakeSchema(draftDefinition);
-const npmLibrarySchema = mongooseUtils.MakeSchema({ _id: String }, { strict: false });
 
 schema.index({ name: 1, app: 1 }, { unique: true, sparse: true, collation: { locale: 'en_US', strength: 2 } });
 schema.index({ 'inputNode.options.path': 1, app: 1 }, { unique: true, sparse: true, collation: { locale: 'en_US', strength: 2 } });
 
 schema.plugin(mongooseUtils.metadataPlugin());
 draftSchema.plugin(mongooseUtils.metadataPlugin());
-npmLibrarySchema.plugin(mongooseUtils.metadataPlugin());
 
 
 schema.pre('save', function (next) {
@@ -133,7 +131,6 @@ draftSchema.pre('save', function (next) {
 
 
 schema.pre('save', mongooseUtils.generateId('FLOW', 'b2b.flow', null, 4, 2000));
-npmLibrarySchema.pre('save', mongooseUtils.generateId('CONFIG', 'config.b2b.libraries', null, 4, 2000));
 
 schema.pre('save', dataStackUtils.auditTrail.getAuditPreSaveHook('b2b.flow'));
 
@@ -199,4 +196,3 @@ schema.post('remove', function (doc) {
 
 mongoose.model('flow', schema, 'b2b.flows');
 mongoose.model('flow.draft', draftSchema, 'b2b.flows.draft');
-mongoose.model('b2b.libraries', npmLibrarySchema, 'config.b2b.libraries');
