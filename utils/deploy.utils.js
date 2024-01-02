@@ -36,12 +36,7 @@ async function deploy(data, type) {
 	await kubeutil.service.deleteService(deployNamespace, data.deploymentName);
 	await kubeutil.deployment.deleteDeployment(deployNamespace, data.deploymentName);
 
-	const envKeys = ['FQDN', 'LOG_LEVEL', 'MONGO_APPCENTER_URL', 'MONGO_AUTHOR_DBNAME', 'MONGO_AUTHOR_URL', 'MONGO_LOGS_DBNAME', 'MONGO_LOGS_URL', 'MONGO_RECONN_TIME', 'MONGO_RECONN_TRIES', 'STREAMING_CHANNEL', 'STREAMING_HOST', 'STREAMING_PASS', 'STREAMING_RECONN_ATTEMPTS', 'STREAMING_RECONN_TIMEWAIT', 'STREAMING_USER', 'DATA_STACK_NAMESPACE', 'CACHE_CLUSTER', 'CACHE_HOST', 'CACHE_PORT', 'CACHE_RECONN_ATTEMPTS', 'CACHE_RECONN_TIMEWAIT_MILLI', 'RELEASE', 'TLS_REJECT_UNAUTHORIZED', 'API_REQUEST_TIMEOUT'];
 	const envObj = {};
-	for (let i in envKeys) {
-		let val = envKeys[i];
-		envObj[val] = process.env[val];
-	}
 	if (type == 'flow') {
 		envObj['B2B_ALLOW_NPM_INSTALL'] = process.env['B2B_ALLOW_NPM_INSTALL'];
 		envObj['ENCRYPTION_KEY'] = process.env['ENCRYPTION_KEY'];

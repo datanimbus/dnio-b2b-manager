@@ -35,12 +35,7 @@ async function upsertService(data) {
 
 async function upsertDeployment(data) {
 	try {
-		const envKeys = ['FQDN', 'LOG_LEVEL', 'MONGO_APPCENTER_URL', 'MONGO_AUTHOR_DBNAME', 'MONGO_AUTHOR_URL', 'MONGO_LOGS_DBNAME', 'MONGO_LOGS_URL', 'MONGO_RECONN_TIME', 'MONGO_RECONN_TRIES', 'STREAMING_CHANNEL', 'STREAMING_HOST', 'STREAMING_PASS', 'STREAMING_RECONN_ATTEMPTS', 'STREAMING_RECONN_TIMEWAIT', 'STREAMING_USER', 'DATA_STACK_NAMESPACE', 'CACHE_CLUSTER', 'CACHE_HOST', 'CACHE_PORT', 'CACHE_RECONN_ATTEMPTS', 'CACHE_RECONN_TIMEWAIT_MILLI', 'RELEASE', 'TLS_REJECT_UNAUTHORIZED', 'API_REQUEST_TIMEOUT', 'B2B_ALLOW_NPM_INSTALL', 'ENCRYPTION_KEY'];
 		const envVars = [];
-		for (let i in envKeys) {
-			let val = envKeys[i];
-			envVars.push({ name: val, value: process.env[val] });
-		}
 		envVars.push({ name: 'DATA_STACK_APP_NS', value: (config.DATA_STACK_NAMESPACE + '-' + data.app).toLowerCase() });
 		envVars.push({ name: 'DATA_STACK_FLOW_ID', value: data._id });
 		envVars.push({ name: 'DATA_STACK_APP', value: data.app });
@@ -96,12 +91,7 @@ async function upsertDeployment(data) {
 
 async function upsertFaasDeployment(data) {
 	try {
-		const envKeys = ['FQDN', 'LOG_LEVEL', 'MONGO_APPCENTER_URL', 'MONGO_AUTHOR_DBNAME', 'MONGO_AUTHOR_URL', 'MONGO_LOGS_DBNAME', 'MONGO_LOGS_URL', 'MONGO_RECONN_TIME', 'MONGO_RECONN_TRIES', 'STREAMING_CHANNEL', 'STREAMING_HOST', 'STREAMING_PASS', 'STREAMING_RECONN_ATTEMPTS', 'STREAMING_RECONN_TIMEWAIT', 'STREAMING_USER', 'DATA_STACK_NAMESPACE', 'CACHE_CLUSTER', 'CACHE_HOST', 'CACHE_PORT', 'CACHE_RECONN_ATTEMPTS', 'CACHE_RECONN_TIMEWAIT_MILLI', 'RELEASE', 'TLS_REJECT_UNAUTHORIZED', 'API_REQUEST_TIMEOUT'];
 		const envVars = [];
-		for (let i in envKeys) {
-			let val = envKeys[i];
-			envVars.push({ name: val, value: process.env[val] });
-		}
 		envVars.push({ name: 'DATA_STACK_APP_NS', value: (config.DATA_STACK_NAMESPACE + '-' + data.app).toLowerCase() });
 		envVars.push({ name: 'FAAS_ID', value: data._id });
 		envVars.push({ name: 'DATA_STACK_APP', value: data.app });
