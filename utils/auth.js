@@ -89,6 +89,12 @@ const commonUrls = [
 	'/{app}/flow/utils/{id}/draftDelete',
 	'/{app}/flow/utils/{id}/yamls',
 
+	'/{app}/flow/bundle',
+	'/{app}/flow/bundle/{id}',
+	'/{app}/flow/bundle/utils/{id}/start',
+	'/{app}/flow/bundle/utils/{id}/stop',
+	'/{app}/flow/bundle/utils/{id}/yamls',
+
 	'/{app}/interaction/{flowId}/',
 	'/{app}/interaction/{flowId}/{id}',
 	'/{app}/interaction/{flowId}/{id}/state',
@@ -373,8 +379,38 @@ function canAccessPath(req) {
 		return true;
 	}
 
+	//Flow Bundle
+	if (compareURL('/{app}/flow/bundle', req.path) && _.intersectionWith(req.user.appPermissions, ['PVIF', 'PMIF', 'INTR_'], comparator).length > 0) {
+		if (req.method === 'POST') {
+			if (_.intersectionWith(req.user.appPermissions, ['PMIF'], comparator).length > 0) {
+				return true;
+			}
+			return false;
+		}
+		return true;
+	}
 
+	if (compareURL('/{app}/flow/bundle/{id}', req.path) && _.intersectionWith(req.user.appPermissions, ['PVIF', 'PMIF', 'INTR_'], comparator).length > 0) {
+		if (req.method === 'PUT' || req.method === 'DELETE') {
+			if (_.intersectionWith(req.user.appPermissions, ['PMIF'], comparator).length > 0) {
+				return true;
+			}
+			return false;
+		}
+		return true;
+	}
 
+	if (compareURL('/{app}/flow/bundle/utils/{id}/start', req.path) && _.intersectionWith(req.user.appPermissions, ['PMIFPS'], comparator).length > 0) {
+		return true;
+	}
+
+	if (compareURL('/{app}/flow/bundle/utils/{id}/stop', req.path) && _.intersectionWith(req.user.appPermissions, ['PMIFPS'], comparator).length > 0) {
+		return true;
+	}
+
+	if (compareURL('/{app}/flow/bundle/utils/{id}/yamls', req.path) && _.intersectionWith(req.user.appPermissions, ['PVIF'], comparator).length > 0) {
+		return true;
+	}
 	// Plugins (OLD) (Permissions Same as Data Pipes)
 
 	if (compareURL('/{app}/node/', req.path) && _.intersectionWith(req.user.appPermissions, ['PVIF', 'PMIF'], comparator).length > 0) {
