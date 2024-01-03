@@ -38,7 +38,7 @@ router.use('/:app/faas', paramParser, require('./faas.controller'));
 router.use('/:app/faas/utils', paramParser, require('./faas.utils.controller'));
 router.use('/:app/flow', paramParser, require('./flow.controller'));
 router.use('/:app/flow/utils', paramParser, require('./flow.utils.controller'));
-router.use('/:app/flow/bundle', paramParser, require('./bundle-deployment.controller'));
+router.use('/:app/deployment/bundle', paramParser, require('./bundle-deployment.controller'));
 router.use('/:app/interaction', paramParser, require('./interaction.controller'));
 // router.use('/:app/node', paramParser, require('./custom-node.controller'));
 router.use('/internal', require('./internal.controller'));
