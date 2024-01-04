@@ -6,6 +6,7 @@ let version = require('./package.json').version;
 
 
 const LOG_LEVEL = process.env.LOG_LEVEL ? process.env.LOG_LEVEL : 'info';
+global.LOG_LEVEL = LOG_LEVEL;
 
 const LOGGER_NAME = isK8sEnv() ? `[${process.env.DATA_STACK_NAMESPACE}] [${process.env.HOSTNAME}] [BM ${version}]` : `[BM ${version}]`;
 global.loggerName = LOGGER_NAME;
