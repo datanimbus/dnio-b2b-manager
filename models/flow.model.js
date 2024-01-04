@@ -171,7 +171,7 @@ schema.post('remove', dataStackUtils.auditTrail.getAuditPostRemoveHook('b2b.flow
 
 
 schema.post('remove', function (doc) {
-	let appDB = mongoose.connections[1].useDb(config.DATA_STACK_NAMESPACE + '-' + doc.app)
+	let appDB = mongoose.connections[1].useDb(config.DATA_STACK_NAMESPACE + '-' + doc.app);
 	appDB.dropCollection(`b2b.${doc._id}.interactions`).catch((err) => {
 		logger.error(`Error Orrcured while deleting collection - b2b.${doc._id}.interactions`);
 		logger.error(err);

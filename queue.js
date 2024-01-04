@@ -2,7 +2,7 @@ const NATS = require('node-nats-streaming');
 const config = require('./config');
 const mongoose = require('mongoose');
 
-const logger = global.logger
+const logger = global.logger;
 const clusterName = process.env.STREAMING_CHANNEL || 'datastack-cluster';
 const clientId = `${process.env.HOSTNAME || 'B2B-MANAGER'}` + Math.floor(Math.random() * 10000);
 const streamingConfig = config.streamingConfig;

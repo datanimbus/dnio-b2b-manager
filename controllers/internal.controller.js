@@ -48,7 +48,7 @@ router.get('/document/:type/:id', async (req, res) => {
 		if (doc) {
 			return res.status(200).json(doc);
 		} else {
-			return res.status(404).json({ message: "Not found." });
+			return res.status(404).json({ message: 'Not found.' });
 		}
 	} catch (err) {
 		logger.error(`Error fetching document Type :: ${type} :: ID :: ${id} :: ${err}`);

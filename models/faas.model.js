@@ -22,8 +22,8 @@ schema.plugin(mongooseUtils.metadataPlugin());
 draftSchema.plugin(mongooseUtils.metadataPlugin());
 
 
-schema.index({ name: 1, app: 1 }, { unique: true, name: "name", sparse: true, collation: { locale: 'en_US', strength: 2 } });
-schema.index({ url: 1, app: 1 }, { unique: true, name: "url", sparse: true, collation: { locale: 'en_US', strength: 2 } });
+schema.index({ name: 1, app: 1 }, { unique: true, name: 'name', sparse: true, collation: { locale: 'en_US', strength: 2 } });
+schema.index({ url: 1, app: 1 }, { unique: true, name: 'url', sparse: true, collation: { locale: 'en_US', strength: 2 } });
 
 
 schema.pre('validate', function (next) {
@@ -52,6 +52,8 @@ draftSchema.pre('validate', function (next) {
 
 
 schema.pre('validate', function (next) {
+	const req = this._req;
+	let txnId = req && req.headers['TxnId'];
 	try {
 		// One extra character for / in api
 		let apiregx = /^[a-zA-Z]+[a-zA-Z0-9]*$/;
@@ -75,6 +77,8 @@ schema.pre('validate', function (next) {
 });
 
 draftSchema.pre('validate', function (next) {
+	const req = this._req;
+	let txnId = req && req.headers['TxnId'];
 	try {
 		let apiregx = /^[a-zA-Z]+[a-zA-Z0-9]*$/;
 		var nameregx = /^[a-zA-Z]+[a-zA-Z0-9_ -]*$/;

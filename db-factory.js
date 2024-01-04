@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const log4js = require('log4js');
+// const log4js = require('log4js');
 
 const config = require('./config');
 const { fetchEnvironmentVariablesFromDB } = require('./config');
