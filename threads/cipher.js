@@ -66,11 +66,16 @@ function encrypt(plainText, secret) {
 
 
 function decrypt(cipherText, secret) {
-	const key = crypto.createHash('sha256').update(secret).digest('base64').substring(0, 32);
-	const iv = Buffer.from(cipherText.split(':')[0], 'hex');
-	const textBytes = cipherText.split(':')[1];
-	const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
-	let decrypted = decipher.update(textBytes, 'hex', 'utf8');
-	decrypted += decipher.final('utf8');
+	let decrypted;
+	try {
+		const key = crypto.createHash('sha256').update(secret).digest('base64').substring(0, 32);
+		const iv = Buffer.from(cipherText.split(':')[0], 'hex');
+		const textBytes = cipherText.split(':')[1];
+		const decipher = crypto.createDecipheriv('aes-256-cbc', key, iv);
+		decrypted = decipher.update(textBytes, 'hex', 'utf8');
+		decrypted += decipher.final('utf8');
+	} catch (err) {
+		logger.error('Error decrypting text :: ', err);
+	}
 	return decrypted;
 }

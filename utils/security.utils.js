@@ -33,7 +33,6 @@ async function executeCipher(txnId, action, app, text) {
 	const data = await getKeys(app);
 	return await new Promise((resolve, reject) => {
 		const appEncryptionKey = data.appEncryptionKey;
-		// const baseCert = data.baseCert;
 		const encryptionKey = data.encryptionKey;
 		let responseSent = false;
 		const filePath = path.join(process.cwd(), 'threads', 'cipher.js');
@@ -45,7 +44,6 @@ async function executeCipher(txnId, action, app, text) {
 			workerData: {
 				text,
 				appEncryptionKey,
-				// baseCert,
 				encryptionKey,
 				action
 			}
