@@ -1,20 +1,23 @@
 const log4js = require('log4js');
-const LOG_LEVEL = process.env.LOG_LEVEL ? process.env.LOG_LEVEL : 'info';
+
+const dataStackUtils = require('@appveen/data.stack-utils');
+
 let version = require('./package.json').version;
+
+
+const LOG_LEVEL = process.env.LOG_LEVEL ? process.env.LOG_LEVEL : 'info';
+
+const LOGGER_NAME = isK8sEnv() ? `[${process.env.DATA_STACK_NAMESPACE}] [${process.env.HOSTNAME}] [BM ${version}]` : `[BM ${version}]`;
+global.loggerName = LOGGER_NAME;
 
 log4js.configure({
     appenders: { out: { type: 'stdout', layout: { type: 'basic' } } },
     categories: { default: { appenders: ['out'], level: LOG_LEVEL } }
 });
-const dataStackUtils = require('@appveen/data.stack-utils');
 
-// const LOGGER_NAME = isK8sEnv() ? `[${process.env.HOSTNAME}] [B2B-MANAGER v${process.env.IMAGE_TAG}]` : `[B2B-MANAGER v${process.env.IMAGE_TAG}]`;
-
-const LOGGER_NAME = isK8sEnv() ? `[${process.env.DATA_STACK_NAMESPACE}] [${process.env.HOSTNAME}] [BM ${version}]` : `[BM ${version}]`;
-global.loggerName = LOGGER_NAME;
 const logger = log4js.getLogger(LOGGER_NAME);
-
 global.logger = logger;
+
 
 let envVariables = {};
 

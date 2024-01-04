@@ -1,13 +1,26 @@
 const { workerData, parentPort } = require('worker_threads');
 const crypto = require('crypto');
+const log4js = require('log4js');
+const config = require('../config');
 
 const IV_LENGTH = 16;
 const action = workerData.action;
 const text = workerData.text;
 const encryptionKey = workerData.encryptionKey;
 const appEncryptionKey = workerData.appEncryptionKey;
-
 const SECRET = '34857057658800771270426551038148';
+
+let additionalLoggerIdentifier = 'Worker/Cipher';
+let LOGGER_NAME = `${global.loggerName} [${additionalLoggerIdentifier}]`;
+
+const LOG_LEVEL = global.LOG_LEVEL;
+
+log4js.configure({
+	appenders: { out: { type: 'stdout', layout: { type: 'basic' } } },
+	categories: { default: { appenders: ['out'], level: LOG_LEVEL } }
+});
+let logger = log4js.getLogger(LOGGER_NAME);
+
 
 let resultData;
 try {
