@@ -74,7 +74,7 @@ router.post('/:id/init', async (req, res) => {
 			// if (flow.inputNode && flow.inputNode.options && flow.inputNode.options.agentId == agentId) {
 			// 	allFlows.push({ flowId: flow._id, options: flow.inputNode.options });
 			// }
-			return helpers.constructFlowEvent(req, doc, flow, action);
+			return helpers.constructFlowEvent(doc, flow, action);
 		});
 		await Promise.all(promises).then((_d) => {
 			newRes = [].concat.apply([], _d);

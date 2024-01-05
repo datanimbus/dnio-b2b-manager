@@ -3,7 +3,7 @@ const _ = require('lodash');
 const envConfig = require('../config');
 
 
-function constructFlowEvent(req, doc, flow, action) {
+function constructFlowEvent(doc, flow, action) {
 	try {
 		if (doc != '') {
 			logger.debug('Constructing Flow Events for - ', doc.name, flow.name, action);
