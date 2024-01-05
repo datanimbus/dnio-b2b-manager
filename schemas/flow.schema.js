@@ -42,6 +42,11 @@ const definition = {
 		'enum': ['Pending', 'Stopped', 'Error', 'Active', 'Draft'],
 		'default': 'Draft'
 	},
+	'scale': {
+		'type': 'Number',
+		'required': true,
+		'default': 1
+	},
 	'lastInvoked': {
 		'type': 'Date'
 	},
