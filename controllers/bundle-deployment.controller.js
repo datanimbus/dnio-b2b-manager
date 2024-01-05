@@ -8,12 +8,10 @@ const config = require('../config');
 const k8sUtils = require('../utils/k8s.utils');
 const queryUtils = require('../utils/query.utils');
 const commonUtils = require('../utils/common.utils');
-const helpers = require('../utils/helper');
 
 const logger = log4js.getLogger(global.loggerName);
 const bundleModel = mongoose.model('bundle-deployment');
 const flowModel = mongoose.model('flow');
-const agentActionModel = mongoose.model('agent-action');
 
 let dockerRegistryType = process.env.DOCKER_REGISTRY_TYPE ? process.env.DOCKER_REGISTRY_TYPE : '';
 if (dockerRegistryType.length > 0) dockerRegistryType = dockerRegistryType.toUpperCase();
@@ -131,68 +129,16 @@ router.put('/utils/:id/start', async (req, res) => {
 	try {
 		let id = req.params.id;
 		let txnId = req.get('TxnId');
-		let socket = req.app.get('socket');
 		logger.info(`[${txnId}] Bundle start request received :: ${id}`);
 		const bundleDoc = await bundleModel.findById(req.params.id);
 		if (!bundleDoc) {
 			return res.status(400).json({ message: 'Invalid Bundle' });
 		}
-		const flowList = await flowModel.find({ _id: { $in: bundleDoc.bundle } }).exec();
-		const appData = await commonUtils.getApp(req, bundleDoc.app);
-		if (appData.body.b2bBaseImage) {
-			flowBaseImage = appData.body.b2bBaseImage;
-		}
-		bundleDoc.image = flowBaseImage;
 		logger.debug(`[${txnId}] Bundle data found for id :: ${id}`);
 		logger.trace(`[${txnId}] Bundle data :: ${JSON.stringify(bundleDoc)}`);
-
-		logger.info(`[${txnId}] Scaling up deployment :: ${bundleDoc.deploymentName}`);
-		bundleDoc.volumeMounts = _.flatten(flowList.map(e => e.volumeMounts));
-		if (config.isK8sEnv()) {
-			const status = await k8sUtils.upsertBundleDeployment(bundleDoc);
-			logger.trace(`[${txnId}] Deployment Scaled status :: ${JSON.stringify(status)}`);
-			if (status.statusCode !== 200 && status.statusCode !== 202) {
-				return res.status(status.statusCode).json({ message: 'Unable to start Bundle' });
-			}
-		}
-		let promises = flowList.map(async (doc) => {
-			try {
-				let payload = {};
-				payload.name = doc.deploymentName;
-				payload.namespace = bundleDoc.namespace;
-				payload.selector = bundleDoc.deploymentName;
-				payload.port = 8080;
-				const status = await k8sUtils.upsertBundleService(payload);
-				logger.trace(`[${txnId}] Deployment Scaled status :: ${JSON.stringify(status)}`);
-				doc.status = 'Pending';
-				doc.isNew = false;
-				doc._req = req;
-				await doc.save();
-				if (doc.inputNode.type === 'FILE' || doc.nodes.some(node => node.type === 'FILE')) {
-					let action = 'start';
-					let flowActionList = helpers.constructFlowEvent(req, '', doc, action);
-					flowActionList.forEach(action => {
-						const actionDoc = new agentActionModel(action);
-						actionDoc._req = req;
-						let status = actionDoc.save();
-						logger.trace(`[${txnId}] Flow Action Create Status - `, status);
-						logger.trace(`[${txnId}] Flow Action Doc - `, actionDoc);
-					});
-				}
-				socket.emit('flowStatus', {
-					_id: id,
-					app: doc.app,
-					url: doc.url,
-					port: doc.port,
-					deploymentName: doc.deploymentName,
-					namespace: doc.namespace,
-					message: 'Started'
-				});
-			} catch (err) {
-				logger.error(err);
-			}
-		});
-		await Promise.all(promises);
+		bundleDoc.status = 'Pending';
+		bundleDoc._req = req;
+		await bundleDoc.save();
 		res.status(200).json({ message: 'Bundle Started' });
 	} catch (err) {
 		logger.error(err);
@@ -211,7 +157,6 @@ router.put('/utils/:id/stop', async (req, res) => {
 	try {
 		let id = req.params.id;
 		let txnId = req.get('TxnId');
-		let socket = req.app.get('socket');
 		logger.info(`[${txnId}] Bundle stop request received :: ${id}`);
 
 		const bundleDoc = await bundleModel.findById(id);
@@ -236,28 +181,6 @@ router.put('/utils/:id/stop', async (req, res) => {
 		const flowList = await flowModel.find({ _id: { $in: bundleDoc.bundle } }).exec();
 		let promises = flowList.map(async (doc) => {
 			try {
-				if (doc.inputNode.type === 'FILE' || doc.nodes.some(node => node.type === 'FILE')) {
-					let action = 'stop';
-					let flowActionList = helpers.constructFlowEvent(req, '', doc, action);
-					flowActionList.forEach(action => {
-						const actionDoc = new agentActionModel(action);
-						actionDoc._req = req;
-						let status = actionDoc.save();
-						logger.trace(`[${txnId}] Flow Action Create Status - `, status);
-						logger.trace(`[${txnId}] Flow Action Doc - `, actionDoc);
-					});
-				}
-
-				socket.emit('flowStatus', {
-					_id: id,
-					app: doc.app,
-					url: doc.url,
-					port: doc.port,
-					deploymentName: doc.deploymentName,
-					namespace: doc.namespace,
-					message: 'Stopped'
-				});
-
 				doc.status = 'Stopped';
 				doc.isNew = false;
 				doc._req = req;

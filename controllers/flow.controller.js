@@ -3,19 +3,13 @@ const log4js = require('log4js');
 const mongoose = require('mongoose');
 const router = require('express').Router({ mergeParams: true });
 
-const dataStackUtils = require('@appveen/data.stack-utils');
-
-const config = require('../config');
 const flowUtils = require('../utils/flow.utils');
 const queryUtils = require('../utils/query.utils');
-const deployUtils = require('../utils/deploy.utils');
-const helpers = require('../utils/helper');
 
 const logger = log4js.getLogger(global.loggerName);
 
 const flowModel = mongoose.model('flow');
 const draftFlowModel = mongoose.model('flow.draft');
-const agentActionModel = mongoose.model('agent-action');
 
 function mergeCustomizer(objValue, srcValue) {
 	if (_.isArray(objValue)) {
@@ -115,18 +109,6 @@ router.post('/', async (req, res) => {
 		doc._req = req;
 		const status = await doc.save();
 
-		if (doc.status != 'Draft' && doc.inputNode.type === 'FILE' || doc.nodes.some(node => node.type === 'FILE')) {
-			let action = 'create';
-			let flowActionList = helpers.constructFlowEvent(req, '', doc, action);
-			flowActionList.forEach(action => {
-				const actionDoc = new agentActionModel(action);
-				actionDoc._req = req;
-				let status = actionDoc.save();
-				logger.trace(`[${txnId}] Flow Action Create Status - `, status);
-				logger.trace(`[${txnId}] Flow Action Doc - `, actionDoc);
-			});
-		}
-
 		socket.emit('flowCreated', {
 			app: payload.app,
 			url: payload.url,
@@ -155,13 +137,11 @@ router.put('/:id', async (req, res) => {
 		logger.info(`[${txnId}] Flow update request received - ${id}`);
 		logger.trace(`[${txnId}] Flow update data received :: ${JSON.stringify(payload)}`);
 
-
 		payload.app = payload.app || req.locals.app;
 		const errorMsg = flowUtils.validatePayload(payload);
 		if (errorMsg) {
 			return res.status(400).json({ message: errorMsg });
 		}
-
 
 		let doc = await flowModel.findById(id);
 
@@ -177,7 +157,6 @@ router.put('/:id', async (req, res) => {
 
 		let flowData = JSON.parse(JSON.stringify(doc));
 
-
 		delete payload._id;
 		delete payload.__v;
 		delete payload.version;
@@ -188,10 +167,8 @@ router.put('/:id', async (req, res) => {
 		delete payload.namespace;
 		payload._id = id;
 
-
 		let status;
 		if (flowData.status === 'Draft') {
-
 			_.merge(doc, payload, mergeCustomizer);
 			if (payload.inputNode && !_.isEmpty(payload.inputNode)) {
 				doc.inputNode = payload.inputNode;
@@ -222,11 +199,9 @@ router.put('/:id', async (req, res) => {
 			draftData = Object.assign(draftData, payload);
 
 			draftData._req = req;
-			
+
 			status = await draftData.save();
-
 		} else {
-
 			logger.info(`[${txnId}] Flow is neither in draft status nor has a linked draft, creating a new draft`);
 
 			let newData = new draftFlowModel(Object.assign({}, JSON.parse(JSON.stringify(doc)), payload));
@@ -244,21 +219,6 @@ router.put('/:id', async (req, res) => {
 			status = await newData.save();
 			await doc.save();
 		}
-
-		if (doc.status != 'Draft' && doc.inputNode.type === 'FILE' || doc.nodes.some(node => node.type === 'FILE')) {
-			let action = 'update';
-			let flowActionList = helpers.constructFlowEvent(req, '', doc, action);
-			flowActionList.forEach(action => {
-				const actionDoc = new agentActionModel(action);
-				actionDoc._req = req;
-				let status = actionDoc.save();
-				logger.trace(`[${txnId}] Flow Action Update Status - `, status);
-				logger.trace(`[${txnId}] Flow Action Doc - `, actionDoc);
-			});
-		}
-
-		res.status(200).json(status);
-
 		socket.emit('flowStatus', {
 			_id: id,
 			app: flowData.app,
@@ -268,6 +228,7 @@ router.put('/:id', async (req, res) => {
 			namespace: flowData.namespace,
 			message: 'Updated'
 		});
+		res.status(200).json(status);
 	} catch (err) {
 		logger.error(err);
 		if (err.message.includes('FLOW_NAME_ERROR')) {
@@ -316,31 +277,10 @@ router.delete('/:id', async (req, res) => {
 			await draftData.remove();
 		}
 
+		doc._req = req;
+		await doc.remove();
 
-		if (config.isK8sEnv() && doc.status == 'Active') {
-			const status = await deployUtils.undeploy(doc);
-			if (status.statusCode !== 200 && status.statusCode !== 202) {
-				return res.status(status.statusCode).json({ message: 'Unable to stop Flow' });
-			}
-		}
-
-
-		let eventId = 'EVENT_FLOW_DELETE';
-		logger.debug(`[${txnId}] Publishing Event :: ${eventId}`);
-		dataStackUtils.eventsUtil.publishEvent(eventId, 'flow', req, doc, null);
-
-		if (doc.status != 'Draft' && doc.inputNode.type === 'FILE' || doc.nodes.some(node => node.type === 'FILE')) {
-			let action = 'delete';
-			let flowActionList = helpers.constructFlowEvent(req, '', doc, action);
-			flowActionList.forEach(action => {
-				const actionDoc = new agentActionModel(action);
-				actionDoc._req = req;
-				let status = actionDoc.save();
-				logger.trace(`[${txnId}] Flow Action Delete Status - `, status);
-				logger.trace(`[${txnId}] Flow Action Doc - `, actionDoc);
-			});
-		}
-
+		logger.info(`[${txnId}] Destroyed flow data :: ${id}`);
 		socket.emit('flowDeleted', {
 			_id: id,
 			app: doc.app,
@@ -350,13 +290,6 @@ router.delete('/:id', async (req, res) => {
 			namespace: doc.namespace,
 			message: 'Deleted'
 		});
-
-
-		doc._req = req;
-		await doc.remove();
-
-		logger.info(`[${txnId}] Destroyed flow data :: ${id}`);
-
 		res.status(200).json({
 			message: 'Data Pipe Deleted'
 		});

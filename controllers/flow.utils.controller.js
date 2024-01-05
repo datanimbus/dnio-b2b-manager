@@ -9,15 +9,12 @@ const config = require('../config');
 const k8sUtils = require('../utils/k8s.utils');
 const queryUtils = require('../utils/query.utils');
 const routerUtils = require('../utils/router.utils');
-const helpers = require('../utils/helper');
 const commonUtils = require('../utils/common.utils');
 
 const logger = log4js.getLogger(global.loggerName);
 
 const flowModel = mongoose.model('flow');
 const draftFlowModel = mongoose.model('flow.draft');
-const agentActionModel = mongoose.model('agent-action');
-const flowConfigModel = mongoose.model('b2b.libraries');
 
 let dockerRegistryType = process.env.DOCKER_REGISTRY_TYPE ? process.env.DOCKER_REGISTRY_TYPE : '';
 if (dockerRegistryType.length > 0) dockerRegistryType = dockerRegistryType.toUpperCase();
@@ -91,107 +88,6 @@ router.get('/status/count', async (req, res) => {
 	}
 });
 
-router.get('/node-library/count', async (req, res) => {
-	try {
-		const filter = queryUtils.parseFilter(req.query.filter);
-		if (filter) {
-			delete filter.app;
-		}
-		const docs = await flowConfigModel.countDocuments(filter);
-		res.status(200).json(docs);
-	} catch (err) {
-		logger.error(err);
-		if (typeof err === 'string') {
-			return res.status(500).json({
-				message: err
-			});
-		}
-		res.status(500).json({
-			message: err.message
-		});
-	}
-});
-
-router.get('/node-library', async (req, res) => {
-	try {
-		const filter = queryUtils.parseFilter(req.query.filter);
-		if (filter) {
-			delete filter.app;
-		}
-		const data = queryUtils.getPaginationData(req);
-		const docs = await flowConfigModel.find(filter).select(data.select).sort(data.sort).skip(data.skip).limit(data.count).lean();
-		res.status(200).json(docs);
-	} catch (err) {
-		logger.error(err);
-		if (typeof err === 'string') {
-			return res.status(500).json({
-				message: err
-			});
-		}
-		res.status(500).json({
-			message: err.message
-		});
-	}
-});
-
-router.post('/node-library', async (req, res) => {
-	try {
-		const doc = new flowConfigModel(req.body);
-		doc._req = req;
-		const status = await doc.save();
-		res.status(200).json(status);
-	} catch (err) {
-		logger.error(err);
-		if (typeof err === 'string') {
-			return res.status(500).json({
-				message: err
-			});
-		}
-		res.status(500).json({
-			message: err.message
-		});
-	}
-});
-
-router.put('/node-library/:id', async (req, res) => {
-	try {
-		let doc = await flowConfigModel.findById(req.params.id);
-		doc._req = req;
-		doc = _.merge(doc, req.body);
-		const status = await doc.save();
-		res.status(200).json(status);
-	} catch (err) {
-		logger.error(err);
-		if (typeof err === 'string') {
-			return res.status(500).json({
-				message: err
-			});
-		}
-		res.status(500).json({
-			message: err.message
-		});
-	}
-});
-
-router.delete('/node-library/:id', async (req, res) => {
-	try {
-		const status = await flowConfigModel.deleteOne({ _id: req.params.id });
-		logger.info('Library Deleted!');
-		logger.debug(status);
-		res.status(200).json({ message: 'Library deleted successfully' });
-	} catch (err) {
-		logger.error(err);
-		if (typeof err === 'string') {
-			return res.status(500).json({
-				message: err
-			});
-		}
-		res.status(500).json({
-			message: err.message
-		});
-	}
-});
-
 router.put('/:id/init', async (req, res) => {
 	try {
 		const doc = await flowModel.findById(req.params.id);
@@ -225,7 +121,6 @@ router.put('/:id/deploy', async (req, res) => {
 
 		logger.info(`[${txnId}] Flow deployment request received :: ${id}`);
 
-
 		let user = req.user;
 		let isSuperAdmin = user.isSuperAdmin;
 
@@ -246,7 +141,6 @@ router.put('/:id/deploy', async (req, res) => {
 		const oldFlowObj = JSON.parse(JSON.stringify(doc));
 		logger.debug(`[${txnId}] Flow data found`);
 		logger.trace(`[${txnId}] Flow data found :: ${JSON.stringify(doc)}`);
-
 
 		if (doc.status === 'Active' && !doc.draftVersion) {
 			logger.error(`[${txnId}] Flow is already running, cannot deploy again`);
@@ -297,53 +191,13 @@ router.put('/:id/deploy', async (req, res) => {
 		doc._req = req;
 		doc._oldData = oldFlowObj;
 
-
-		if (config.isK8sEnv() && !doc.isBinary) {
-			doc.image = flowBaseImage;
-
-			doc.status = 'Pending';
-			doc.isNew = false;
-
-			await doc.save();
-
-			let srvcStatus = await k8sUtils.upsertService(doc);
-			let depStatus = await k8sUtils.upsertDeployment(doc);
-
-			if ((srvcStatus.statusCode < 200 || srvcStatus.statusCode > 202) || (depStatus.statusCode < 200 || depStatus.statusCode > 202)) {
-				return res.status(400).json({ message: 'Unable to deploy Flow' });
-			}
-
-
-		} else if (doc.isBinary) {
+		if (doc.isBinary) {
 			doc.status = 'Active';
-			doc.isNew = false;
-
-			await doc.save();
-
 		} else {
 			doc.status = 'Pending';
-			doc.isNew = false;
-
-			await doc.save();
 		}
-
-		if (doc.inputNode.type === 'FILE' || doc.nodes.some(node => node.type === 'FILE')) {
-			let action;
-			if (oldFlowObj.status === 'Active') {
-				action = 'update';
-			} else {
-				action = 'create';
-			}
-
-			let flowActionList = helpers.constructFlowEvent(req, '', doc, action);
-			flowActionList.forEach(action => {
-				const actionDoc = new agentActionModel(action);
-				actionDoc._req = req;
-				let status = actionDoc.save();
-				logger.trace(`[${txnId}] Flow Action Create Status - `, status);
-				logger.trace(`[${txnId}] Flow Action Doc - `, actionDoc);
-			});
-		}
+		doc.isNew = false;
+		await doc.save();
 
 		socket.emit('flowStatus', {
 			_id: id,
@@ -388,11 +242,7 @@ router.put('/:id/repair', async (req, res) => {
 			doc.image = flowBaseImage;
 			let status = await k8sUtils.deleteDeployment(doc);
 			status = await k8sUtils.deleteService(doc);
-			status = await k8sUtils.upsertService(doc);
-			status = await k8sUtils.upsertDeployment(doc);
-
 			logger.debug(status);
-
 			if (status.statusCode !== 200 && status.statusCode !== 202) {
 				return res.status(status.statusCode).json({ message: 'Unable to repair Flow' });
 			}
@@ -433,45 +283,15 @@ router.put('/:id/start', async (req, res) => {
 		logger.debug(`[${txnId}] Flow data found for id :: ${id}`);
 		logger.trace(`[${txnId}] Flow data :: ${JSON.stringify(doc)}`);
 
-
 		if (doc.status === 'Active') {
 			logger.error(`[${txnId}] Flow is already running, cant start again`);
 			return res.status(400).json({ message: 'Can\'t restart a running flow' });
-		}
-
-
-		logger.info(`[${txnId}] Scaling up deployment :: ${doc.deploymentName}`);
-
-		if (config.isK8sEnv() && !doc.isBinary) {
-			const status = await k8sUtils.scaleDeployment(doc, 1);
-
-			logger.trace(`[${txnId}] Deployment Scaled status :: ${JSON.stringify(status)}`);
-
-			if (status.statusCode !== 200 && status.statusCode !== 202) {
-				return res.status(status.statusCode).json({ message: 'Unable to start Flow' });
-			}
 		}
 
 		doc.status = 'Pending';
 		doc.isNew = false;
 		doc._req = req;
 		await doc.save();
-
-		let eventId = 'EVENT_FLOW_START';
-		logger.debug(`[${txnId}] Publishing Event :: ${eventId}`);
-		dataStackUtils.eventsUtil.publishEvent(eventId, 'flow', req, doc, null);
-
-		if (doc.inputNode.type === 'FILE' || doc.nodes.some(node => node.type === 'FILE')) {
-			let action = 'start';
-			let flowActionList = helpers.constructFlowEvent(req, '', doc, action);
-			flowActionList.forEach(action => {
-				const actionDoc = new agentActionModel(action);
-				actionDoc._req = req;
-				let status = actionDoc.save();
-				logger.trace(`[${txnId}] Flow Action Create Status - `, status);
-				logger.trace(`[${txnId}] Flow Action Doc - `, actionDoc);
-			});
-		}
 
 		socket.emit('flowStatus', {
 			_id: id,
@@ -515,34 +335,6 @@ router.put('/:id/stop', async (req, res) => {
 		if (doc.status !== 'Active') {
 			logger.debug(`[${txnId}] Flow is not running, can't stop again`);
 			return res.status(400).json({ message: 'Can\'t stop an inactive flow' });
-		}
-
-		logger.info(`[${txnId}] Scaling down deployment :: ${JSON.stringify({ namespace: doc.namespace, deploymentName: doc.deploymentName })}`);
-
-		if (config.isK8sEnv() && !doc.isBinary) {
-			const status = await k8sUtils.scaleDeployment(doc, 0);
-			logger.info('Stop API called');
-			logger.debug(status);
-			if (status.statusCode !== 200 && status.statusCode !== 202) {
-				logger.error('K8S :: Error stopping flow');
-				return res.status(status.statusCode).json({ message: 'Unable to stop Flow' });
-			}
-		}
-
-		let eventId = 'EVENT_FLOW_STOP';
-		logger.debug(`[${txnId}] Publishing Event - ${eventId}`);
-		dataStackUtils.eventsUtil.publishEvent(eventId, 'flow', req, doc, null);
-
-		if (doc.inputNode.type === 'FILE' || doc.nodes.some(node => node.type === 'FILE')) {
-			let action = 'stop';
-			let flowActionList = helpers.constructFlowEvent(req, '', doc, action);
-			flowActionList.forEach(action => {
-				const actionDoc = new agentActionModel(action);
-				actionDoc._req = req;
-				let status = actionDoc.save();
-				logger.trace(`[${txnId}] Flow Action Create Status - `, status);
-				logger.trace(`[${txnId}] Flow Action Doc - `, actionDoc);
-			});
 		}
 
 		socket.emit('flowStatus', {
@@ -590,28 +382,10 @@ router.put('/startAll', async (req, res) => {
 		logger.trace(`[${txnId}] Flows data :: ${JSON.stringify(docs)}`);
 
 		let promises = docs.map(async doc => {
-			logger.info(`[${txnId}] Scaling up deployment :: ${doc.deploymentName}`);
-
-			if (config.isK8sEnv() && !doc.isBinary) {
-				const status = await k8sUtils.scaleDeployment(doc, 1);
-
-				logger.trace(`[${txnId}] Deployment Scaled status :: ${JSON.stringify(status)}`);
-
-				if (status.statusCode !== 200 && status.statusCode !== 202) {
-					logger.error(`Unable to start Flow :: ${doc._id} :: ${JSON.stringify(status)}`);
-					return;
-				}
-			}
-
 			doc.status = 'Pending';
 			doc.isNew = false;
 			doc._req = req;
 			await doc.save();
-
-			let eventId = 'EVENT_FLOW_START';
-			logger.debug(`[${txnId}] Publishing Event :: ${eventId}`);
-			dataStackUtils.eventsUtil.publishEvent(eventId, 'flow', req, doc, null);
-
 			socket.emit('flowStatus', {
 				_id: doc._id,
 				app: app,
@@ -659,23 +433,6 @@ router.put('/stopAll', async (req, res) => {
 		logger.trace(`[${txnId}] Flows data :: ${JSON.stringify(docs)}`);
 
 		let promises = docs.map(async doc => {
-			logger.info(`[${txnId}] Scaling down deployment :: ${JSON.stringify({ namespace: doc.namespace, deploymentName: doc.deploymentName })}`);
-
-			if (config.isK8sEnv() && !doc.isBinary) {
-				const status = await k8sUtils.scaleDeployment(doc, 0);
-
-				logger.debug(status);
-
-				if (status.statusCode !== 200 && status.statusCode !== 202) {
-					logger.error('K8S :: Error stopping flow');
-					logger.error(`Unable to stop Flow :: ${doc._id} :: ${status}`);
-				}
-			}
-
-			let eventId = 'EVENT_FLOW_STOP';
-			logger.debug(`[${txnId}] Publishing Event - ${eventId}`);
-			dataStackUtils.eventsUtil.publishEvent(eventId, 'flow', req, doc, null);
-
 			socket.emit('flowStatus', {
 				_id: doc._id,
 				app: app,

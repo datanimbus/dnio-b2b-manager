@@ -8,6 +8,8 @@ const queue = require('../queue');
 const config = require('../config');
 const mongooseUtils = require('../utils/mongoose.utils');
 const definition = require('../schemas/flow.schema').definition;
+const helpers = require('../utils/helper');
+const k8sUtils = require('../utils/k8s.utils');
 
 const logger = log4js.getLogger(global.loggerName);
 
@@ -30,6 +32,7 @@ schema.pre('save', function (next) {
 	if (!this.inputNode || !this.inputNode.type) {
 		return next(new Error('Input Node is Mandatory'));
 	}
+	this._wasNew = this.isNew;
 	if (this.isNew) {
 		if (!this.inputNode || !this.inputNode.options) {
 			this.inputNode.options = {};
@@ -106,6 +109,50 @@ schema.pre('save', function (next) {
 		}
 	} else {
 		next(new Error('FLOW_NAME_ERROR :: API Endpoint must consist of alphanumeric characters and must start with \'/\' and followed by an alphabet.'));
+	}
+});
+
+schema.pre('save', async function (next) {
+	let doc = this;
+	if (!doc._req) {
+		doc._req = {};
+	}
+	if (!doc._req.headers) {
+		doc._req.headers = {};
+	}
+	const txnId = `[${doc._req.headers.TxnId || doc._req.headers.txnId}]`;
+	let bundleModel = mongoose.model('bundle-deployment');
+	try {
+		let bundleDoc = await bundleModel.findOne({ bundle: doc._id }, { name: 1, _id: 1 });
+		if (bundleDoc) {
+			logger.trace(`[${txnId}] Flow is part of bundle - ${JSON.stringify(bundleDoc)}`);
+			return;
+		}
+		if (config.isK8sEnv() && doc.status != 'Active') {
+			let status;
+			if (doc.status == 'Pending') {
+				status = await k8sUtils.upsertDeployment(doc);
+				logger.trace(`[${txnId}] Flow Service Upsert Status - `, status);
+				status = await k8sUtils.upsertService(doc);
+				logger.trace(`[${txnId}] Flow Deployment Upsert Status - `, status);
+			} else {
+				try {
+					status = await k8sUtils.deleteDeployment(doc);
+					logger.trace(`[${txnId}] Flow Service Delete Status - `, status);
+				} catch (err) {
+					logger.error(`[${txnId}] Flow Service Delete Error - `, err);
+				}
+				try {
+					status = await k8sUtils.deleteService(doc);
+					logger.trace(`[${txnId}] Flow Deployment Delete Status - `, status);
+				} catch (err) {
+					logger.error(`[${txnId}] Flow Service Delete Error - `, err);
+				}
+			}
+		}
+	} catch (err) {
+		logger.error(`[${txnId}] Flow post save hook - ${JSON.stringify(err)}`);
+		next(err);
 	}
 });
 
@@ -150,18 +197,83 @@ schema.post('save', function (error, doc, next) {
 
 schema.post('save', dataStackUtils.auditTrail.getAuditPostSaveHook('b2b.flow.audit', client, 'auditQueue'));
 
-
 schema.post('save', function (doc) {
 	if (!doc._req) {
 		doc._req = {};
 	}
-	if (doc._isNew) {
-		dataStackUtils.eventsUtil.publishEvent('EVENT_FLOW_CREATE', 'b2b.flow', doc._req, doc);
-	} else {
-		dataStackUtils.eventsUtil.publishEvent('EVENT_FLOW_UPDATE', 'b2b.flow', doc._req, doc);
+	if (!doc._req.headers) {
+		doc._req.headers = {};
+	}
+	const txnId = `[${doc._req.headers.TxnId || doc._req.headers.txnId}]`;
+	const agentActionModel = mongoose.model('agent-action');
+	if ((doc.status != 'Draft') && (doc.inputNode.type === 'FILE' || doc.nodes.some(node => node.type === 'FILE'))) {
+		let action;
+		if (doc.status == 'Stopped') {
+			action = 'stop';
+		} else if (doc.status == 'Active') {
+			action = 'start';
+		} else {
+			if (doc._wasNew) {
+				action = 'create';
+			} else {
+				action = 'update';
+			}
+		}
+		let flowActionList = helpers.constructFlowEvent('', doc, action);
+		flowActionList.forEach(action => {
+			const actionDoc = new agentActionModel(action);
+			let status = actionDoc.save();
+			logger.trace(`[${txnId}] Flow Action Create Status - `, status);
+			logger.trace(`[${txnId}] Flow Action Doc - `, actionDoc);
+		});
 	}
 });
 
+schema.post('remove', function (doc) {
+	if (!doc._req) {
+		doc._req = {};
+	}
+	if (!doc._req.headers) {
+		doc._req.headers = {};
+	}
+	const txnId = `[${doc._req.headers.TxnId || doc._req.headers.txnId}]`;
+	const agentActionModel = mongoose.model('agent-action');
+	if (doc.status != 'Draft' && (doc.inputNode.type === 'FILE' || doc.nodes.some(node => node.type === 'FILE'))) {
+		let action = 'delete';
+		let flowActionList = helpers.constructFlowEvent('', doc, action);
+		flowActionList.forEach(action => {
+			const actionDoc = new agentActionModel(action);
+			let status = actionDoc.save();
+			logger.trace(`[${txnId}] Flow Action Create Status - `, status);
+			logger.trace(`[${txnId}] Flow Action Doc - `, actionDoc);
+		});
+	}
+});
+
+schema.post('remove', async function (doc) {
+	if (!doc._req) {
+		doc._req = {};
+	}
+	if (!doc._req.headers) {
+		doc._req.headers = {};
+	}
+	const txnId = `[${doc._req.headers.TxnId || doc._req.headers.txnId}]`;
+	if (config.isK8sEnv()) {
+		let status;
+		try {
+			status = await k8sUtils.deleteDeployment(doc);
+			logger.trace(`[${txnId}] Flow Service Delete Status - `, status);
+		} catch (err) {
+			logger.error(`[${txnId}] Flow Service Delete Error - `, err);
+		}
+		try {
+			status = await k8sUtils.deleteService(doc);
+			logger.trace(`[${txnId}] Flow Deployment Delete Status - `, status);
+		} catch (err) {
+			logger.error(`[${txnId}] Flow Service Delete Error - `, err);
+		}
+	}
+});
 
 
 schema.pre('remove', dataStackUtils.auditTrail.getAuditPreRemoveHook());
@@ -184,13 +296,6 @@ schema.post('remove', function (doc) {
 		logger.error(`Error Orrcured while deleting collection - b2b.${doc._id}.node-state.data`);
 		logger.error(err);
 	});
-});
-
-schema.post('remove', function (doc) {
-	if (!doc._req) {
-		doc._req = {};
-	}
-	dataStackUtils.eventsUtil.publishEvent('EVENT_FLOW_DELETE', 'b2b.flow', doc._req, doc);
 });
 
 
