@@ -5,13 +5,11 @@ const yamljs = require('json-to-pretty-yaml');
 const _ = require('lodash');
 
 const config = require('../config');
-const k8sUtils = require('../utils/k8s.utils');
 const queryUtils = require('../utils/query.utils');
 const commonUtils = require('../utils/common.utils');
 
 const logger = log4js.getLogger(global.loggerName);
 const bundleModel = mongoose.model('bundle-deployment');
-const flowModel = mongoose.model('flow');
 
 let dockerRegistryType = process.env.DOCKER_REGISTRY_TYPE ? process.env.DOCKER_REGISTRY_TYPE : '';
 if (dockerRegistryType.length > 0) dockerRegistryType = dockerRegistryType.toUpperCase();
@@ -158,38 +156,15 @@ router.put('/utils/:id/stop', async (req, res) => {
 		let id = req.params.id;
 		let txnId = req.get('TxnId');
 		logger.info(`[${txnId}] Bundle stop request received :: ${id}`);
-
 		const bundleDoc = await bundleModel.findById(id);
 		if (!bundleDoc) {
 			return res.status(400).json({ message: 'Invalid Bundle' });
 		}
-
 		logger.debug(`[${txnId}] Bundle data found for id :: ${id}`);
 		logger.trace(`[${txnId}] Bundle data :: ${JSON.stringify(bundleDoc)}`);
-
-		logger.info(`[${txnId}] Scaling down deployment :: ${JSON.stringify({ namespace: bundleDoc.namespace, deploymentName: bundleDoc.deploymentName })}`);
-
-		if (config.isK8sEnv()) {
-			const status = await k8sUtils.scaleDeployment(bundleDoc, 0);
-			logger.info('Stop API called');
-			logger.debug(status);
-			if (status.statusCode !== 200 && status.statusCode !== 202) {
-				logger.error('K8S :: Error stopping Bundle');
-				return res.status(status.statusCode).json({ message: 'Unable to stop Bundle' });
-			}
-		}
-		const flowList = await flowModel.find({ _id: { $in: bundleDoc.bundle } }).exec();
-		let promises = flowList.map(async (doc) => {
-			try {
-				doc.status = 'Stopped';
-				doc.isNew = false;
-				doc._req = req;
-				await doc.save();
-			} catch (err) {
-				logger.error(err);
-			}
-		});
-		await Promise.all(promises);
+		bundleDoc.status = 'Stopped';
+		bundleDoc._req = req;
+		await bundleDoc.save();
 		res.status(200).json({ message: 'Bundle Stopped' });
 	} catch (err) {
 		logger.error(err);
@@ -206,17 +181,17 @@ router.put('/utils/:id/stop', async (req, res) => {
 
 router.get('/utils/:id/yamls', async (req, res) => {
 	try {
-		const doc = await flowModel.findById(req.params.id);
+		const doc = await bundleModel.findById(req.params.id);
 		const appData = await commonUtils.getApp(req, doc.app);
 		if (appData.body.b2bBaseImage) {
 			flowBaseImage = appData.body.b2bBaseImage;
 		}
-		const namespace = (config.DATA_STACK_NAMESPACE + '-' + doc.app).toLowerCase();
 		const port = 8080;
 		const name = doc.deploymentName;
+		const namespace = (config.DATA_STACK_NAMESPACE + '-' + doc.app).toLowerCase();
 		const envVars = [];
 		envVars.push({ name: 'DATA_STACK_APP_NS', value: namespace });
-		envVars.push({ name: 'DATA_STACK_FLOW_ID', value: `${doc._id}` });
+		envVars.push({ name: 'DATA_STACK_FLOW_ID', value: `${doc.bundle.join(',')}` });
 		envVars.push({ name: 'DATA_STACK_APP', value: `${doc.app}` });
 
 		const options = {

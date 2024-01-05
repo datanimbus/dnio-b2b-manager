@@ -62,9 +62,10 @@ schema.pre('save', async function (next) {
 					k8sUtils.deleteService(doc);
 					k8sUtils.deleteDeployment(doc);
 				}
-				if (flowsToUnDeploy.indexOf(doc._id) > -1) {
-					doc.status = 'Stopped';
-				} else {
+				if (!(flowsToUnDeploy.indexOf(doc._id) > -1)) {
+					if (doc.status == 'Active' && this.isNew) {
+						this.status = 'Active';
+					}
 					doc.status = 'Pending';
 					let payload = {};
 					payload.name = doc.deploymentName;
@@ -76,17 +77,19 @@ schema.pre('save', async function (next) {
 						logger.trace(`Service Create status :: ${JSON.stringify(status)}`);
 					}
 				}
-				doc.isNew = false;
-				doc._req = this._req;
-				await doc.save();
 			} catch (err) {
 				logger.error(err);
 			}
 		});
 		await Promise.all(promises);
 		if (config.isK8sEnv()) {
-			const status = await k8sUtils.upsertBundleDeployment(this);
-			logger.trace(`Deployment Create status :: ${JSON.stringify(status)}`);
+			if (this.status == 'Active') {
+				const status = await k8sUtils.upsertBundleDeployment(this);
+				logger.trace(`Deployment Create status :: ${JSON.stringify(status)}`);
+			} else {
+				const status = await k8sUtils.deleteDeployment(this);
+				logger.trace(`Deployment Stop status :: ${JSON.stringify(status)}`);
+			}
 		}
 		next();
 	} catch (err) {
@@ -106,7 +109,11 @@ schema.post('save', async function (doc) {
 		let promises = flowList.map(async (item) => {
 			try {
 				if (doc._flowsToUnDeploy.indexOf(item._id) > -1) {
-					item.status = 'Stopped';
+					if (doc.status == 'Active') {
+						item.status = 'Pending';
+					} else {
+						item.status = 'Stopped';
+					}
 				} else {
 					item.status = 'Pending';
 				}
@@ -140,10 +147,18 @@ schema.post('remove', async function (doc) {
 			try {
 				logger.info('Removing Standalone Service and Deployment for flow :', item._id);
 				if (config.isK8sEnv()) {
-					k8sUtils.deleteService(item);
-					k8sUtils.deleteDeployment(item);
+					k8sUtils.deleteService(item).catch((err) => {
+						logger.error(`Service Delete Error :: ${JSON.stringify(err)}`);
+					});
+					k8sUtils.deleteDeployment(item).catch((err) => {
+						logger.error(`Deployment Delete Error :: ${JSON.stringify(err)}`);
+					});
 				}
-				item.status = 'Stopped';
+				if (doc.status == 'Active') {
+					item.status = 'Pending';
+				} else {
+					item.status = doc.status;
+				}
 				item.isNew = false;
 				item._req = doc._req;
 				await item.save();
@@ -153,7 +168,7 @@ schema.post('remove', async function (doc) {
 		});
 		await Promise.all(promises);
 		if (config.isK8sEnv()) {
-			const status = await k8sUtils.deleteDeployment(doc);
+			let status = await k8sUtils.deleteDeployment(doc);
 			logger.trace(`Deployment Delete status :: ${JSON.stringify(status)}`);
 		}
 	} catch (err) {

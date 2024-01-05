@@ -14,6 +14,16 @@ var defintion = {
 		'type': 'String',
 		'required': true
 	},
+	'status': {
+		'type': 'String',
+		'required': true,
+		'default': 'Stopped'
+	},
+	'scale': {
+		'type': 'Number',
+		'required': true,
+		'default': 1
+	},
 	'namespace': {
 		'type': 'String'
 	},
