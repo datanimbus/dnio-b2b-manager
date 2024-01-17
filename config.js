@@ -109,6 +109,9 @@ module.exports = {
     mongoAuthorUrl: process.env.MONGO_AUTHOR_URL || 'mongodb://localhost',
     mongoLogUrl: process.env.MONGO_LOGS_URL || 'mongodb://localhost',
     logsDB: process.env.MONGO_LOGS_DBNAME || 'datastackLogs',
+    dbAuthorUrl: process.env.DB_AUTHOR_URL || process.env.MONGO_AUTHOR_URL || 'mongodb://localhost',
+    dbAppcenterUrl: process.env.DB_APPCENTER_URL || process.env.MONGO_APPCENTER_URL || 'mongodb://localhost',
+    dbLogsUrl: process.env.DB_LOGS_URL || process.env.MONGO_LOGS_URL || 'mongodb://localhost',
     googleKey: envVariables.GOOGLE_API_KEY || '',
     queueName: 'webHooks',
     interactionLogQueueName: 'interactionLogs',
@@ -138,6 +141,20 @@ module.exports = {
         useUnifiedTopology: true,
         useNewUrlParser: true,
         dbName: process.env.MONGO_LOGS_DBNAME || 'datastackLogs'
+    },
+    dbAuthorOptions: {
+        useUnifiedTopology: true,
+        useNewUrlParser: true,
+        dbName: process.env.DB_AUTHOR_DBNAME || process.env.MONGO_AUTHOR_DBNAME || 'datastackConfig',
+    },
+    dbAppcenterOptions: {
+        useUnifiedTopology: true,
+        useNewUrlParser: true,
+    },
+    dbLogsOptions: {
+        useUnifiedTopology: true,
+        useNewUrlParser: true,
+        dbName: process.env.DB_LOGS_DBNAME || process.env.MONGO_LOGS_DBNAME || 'datastackLogs'
     },
     TZ_DEFAULT: envVariables.TZ_DEFAULT || 'Zulu',
     agentMonitoringExpiry: process.env.B2B_HB_LOG_EXPIRY ? parseInt(process.env.B2B_HB_LOG_EXPIRY) : 30 * 60,
